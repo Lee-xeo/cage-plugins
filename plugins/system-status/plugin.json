@@ -1,0 +1,18 @@
+{
+  "name": "system-status",
+  "displayName": "System Status",
+  "version": "0.1.0",
+  "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.1.8" },
+  "kind": "guest",
+  "permissions": [],
+  "contributes": {
+    "mcpServers": [
+      { "id": "status", "command": ["python3", "server.py"] }
+    ],
+    "views": [
+      { "id": "status", "title": "System Status", "icon": "icon.svg", "entry": "view/index.html", "server": "status" }
+    ]
+  }
+}
