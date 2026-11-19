@@ -4,9 +4,9 @@
 
 ## 安装插件
 
-在 Cage 侧栏打开「MCP 插件」→「插件市场」，选择插件并安装。Cage 从本仓库读取 `index.json`，下载对应的压缩包，核对 SHA-256 后放进插件目录。
+在 Cage 侧栏打开「插件」→「插件市场」，按分类浏览并安装。Cage 从本仓库读取 `index.json`，下载对应的压缩包，核对 SHA-256 后放进插件目录。
 
-插件以你的系统账户权限在电脑上运行，不受环境的隔离保护。每次调用前系统会弹出确认窗口，显示插件、工具和参数。安装前请阅读插件声明的权限，只安装你信任的插件。
+运行在你电脑上的插件以你的系统账户权限运行，不受环境的隔离保护。调用前会弹出确认窗口，显示插件、工具和参数，你可以只允许这一次，也可以选择对该插件始终允许。安装前请阅读插件声明的权限，只安装你信任的插件。
 
 ## 提交插件
 
@@ -30,6 +30,7 @@
   "engines": { "cage": ">=0.1.8" },
   "kind": "guest",
   "permissions": [],
+  "categories": ["system"],
   "contributes": {
     "mcpServers": [{ "id": "status", "command": ["python3", "server.py"] }],
     "views": [{ "id": "status", "title": "System Status", "entry": "view/index.html", "server": "status" }]
@@ -41,21 +42,23 @@
 
 `permissions` 必须如实写明，没有就写空列表。可选值：`files`（读写文件）、`commands`（运行命令）、`screen`（查看屏幕）、`input`（控制键盘和鼠标）、`network`（访问网络）。
 
+`categories` 是插件在市场里的分类，上架时必须写 1 到 3 个：`desktop`（桌面控制）、`developer`（开发）、`system`（系统与状态）、`network`（网络）、`files`（文件）、`productivity`（效率）、`example`（示例）。
+
 带有按系统编译的程序的插件，放在 `targets/<目标>/<插件名>/` 下，每个目标一份，目标为 `darwin-arm64`、`darwin-x64`、`linux-arm64`、`linux-x64`、`win32-arm64` 或 `win32-x64`。不分系统的插件放在 `plugins/` 下。
 
 ### 收录要求
 
 - 权限如实声明。插件做了清单没有声明的事，会被移除。
-- 工具的名称和说明只描述工具做什么，不提及模型运行在哪里，也不出现本产品的名字。
+- 工具的名称、说明和参数说明只描述工具做什么，不提及模型运行在哪里，也不出现本产品的名字或 VM、guest 之类的词。打包脚本只检查清单；工具的文字由应用在加载时检查，不合格的插件无法加载。
 - 以 MIT 许可提交。本仓库采用 [MIT 许可](LICENSE)，提交插件即表示同意以该许可发布；插件带有第三方代码时，在插件目录里附上其许可。
 - 源码可读。不收录只有二进制文件或混淆代码的插件。
 - 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB。
 - 运行时不自行下载并执行代码。需要的依赖在说明里写明，由用户自己安装。
 
-示例，都只用到 Python 标准库：
+示例都不需要安装依赖，只用到 Python 标准库或 Windows 自带的 PowerShell：
 
 - [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。
-- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠（macOS）。
+- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下。
 - [`plugins/system-status`](plugins/system-status)：环境内插件，一个页面加一个工具。
 
 ## 索引格式
