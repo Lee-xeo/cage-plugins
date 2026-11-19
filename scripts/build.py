@@ -17,7 +17,7 @@ import tarfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BASE = "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/"
 FIELDS = {"name", "displayName", "version", "description", "engines", "kind", "platforms", "permissions",
-          "activationEvents", "command", "icon", "contributes"}
+          "categories", "activationEvents", "command", "icon", "contributes"}
 TARGETS = {"darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "win32-arm64", "win32-x64"}
 ENGINE = re.compile(r"^(>=|\^)\d+\.\d+\.\d+$")
 SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*$")
@@ -25,11 +25,15 @@ COMMON_SCHEMES = {"http", "https", "file", "ftp", "mailto", "data", "javascript"
 HOST = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
 PORT = re.compile(r"^(\*|\d{1,5})$")
 PERMISSIONS = {"files", "commands", "screen", "input", "network"}
+# The market's sections. The application shows only those it knows, so add
+# here only after the application knows the new one.
+CATEGORIES = ("desktop", "developer", "system", "network", "files", "productivity", "example")
 PLATFORMS = {"darwin", "linux", "windows"}
 NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 VERSION = re.compile(r"^[0-9]+(\.[0-9]+){0,2}([-+.][0-9A-Za-z.-]+)?$")
-# Tools describe only what they do, never where the model runs.
-RESERVED = ("cage", "guest", "virtual machine", "虚拟机", "客机")
+# Tools describe only what they do, never where the model runs. Latin words
+# are matched whole, as the application does.
+RESERVED = ("cage", "guest", "vm", "virtual machine", "虚拟机", "客机")
 MAX_BYTES = 20 * 1024 * 1024
 MAX_ICON_BYTES = 256 * 1024
 
@@ -143,6 +147,10 @@ def manifest(folder):
         fail(f"{folder.name}: platforms must be drawn from {sorted(PLATFORMS)}")
     if "displayName" in data and (not isinstance(data["displayName"], str) or not 0 < len(data["displayName"]) <= 80):
         fail(f"{folder.name}: displayName must be a short name")
+    categories = data.get("categories", [])
+    if (not isinstance(categories, list) or not 0 < len(categories) <= 3 or len(set(categories)) != len(categories)
+            or set(categories) - set(CATEGORIES)):
+        fail(f"{folder.name}: categories must name one to three of {list(CATEGORIES)}")
     if "contributes" in data:
         contributes(folder, data)
     else:
@@ -161,8 +169,9 @@ def manifest(folder):
     shown = [data["name"], data.get("displayName", ""), data["description"]]
     shown += [view["title"] for view in data.get("contributes", {}).get("views", [])]
     lowered = json.dumps(shown, ensure_ascii=False).lower()
+    words = set(re.split(r"[^a-z0-9\u0080-\U0010ffff]+", lowered))
     for word in RESERVED:
-        if word in lowered:
+        if (word in lowered) if (" " in word or not word.isascii()) else (word in words):
             fail(f"{folder.name}: the manifest mentions {word!r}")
     return data
 
@@ -221,12 +230,14 @@ def main():
             fail(f"{folder.name}: its files changed but its version did not; raise the version in plugin.json")
         wanted[target] = packed
         entry = {key: data[key] for key in ("name", "version", "description", "permissions")}
-        for key in ("displayName", "platforms", "kind", "engines", "contributes"):
+        for key in ("displayName", "platforms", "categories", "kind", "engines", "contributes"):
             if data.get(key):
                 entry[key] = data[key]
         if target_name:
             entry["target"] = target_name
-        if data.get("icon") and not target_name:
+        # The application takes pictures only from plugins/<name>/; a build
+        # for one target shows the picture of the plugin's folder there.
+        if data.get("icon") and (not target_name or (ROOT / "plugins" / data["name"] / data["icon"]).is_file()):
             entry["icon"] = BASE + "plugins/" + data["name"] + "/" + data["icon"]
         entry["archive"] = BASE + "dist/" + name
         entry["sha256"] = hashlib.sha256(packed).hexdigest()

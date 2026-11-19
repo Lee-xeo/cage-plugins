@@ -1,8 +1,10 @@
 {
   "name": "clock",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tells the current time on this computer.",
+  "platforms": ["darwin", "linux"],
   "permissions": [],
+  "categories": ["example"],
   "command": ["python3", "server.py"],
   "icon": "icon.svg"
 }

@@ -1,0 +1,10 @@
+{
+  "name": "desktop-control",
+  "version": "0.2.0",
+  "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+  "platforms": ["windows"],
+  "permissions": ["screen", "input"],
+  "categories": ["desktop"],
+  "command": ["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "server.ps1"],
+  "icon": "icon.svg"
+}

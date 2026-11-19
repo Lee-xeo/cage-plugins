@@ -3,17 +3,24 @@
   "plugins": [
     {
       "name": "clock",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Tells the current time on this computer.",
       "permissions": [],
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "categories": [
+        "example"
+      ],
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
-      "sha256": "81986fad7e03d1dad11603267582ef0fe0246a92520a71edcd3b586d111d70bb",
-      "bytes": 1073
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.2.tar.gz",
+      "sha256": "066dcd96527900de23e3abed40039b66addd3c5dd8850d70aacb966c89bf8c6c",
+      "bytes": 1105
     },
     {
       "name": "desktop-control",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -22,10 +29,13 @@
       "platforms": [
         "darwin"
       ],
+      "categories": [
+        "desktop"
+      ],
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.1.0.tar.gz",
-      "sha256": "a40d3108a839c541a2f738013dcfded76c25ab2c72f32aa997efcf9f58f8979e",
-      "bytes": 6258
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0.tar.gz",
+      "sha256": "f77cad9c6787ad4fe511e62d3fe13700696a9e93a7c30192e98bf60c57c498a1",
+      "bytes": 6696
     },
     {
       "name": "system-status",
@@ -33,6 +43,10 @@
       "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
       "permissions": [],
       "displayName": "System Status",
+      "categories": [
+        "system",
+        "example"
+      ],
       "kind": "guest",
       "engines": {
         "cage": ">=0.1.8"
@@ -59,8 +73,48 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.0.tar.gz",
-      "sha256": "06b0e8265a8cbb49cc54b74b55cbecf674cb1ee0215d689cfa1a54aafe7a64d5",
-      "bytes": 3581
+      "sha256": "2055808d327ca4a06c4dae55c70574f6cb5e4975db24954869471f8c1840e0b7",
+      "bytes": 3604
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.2.0",
+      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "platforms": [
+        "windows"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "win32-arm64",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0-win32-arm64.tar.gz",
+      "sha256": "33842ae00ad49f48d84de984a13fefe840e589bf8ab6b579807dd63f0bed7a27",
+      "bytes": 7257
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.2.0",
+      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "platforms": [
+        "windows"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "win32-x64",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0-win32-x64.tar.gz",
+      "sha256": "33842ae00ad49f48d84de984a13fefe840e589bf8ab6b579807dd63f0bed7a27",
+      "bytes": 7257
     }
   ]
 }

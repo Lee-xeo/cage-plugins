@@ -7,6 +7,7 @@
   "engines": { "cage": ">=0.1.8" },
   "kind": "guest",
   "permissions": [],
+  "categories": ["system", "example"],
   "contributes": {
     "mcpServers": [
       { "id": "status", "command": ["python3", "server.py"] }
