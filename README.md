@@ -18,29 +18,30 @@
 
 ### 清单 `plugin.json`
 
+插件有两种用途，可以兼有：给 Claude 提供工具（MCP 服务），或者给 Cage 加一个自己的页面。可以运行在你的电脑上（`"kind": "host"`），也可以运行在环境内（`"kind": "guest"`）。
+
 ```json
 {
-  "name": "clock",
+  "name": "system-status",
+  "displayName": "System Status",
   "version": "0.1.0",
-  "description": "Tells the current time on this computer.",
-  "platforms": ["darwin", "linux", "windows"],
+  "description": "Shows processor load, memory and disk use.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.1.8" },
+  "kind": "guest",
   "permissions": [],
-  "command": ["python3", "server.py"],
-  "icon": "icon.svg"
+  "contributes": {
+    "mcpServers": [{ "id": "status", "command": ["python3", "server.py"] }],
+    "views": [{ "id": "status", "title": "System Status", "entry": "view/index.html", "server": "status" }]
+  }
 }
 ```
 
-| 字段 | 说明 |
-| --- | --- |
-| `name` | 小写字母、数字和连字符，必须与目录名相同 |
-| `version` | 版本号，如 `1.2.3` |
-| `description` | 一句话说明 |
-| `platforms` | 支持的系统：`darwin`、`linux`、`windows`。省略表示都支持 |
-| `permissions` | 插件在电脑上会做的事，必须写明，没有就写空列表。可选值：`files`（读写文件）、`commands`（运行命令）、`screen`（查看屏幕）、`input`（控制键盘和鼠标）、`network`（访问网络） |
-| `command` | 程序和参数。相对路径从插件目录算起 |
-| `icon` | 插件目录内的一张 PNG 或 SVG 图片，显示在插件名称旁，不超过 256 KB。可省略 |
+清单各字段、页面的限制和页面与 Cage 之间的消息协议，见 Cage 仓库的[插件文档](https://github.com/Lee-xeo/Claude-Cage/blob/main/docs/plugins.md)。只有一个 MCP 服务的主机插件也可以用旧格式，像 [`plugins/clock`](plugins/clock) 那样只写 `command`。
 
-清单里不能有其他字段。
+`permissions` 必须如实写明，没有就写空列表。可选值：`files`（读写文件）、`commands`（运行命令）、`screen`（查看屏幕）、`input`（控制键盘和鼠标）、`network`（访问网络）。
+
+带有按系统编译的程序的插件，放在 `targets/<目标>/<插件名>/` 下，每个目标一份，目标为 `darwin-arm64`、`darwin-x64`、`linux-arm64`、`linux-x64`、`win32-arm64` 或 `win32-x64`。不分系统的插件放在 `plugins/` 下。
 
 ### 收录要求
 
@@ -51,7 +52,11 @@
 - 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB。
 - 运行时不自行下载并执行代码。需要的依赖在说明里写明，由用户自己安装。
 
-[`plugins/clock`](plugins/clock) 是一个完整的示例，只用到 Python 标准库。
+示例，都只用到 Python 标准库：
+
+- [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。
+- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠（macOS）。
+- [`plugins/system-status`](plugins/system-status)：环境内插件，一个页面加一个工具。
 
 ## 索引格式
 
