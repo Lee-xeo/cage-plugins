@@ -21,7 +21,7 @@ FIELDS = {"name", "displayName", "version", "description", "engines", "kind", "p
 TARGETS = {"darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "win32-arm64", "win32-x64"}
 ENGINE = re.compile(r"^(>=|\^)\d+\.\d+\.\d+$")
 SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*$")
-COMMON_SCHEMES = {"http", "https", "file", "ftp", "mailto", "data", "javascript", "blob", "about", "chrome", "ws", "wss"}
+COMMON_SCHEMES = {"http", "https", "file", "ftp", "mailto", "data", "javascript", "blob", "about", "chrome", "ws", "wss", "claude", "tailscale"}
 HOST = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
 PORT = re.compile(r"^(\*|\d{1,5})$")
 PERMISSIONS = {"files", "commands", "screen", "input", "network"}
