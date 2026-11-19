@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "name": "clock",
+      "version": "0.1.0",
+      "description": "Tells the current time on this computer.",
+      "permissions": [],
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.0.tar.gz",
+      "sha256": "0560fcee44041f50d96054e38bd20c82596b54cb7be5e3819b4af56db26e95a7",
+      "bytes": 887
+    }
+  ]
+}
