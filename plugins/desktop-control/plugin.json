@@ -1,0 +1,9 @@
+{
+  "name": "desktop-control",
+  "version": "0.1.0",
+  "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+  "platforms": ["darwin"],
+  "permissions": ["screen", "input"],
+  "command": ["python3", "server.py"],
+  "icon": "icon.svg"
+}

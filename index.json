@@ -10,6 +10,22 @@
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
       "sha256": "81986fad7e03d1dad11603267582ef0fe0246a92520a71edcd3b586d111d70bb",
       "bytes": 1073
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.1.0",
+      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "platforms": [
+        "darwin"
+      ],
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.1.0.tar.gz",
+      "sha256": "a40d3108a839c541a2f738013dcfded76c25ab2c72f32aa997efcf9f58f8979e",
+      "bytes": 6258
     }
   ]
 }
