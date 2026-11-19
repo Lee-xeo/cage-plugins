@@ -16,7 +16,7 @@ import tarfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BASE = "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/"
-FIELDS = {"name", "version", "description", "platforms", "permissions", "command"}
+FIELDS = {"name", "version", "description", "platforms", "permissions", "command", "icon"}
 PERMISSIONS = {"files", "commands", "screen", "input", "network"}
 PLATFORMS = {"darwin", "linux", "windows"}
 NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -24,6 +24,7 @@ VERSION = re.compile(r"^[0-9]+(\.[0-9]+){0,2}([-+.][0-9A-Za-z.-]+)?$")
 # Tools describe only what they do, never where the model runs.
 RESERVED = ("cage", "guest", "virtual machine", "虚拟机", "客机")
 MAX_BYTES = 20 * 1024 * 1024
+MAX_ICON_BYTES = 256 * 1024
 
 
 def fail(message):
@@ -51,6 +52,15 @@ def manifest(folder):
     command = data.get("command")
     if not isinstance(command, list) or not command or not all(isinstance(part, str) and part for part in command):
         fail(f"{folder.name}: command is missing")
+    icon = data.get("icon")
+    if icon is not None:
+        target = folder / str(icon)
+        inside = pathlib.PurePosixPath(str(icon))
+        if (not isinstance(icon, str) or inside.is_absolute() or ".." in inside.parts or "\\" in icon
+                or inside.as_posix() != icon or inside.suffix.lower() not in (".png", ".svg")):
+            fail(f"{folder.name}: icon must be a PNG or SVG file inside the plugin")
+        if not target.is_file() or target.is_symlink() or target.stat().st_size > MAX_ICON_BYTES:
+            fail(f"{folder.name}: icon is missing or over {MAX_ICON_BYTES // 1024} KB")
     lowered = json.dumps(data, ensure_ascii=False).lower()
     for word in RESERVED:
         if word in lowered:
@@ -103,6 +113,8 @@ def main():
         entry = {key: data[key] for key in ("name", "version", "description", "permissions")}
         if data.get("platforms"):
             entry["platforms"] = data["platforms"]
+        if data.get("icon"):
+            entry["icon"] = BASE + "plugins/" + data["name"] + "/" + data["icon"]
         entry["archive"] = BASE + "dist/" + name
         entry["sha256"] = hashlib.sha256(packed).hexdigest()
         entry["bytes"] = len(packed)

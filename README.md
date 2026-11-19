@@ -14,7 +14,7 @@
 2. 运行 `python3 scripts/build.py`。它检查清单，把插件打包到 `dist/`，并更新 `index.json`。
 3. 把 `plugins/`、`dist/`、`index.json` 的改动一起提交，发起 Pull Request。
 
-修改已发布的插件时，必须同时提高 `plugin.json` 里的版本号。已发布版本的压缩包不会被改写。
+修改已发布的插件时，必须同时提高 `plugin.json` 里的版本号。已发布版本的压缩包不会被改写；旧版本的压缩包可以从 `dist/` 删除。
 
 ### 清单 `plugin.json`
 
@@ -25,7 +25,8 @@
   "description": "Tells the current time on this computer.",
   "platforms": ["darwin", "linux", "windows"],
   "permissions": [],
-  "command": ["python3", "server.py"]
+  "command": ["python3", "server.py"],
+  "icon": "icon.svg"
 }
 ```
 
@@ -37,6 +38,7 @@
 | `platforms` | 支持的系统：`darwin`、`linux`、`windows`。省略表示都支持 |
 | `permissions` | 插件在电脑上会做的事，必须写明，没有就写空列表。可选值：`files`（读写文件）、`commands`（运行命令）、`screen`（查看屏幕）、`input`（控制键盘和鼠标）、`network`（访问网络） |
 | `command` | 程序和参数。相对路径从插件目录算起 |
+| `icon` | 插件目录内的一张 PNG 或 SVG 图片，显示在插件名称旁，不超过 256 KB。可省略 |
 
 清单里不能有其他字段。
 
@@ -60,10 +62,11 @@
   "plugins": [
     {
       "name": "clock",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Tells the current time on this computer.",
       "permissions": [],
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.0.tar.gz",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
       "sha256": "…",
       "bytes": 887
     }

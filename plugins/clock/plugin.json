@@ -1,7 +1,8 @@
 {
   "name": "clock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tells the current time on this computer.",
   "permissions": [],
-  "command": ["python3", "server.py"]
+  "command": ["python3", "server.py"],
+  "icon": "icon.svg"
 }

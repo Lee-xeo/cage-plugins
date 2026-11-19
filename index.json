@@ -3,12 +3,13 @@
   "plugins": [
     {
       "name": "clock",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Tells the current time on this computer.",
       "permissions": [],
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.0.tar.gz",
-      "sha256": "0560fcee44041f50d96054e38bd20c82596b54cb7be5e3819b4af56db26e95a7",
-      "bytes": 887
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
+      "sha256": "81986fad7e03d1dad11603267582ef0fe0246a92520a71edcd3b586d111d70bb",
+      "bytes": 1073
     }
   ]
 }
