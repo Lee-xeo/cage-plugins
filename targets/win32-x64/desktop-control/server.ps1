@@ -2,7 +2,7 @@
 # screen and sends mouse and keyboard input. Windows only; it needs nothing
 # beyond Windows PowerShell and the system's own libraries.
 $ErrorActionPreference = 'Stop'
-$Version = '0.2.0'
+$Version = '0.2.1'
 # The longest edge of a picture handed back, in pixels.
 $Longest = 1456
 

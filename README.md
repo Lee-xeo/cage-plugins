@@ -55,10 +55,10 @@
 - 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB。
 - 运行时不自行下载并执行代码。需要的依赖在说明里写明，由用户自己安装。
 
-示例都不需要安装依赖，只用到 Python 标准库或 Windows 自带的 PowerShell：
+示例都不需要安装依赖，只用到 Python 标准库、Windows 自带的 PowerShell 或 Linux 桌面自带的 X11 库：
 
 - [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。
-- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下。
+- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下，Linux 版（X11）放在 `targets/linux-x64/` 和 `targets/linux-arm64/` 下。
 - [`plugins/system-status`](plugins/system-status)：环境内插件，一个页面加一个工具。
 
 ## 索引格式

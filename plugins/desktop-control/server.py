@@ -10,7 +10,7 @@ import sys
 import tempfile
 import time
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 # The longest edge of a picture handed back, in pixels.
 LONGEST = 1456
 

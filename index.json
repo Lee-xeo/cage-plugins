@@ -20,7 +20,7 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -33,9 +33,9 @@
         "desktop"
       ],
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0.tar.gz",
-      "sha256": "f77cad9c6787ad4fe511e62d3fe13700696a9e93a7c30192e98bf60c57c498a1",
-      "bytes": 6696
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.1.tar.gz",
+      "sha256": "9f40167c073a26bdc090819fffe9d2cdb1464ce2220442c5403fb4ce18d8bb43",
+      "bytes": 7437
     },
     {
       "name": "system-status",
@@ -78,7 +78,47 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.2.0",
+      "version": "0.2.1",
+      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "platforms": [
+        "linux"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "linux-arm64",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.1-linux-arm64.tar.gz",
+      "sha256": "f10be5029a0bccdd68c8bd2bc20edee48c8dfdb439c9001f039cc89f570c4673",
+      "bytes": 10847
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.2.1",
+      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "platforms": [
+        "linux"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "linux-x64",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.1-linux-x64.tar.gz",
+      "sha256": "f10be5029a0bccdd68c8bd2bc20edee48c8dfdb439c9001f039cc89f570c4673",
+      "bytes": 10847
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.2.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -92,13 +132,13 @@
       ],
       "target": "win32-arm64",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0-win32-arm64.tar.gz",
-      "sha256": "33842ae00ad49f48d84de984a13fefe840e589bf8ab6b579807dd63f0bed7a27",
-      "bytes": 7257
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.1-win32-arm64.tar.gz",
+      "sha256": "1ec589abd4bbde76ebdf602c0d74007416ced2d9e214c133fc47725c0cfd0d2c",
+      "bytes": 7941
     },
     {
       "name": "desktop-control",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -112,9 +152,9 @@
       ],
       "target": "win32-x64",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.0-win32-x64.tar.gz",
-      "sha256": "33842ae00ad49f48d84de984a13fefe840e589bf8ab6b579807dd63f0bed7a27",
-      "bytes": 7257
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.2.1-win32-x64.tar.gz",
+      "sha256": "1ec589abd4bbde76ebdf602c0d74007416ced2d9e214c133fc47725c0cfd0d2c",
+      "bytes": 7941
     }
   ]
 }
