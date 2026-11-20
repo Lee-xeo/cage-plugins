@@ -1,16 +1,14 @@
 {
   "name": "excel-workbooks",
   "displayName": "Excel Workbooks",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Creates, reads and edits Excel workbooks (.xlsx): cells, formulas, formatting, charts, pivot tables and sheets. Microsoft Excel is not needed.",
   "icon": "icon.svg",
   "engines": {
     "cage": ">=0.1.8"
   },
-  "kind": "host",
-  "permissions": [
-    "files"
-  ],
+  "kind": "guest",
+  "permissions": [],
   "categories": [
     "productivity",
     "files"
@@ -20,13 +18,10 @@
       {
         "id": "excel",
         "command": [
-          "uvx",
-          "--exclude-newer",
-          "2026-11-19T00:00:00Z",
-          "--from",
-          "excel-mcp-server==2.3.2",
-          "excel-mcp-server",
-          "stdio"
+          "python3",
+          "launcher.py",
+          "--allow-dir",
+          "${PROJECT_DIR}"
         ]
       }
     ]
