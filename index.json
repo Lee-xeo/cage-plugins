@@ -117,7 +117,7 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -131,15 +131,17 @@
       ],
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0.tar.gz",
-      "sha256": "af17418f562049af02daa77a72f069be152acad1d4773fee0235c8d7b0dd5084",
-      "bytes": 15254
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1.tar.gz",
+      "sha256": "5d7c315f8c110752cc3b2ab6c31b8ea7b849dba77749a6c9fce789c63ae7cbbb",
+      "bytes": 15294
     },
     {
       "name": "documents-to-markdown",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Reads, outlines and searches PDF, Word, Excel, PowerPoint, EPUB and HTML documents as clean Markdown.",
-      "permissions": [],
+      "permissions": [
+        "network"
+      ],
       "displayName": "Documents to Markdown",
       "categories": [
         "files",
@@ -168,9 +170,9 @@
         "url": "https://github.com/SylphxAI/anymd"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/documents-to-markdown/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.0.tar.gz",
-      "sha256": "6f9e2893d1553cb1403a411eabab2f162d6806f3b4e35664b7b171bc99b70821",
-      "bytes": 11862
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.1.tar.gz",
+      "sha256": "d616414f034986777349ef93f77f11e77fc53824e542fcdf53cd98e05822528f",
+      "bytes": 12283
     },
     {
       "name": "excel-workbooks",
@@ -213,7 +215,7 @@
     },
     {
       "name": "git-repository",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",
       "permissions": [],
       "displayName": "Git Repository",
@@ -239,17 +241,17 @@
       "source": {
         "project": "modelcontextprotocol/servers",
         "version": "2026.11.18",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
+        "license": "MIT",
+        "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/git"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/git-repository/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.0.tar.gz",
-      "sha256": "8e4fdc9a99c86183110cea6de12f07f0c04af91f103e9c8d71333c2b2f6062f4",
-      "bytes": 22352
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.1.tar.gz",
+      "sha256": "e0fae8d87cda658056ab7e9d2c0bae3cd785e14f55b8ef6c816de0ce8fc76627",
+      "bytes": 18669
     },
     {
       "name": "knowledge-memory",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
       "permissions": [],
       "displayName": "Knowledge Memory",
@@ -276,17 +278,17 @@
       "source": {
         "project": "modelcontextprotocol/servers",
         "version": "2.2.1",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
+        "license": "Apache-2.0 AND MIT",
+        "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/memory"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/knowledge-memory/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.0.tar.gz",
-      "sha256": "3e260692d24ce3daa96bc3ea64248861bde2e8d6842c0f96053f7bd41be966d6",
-      "bytes": 3252157
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.1.tar.gz",
+      "sha256": "b6064c85c312e7d9c6f8aee1b67cb60b7bbc00827ee2500feb07ede1e7dd281f",
+      "bytes": 3252437
     },
     {
       "name": "linux-desktop",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Sees the Linux desktop of the environment and uses its mouse and keyboard, to work with the programs shown there.",
       "permissions": [
         "screen",
@@ -314,9 +316,9 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/linux-desktop/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-desktop-0.1.0.tar.gz",
-      "sha256": "a4fc7ffc3cc94d48d21446b833a09619ec6f4018a8b37bdd2a7922f0263c04b7",
-      "bytes": 17870
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-desktop-0.1.1.tar.gz",
+      "sha256": "fc237d2908af6b2b45ec47c4d8a8cb1c40af98053f0380ccf1379e29117d3f68",
+      "bytes": 17900
     },
     {
       "name": "local-preview",
@@ -470,7 +472,7 @@
     },
     {
       "name": "web-fetch",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
       "permissions": [
         "network"
@@ -499,13 +501,13 @@
       "source": {
         "project": "modelcontextprotocol/servers",
         "version": "2026.11.18",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
+        "license": "MIT",
+        "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/fetch"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/web-fetch/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.0.tar.gz",
-      "sha256": "d327354fdcfd1d23eeea0a62029bf60a41b326ad564d20c95141bac408016c58",
-      "bytes": 22844
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.1.tar.gz",
+      "sha256": "02513fa1058b5c08cd29deb57c619ec7cc6423a02937f9527fe6005ad7a73b46",
+      "bytes": 19522
     },
     {
       "name": "word-documents",
@@ -546,7 +548,7 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -561,13 +563,13 @@
       "target": "linux-arm64",
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-linux-arm64.tar.gz",
-      "sha256": "c30dd15b2c7b52aaed89a2fc15ed322cc45430575ab5f5cd2f1f4057de4e69a5",
-      "bytes": 19991
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-linux-arm64.tar.gz",
+      "sha256": "4ee33b4b5bab380e301e484f1c9cda0eead4dc8234c2b8b285a6b523f847ae37",
+      "bytes": 20036
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -582,9 +584,9 @@
       "target": "linux-x64",
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-linux-x64.tar.gz",
-      "sha256": "c30dd15b2c7b52aaed89a2fc15ed322cc45430575ab5f5cd2f1f4057de4e69a5",
-      "bytes": 19991
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-linux-x64.tar.gz",
+      "sha256": "4ee33b4b5bab380e301e484f1c9cda0eead4dc8234c2b8b285a6b523f847ae37",
+      "bytes": 20036
     },
     {
       "name": "clock",
@@ -606,7 +608,7 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -621,9 +623,9 @@
       "target": "win32-arm64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-win32-arm64.tar.gz",
-      "sha256": "aed8d8918e3302112762b8f6b0c36d9784d8e283c45922f960081cb963fa5656",
-      "bytes": 15281
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-win32-arm64.tar.gz",
+      "sha256": "cccbea30dc65f7b79bca68ebd6039680d5c4fd1df0cab1e81d87c08905f4decd",
+      "bytes": 15321
     },
     {
       "name": "local-preview",
@@ -687,7 +689,7 @@
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
@@ -702,9 +704,9 @@
       "target": "win32-x64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-win32-x64.tar.gz",
-      "sha256": "aed8d8918e3302112762b8f6b0c36d9784d8e283c45922f960081cb963fa5656",
-      "bytes": 15281
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-win32-x64.tar.gz",
+      "sha256": "cccbea30dc65f7b79bca68ebd6039680d5c4fd1df0cab1e81d87c08905f4decd",
+      "bytes": 15321
     },
     {
       "name": "local-preview",

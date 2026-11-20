@@ -5,7 +5,7 @@
 # The tools are described in tools.json beside this file, which the macOS and
 # Linux versions read as well, so all three offer the same tools.
 $ErrorActionPreference = 'Stop'
-$Version = '0.3.0'
+$Version = '0.3.1'
 # The longest edge of a picture handed back, in pixels.
 $Longest = 1568
 $Subject = "the user's computer"
@@ -178,8 +178,9 @@ Add-Type -AssemblyName System.Drawing, System.Windows.Forms
 # Mouse button flags for SendInput: down, up.
 $ButtonFlags = @{ left = @(0x2, 0x4); right = @(0x8, 0x10); middle = @(0x20, 0x40) }
 $ModifierCodes = @{
-    ctrl = 0x11; control = 0x11; mod = 0x11; shift = 0x10; alt = 0x12; option = 0x12
-    meta = 0x5B; cmd = 0x5B; command = 0x5B; win = 0x5B; windows = 0x5B; super = 0x5B
+    # cmd and command mean the shortcut modifier, as mod does: ctrl here.
+    ctrl = 0x11; control = 0x11; mod = 0x11; cmd = 0x11; command = 0x11; shift = 0x10; alt = 0x12; option = 0x12
+    meta = 0x5B; win = 0x5B; windows = 0x5B; super = 0x5B
 }
 $KeyCodes = @{ return = 0x0D; enter = 0x0D; tab = 0x09; space = 0x20; backspace = 0x08; escape = 0x1B; esc = 0x1B }
 # Keys outside the main block, which Windows tells apart by a flag.

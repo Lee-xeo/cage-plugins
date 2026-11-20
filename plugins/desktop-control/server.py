@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 # The longest edge of a picture handed back, in pixels.
 LONGEST = 1568
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -96,7 +96,7 @@ def ask_to_act():
 
 # Event types: down, up, dragged; and the button's number.
 BUTTONS = {"left": (1, 2, 6, 0), "right": (3, 4, 7, 1), "middle": (25, 26, 27, 2)}
-MOVED, CLICK_STATE, LINE = 5, 1, 0
+MOVED, CLICK_STATE, LINE = 5, 1, 1  # LINE: kCGScrollEventUnitLine
 CMD, SHIFT, CTRL, ALT = 0x100000, 0x20000, 0x40000, 0x80000
 MODIFIERS = {"ctrl": CTRL, "control": CTRL, "shift": SHIFT, "alt": ALT, "option": ALT, "meta": CMD, "cmd": CMD,
              "command": CMD, "win": CMD, "windows": CMD, "super": CMD, "mod": CMD}

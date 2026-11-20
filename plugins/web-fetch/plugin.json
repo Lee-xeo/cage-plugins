@@ -1,7 +1,7 @@
 {
   "name": "web-fetch",
   "displayName": "Web Fetch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
   "icon": "icon.svg",
   "engines": {

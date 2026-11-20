@@ -1,6 +1,6 @@
 {
   "project": "modelcontextprotocol/servers",
   "version": "2026.11.18",
-  "license": "Apache-2.0 OR MIT",
-  "url": "https://github.com/modelcontextprotocol/servers"
+  "license": "MIT",
+  "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/fetch"
 }

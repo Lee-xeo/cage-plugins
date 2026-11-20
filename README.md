@@ -87,10 +87,10 @@
 | [`word-documents`](plugins/word-documents) | [GongRzhe/Office-Word-MCP-Server](https://github.com/GongRzhe/Office-Word-MCP-Server) 1.1.11 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定；转 PDF 另需 LibreOffice） |
 | [`powerpoint-slides`](plugins/powerpoint-slides) | [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server) 2.0.7 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
 | [`documents-to-markdown`](plugins/documents-to-markdown) | [SylphxAI/anymd](https://github.com/SylphxAI/anymd) 8.5.13 | MIT | 环境内 | 环境自带 Node.js 与 Python 3（`launcher.py` + `npx` 固定版本） |
-| [`git-repository`](plugins/git-repository) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2026.11.18 | Apache-2.0 OR MIT | 环境内 | 环境自带 Python 3 与 Git（`pylock.json` SHA-256 锁定） |
-| [`web-fetch`](plugins/web-fetch) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2026.11.18 | Apache-2.0 OR MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
+| [`git-repository`](plugins/git-repository) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/git) v2.5.0（`mcp-server-git` 2026.11.18） | MIT | 环境内 | 环境自带 Python 3 与 Git（`pylock.json` SHA-256 锁定） |
+| [`web-fetch`](plugins/web-fetch) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/fetch) v2.5.0（`mcp-server-fetch` 2026.11.18） | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
 | [`sqlite`](plugins/sqlite) | [modelcontextprotocol/servers-archived](https://github.com/modelcontextprotocol/servers-archived) 2025.4.25 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
-| [`knowledge-memory`](plugins/knowledge-memory) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2.2.1 | Apache-2.0 OR MIT | 环境内 | 环境自带 Node.js 与 Python 3（随包锁定依赖，完全离线） |
+| [`knowledge-memory`](plugins/knowledge-memory) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/memory) v2.5.0（`@modelcontextprotocol/server-memory` 2.2.1） | Apache-2.0 AND MIT | 环境内 | 环境自带 Node.js 与 Python 3（随包锁定依赖，完全离线） |
 | [`blender`](plugins/blender) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) 1.3.1 | MIT | 这台电脑 | 本机 `uv`、Blender 3.0+ 及随附的插件 |
 
 ## 索引格式
