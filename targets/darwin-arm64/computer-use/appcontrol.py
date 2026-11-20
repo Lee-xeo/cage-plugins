@@ -168,6 +168,13 @@ def send(receiver, selector, *arguments, result=vp, types=()):
     return function(receiver, selected, *arguments)
 
 
+# Python may run as an app bundle (Python.app); with AppKit loaded the system
+# would then list this program in the Dock and the app switcher as "Python".
+# It has no windows of its own, so it says it is a background program.
+send(send(objc_getClass(b"NSApplication"), "sharedApplication"), "setActivationPolicy:", 2, result=c.c_bool,
+     types=(c.c_long,))
+
+
 # ------------------------------------------------------------- CF values
 def cf_text(ref):
     if not ref:
@@ -1590,6 +1597,21 @@ def show(app, what, point=None, kind="look"):
             order["window"] = window_under(app, point, VIEWS.get(app["pid"])) or 0
     if overlay_send(order) and point is not None and kind != "look":
         time.sleep(0.3)  # let the cursor arrive before the action
+
+
+def shutdown():
+    """End the on-screen sign's program, as when this module is loaded again."""
+    process = _overlay["process"]
+    if process is not None:
+        try:
+            process.stdin.close()
+        except (OSError, ValueError):
+            pass
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        _overlay["process"] = None
 
 
 def check_stopped():

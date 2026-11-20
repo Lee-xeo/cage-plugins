@@ -26,6 +26,8 @@ def implementation():
         import appcontrol
         _module, _stamp = appcontrol, stamp
     elif stamp != _stamp and os.path.exists(os.path.join(HERE, ".reload-on-change")):
+        if hasattr(_module, "shutdown"):
+            _module.shutdown()
         _module, _stamp = importlib.reload(_module), stamp
     return _module
 
