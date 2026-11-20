@@ -1,6 +1,6 @@
 # Computer Use
 
-**English** — Lets Claude see and work the apps of this Mac in the background through the macOS accessibility interface, without taking your mouse or keyboard: pictures of a window even when it is covered, its controls and text as numbered elements, pressing buttons, typing (any script, regardless of the input method), menus, scrolling, selection in lists and file dialogs, and the clipboard. While it works, a cursor of its own and a banner show on screen; press Esc to stop it. The app hosting this tool's approvals, password and security prompts are never touched; terminals and code editors are limited to looking and clicking, and password managers are blocked (see `policy.json`). macOS only; Python standard library and system frameworks, plus a small Swift overlay program whose source is included.
+**English** — Lets Claude see and work the apps of this Mac in the background through the macOS accessibility interface, without taking your mouse or keyboard or bringing apps forward: pictures of a window even when it is covered, its controls and text as numbered elements, pressing buttons, typing (any script, regardless of the input method), menus, scrolling, selection in lists and file dialogs, and the clipboard. While it works, a cursor of its own and a banner show on screen; press Esc to stop it. The app hosting this tool's approvals, password and security prompts are never touched; terminals and code editors are limited to looking and clicking, and password managers are blocked (see `policy.json`). macOS only; Python standard library and system frameworks, plus a small Swift overlay program whose source is included.
 
 **中文**：
 让 Claude 通过 macOS 的辅助功能接口读取和操作这台电脑上的应用，**大多在后台完成，不占用你的鼠标和键盘**。它和 desktop-control 并存：desktop-control 负责整屏截图和真实的鼠标键盘；Computer Use 以单个应用为对象，按界面元素操作。思路与 Claude 和 Codex 的电脑操作功能相同。
@@ -10,8 +10,8 @@
 | 工具 | 作用 |
 | --- | --- |
 | `list_apps` | 列出正在运行的应用：名称、bundle identifier、进程号、屏幕上的窗口数、是否隐藏，以及本插件能怎样使用它（full / click_only / blocked）。不需要截图 |
-| `open_app` | 打开应用；默认在后台打开，不抢到最前面（`foreground: true` 才会切到前台） |
-| `app_state` | 读取某个应用的一个窗口：窗口截图（即使被别的窗口挡住也能拍到），以及窗口里的按钮、文字、输入框、列表等元素，每个元素有编号和它在截图里的位置。可用 `query` 只找含某段文字的元素，用 `inside` 展开某个元素的内部 |
+| `open_app` | 打开应用；默认在后台打开，不抢到最前面（`foreground: true` 才会切到前台）。带 `url` 时让浏览器在后台打开网址 |
+| `app_state` | 读取某个应用的一个窗口：窗口截图（即使被别的窗口挡住也能拍到），以及窗口里的按钮、文字、输入框、列表等元素，每个元素有编号和它在截图里的位置。可用 `query` 只找含某段文字的元素（包括滚动到视野外的部分），用 `inside` 展开某个元素的内部。**同一个元素在多次读取之间编号不变，一个编号也不会转给别的元素**，因此旧编号最多失效，不会点错地方 |
 | `app_click` | 按编号或截图坐标点击。默认在后台用辅助功能“按下”按钮、选中行、聚焦输入框，指针不动；做不到时把点击只发给这个应用；`foreground: true` 时把应用切到前台、用真实指针点击，点完把指针放回原处 |
 | `app_type` | 向输入框打字。默认在后台通过辅助功能直接写入文字，**中文等任何文字都不受输入法影响**；不支持时改为把按键只发给这个应用 |
 | `app_key` | 向应用按键或组合键（如 `return`、`mod+s`），默认只发给这个应用 |
@@ -28,6 +28,8 @@
 - **辅助功能操作**（按下按钮、写入文字、选菜单、设置值、滚动条滚动）不移动指针、不需要应用在最前面，你可以照常用电脑。
 - **只发给应用的点击和按键**也不移动指针，但有些应用在后台会忽略它们；工具会说明，并提示改用 `foreground: true`。
 - **`foreground: true`** 会把应用切到前台，短暂使用真实的指针或键盘。点击前会检查该位置最上面的窗口是否属于这个应用，不是就不点；点完把指针放回原处。
+- **保持你的前台应用**：有些应用在后台被操作时会自己跳到前面（例如打开文件时）。后台操作结束后，如果目标应用自己到了前台，插件会立即把你原来的前台应用切回来，并在结果里注明。
+- **文件对话框**：在“打开/存储”对话框里双击侧边栏位置或分栏视图中的文件夹，用“选中”完成；双击文件则选中后按对话框的默认按钮（如“打开”“上传”）。整个过程不会把应用调到前台。
 
 ## 屏幕提示与 Esc 停止
 
