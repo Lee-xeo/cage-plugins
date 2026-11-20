@@ -55,8 +55,57 @@ def only(where, value, allowed):
         fail(f"{where}: must be an object with fields drawn from {sorted(allowed)}")
 
 
+NPM_PINNED = re.compile(r"^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*@\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
+PYPI_PINNED = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?==\d+(\.\d+)*([-+.][0-9A-Za-z.]+)?$")
+CUTOFF = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
+
+
 def command_ok(command):
     return isinstance(command, list) and command and all(isinstance(part, str) and part for part in command)
+
+
+def fetched_ok(command):
+    """A command that has npx or uv fetch a package names one exact version,
+    so every start runs the same published files: npm and PyPI never change
+    the files of a version once published. uv also takes --exclude-newer, so
+    the packages it depends on resolve as they did on that day."""
+    program = command[0]
+    if program == "npx":
+        packages = [part for part in command[1:] if not part.startswith("-")][:1]
+        return "--yes" in command and bool(packages) and bool(NPM_PINNED.match(packages[0]))
+    if program in ("uv", "uvx"):
+        if program == "uv" and command[1:3] != ["run", "--no-project"]:
+            return False
+        pairs = list(zip(command, command[1:]))
+        wanted = [value for flag, value in pairs if flag in ("--from", "--with")]
+        cutoffs = [value for flag, value in pairs if flag == "--exclude-newer"]
+        return (bool(wanted) and all(PYPI_PINNED.match(value) for value in wanted)
+                and len(cutoffs) == 1 and bool(CUTOFF.match(cutoffs[0])))
+    return program not in ("bunx", "pipx", "pnpx", "pnpm", "yarn", "npm", "pip", "pip3")
+
+
+SOURCE_FIELDS = {"project", "version", "license", "url"}
+LICENSE = re.compile(r"^[A-Za-z0-9.+-]+( (AND|OR|WITH) [A-Za-z0-9.+-]+)*$")
+
+
+def source(folder):
+    """The open-source project a plugin builds on, from its source.json. It
+    stays out of plugin.json, which older applications read strictly."""
+    path = folder / "source.json"
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    only(f"{folder.name}: source.json", data, SOURCE_FIELDS)
+    plain = lambda text, limit: isinstance(text, str) and len(text) <= limit and not re.search(r"[\x00-\x1f\x7f]", text)
+    if not plain(data.get("project"), 100) or not data["project"].strip():
+        fail(f"{folder.name}: source.json needs a project")
+    if not plain(data.get("version", ""), 40) or not LICENSE.match(str(data.get("license", "MIT"))):
+        fail(f"{folder.name}: source.json version must be short and license an SPDX expression")
+    if "url" in data and not (plain(data["url"], 300) and re.match(r"^https://[a-z0-9.-]+\.[a-z]{2,}(/[^\s]*)?$", data["url"])):
+        fail(f"{folder.name}: source.json url must be https")
+    if data.get("license") and not (folder / "LICENSE").is_file():
+        fail(f"{folder.name}: a plugin built on another project keeps that project's LICENSE beside it")
+    return data
 
 
 def open_url_ok(pattern):
@@ -93,6 +142,9 @@ def contributes(folder, data):
         only(f"{name}: mcpServers", server, {"id", "command"})
         if not NAME.match(str(server.get("id", ""))) or server["id"] in servers or not command_ok(server.get("command")):
             fail(f"{name}: mcpServers needs a unique id and a command")
+        if not fetched_ok(server["command"]):
+            fail(f"{name}: mcpServers {server['id']}: a package fetched at start must name one exact version "
+                 "(npx --yes pkg@1.2.3, or uv with --from/--with pkg==1.2.3 and --exclude-newer)")
         servers.append(server["id"])
     for view in c.get("views", []):
         only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls"})
@@ -155,8 +207,8 @@ def manifest(folder):
         contributes(folder, data)
     else:
         # The first format: one command, and nothing the second format added.
-        if not command_ok(data.get("command")):
-            fail(f"{folder.name}: command is missing")
+        if not command_ok(data.get("command")) or not fetched_ok(data["command"]):
+            fail(f"{folder.name}: command is missing, or fetches a package without an exact version")
         if data.get("kind", "host") != "host" or "engines" in data or "activationEvents" in data:
             fail(f"{folder.name}: kind, engines and activationEvents need contributes")
     icon = data.get("icon")
@@ -235,6 +287,9 @@ def main():
                 entry[key] = data[key]
         if target_name:
             entry["target"] = target_name
+        upstream = source(folder)
+        if upstream:
+            entry["source"] = upstream
         # The application takes pictures only from plugins/<name>/; a build
         # for one target shows the picture of the plugin's folder there.
         if data.get("icon") and (not target_name or (ROOT / "plugins" / data["name"] / data["icon"]).is_file()):
