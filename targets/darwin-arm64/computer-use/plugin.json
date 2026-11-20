@@ -1,0 +1,21 @@
+{
+  "name": "computer-use",
+  "displayName": "Computer Use",
+  "version": "0.1.0",
+  "description": "Sees and works the apps of this computer in the background through the accessibility interface, without taking the mouse or keyboard: window pictures, controls, menus, typing, scrolling and the clipboard, with an on-screen cursor and Esc to stop. 通过辅助功能接口在后台查看和操作这台电脑上的应用，不占用鼠标和键盘：窗口截图、界面元素、菜单、输入、滚动和剪贴板，操作时屏幕上显示光标，按 Esc 即可停止。",
+  "platforms": [
+    "darwin"
+  ],
+  "permissions": [
+    "screen",
+    "input"
+  ],
+  "categories": [
+    "desktop"
+  ],
+  "command": [
+    "python3",
+    "server.py"
+  ],
+  "icon": "icon.svg"
+}

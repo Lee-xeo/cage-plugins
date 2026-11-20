@@ -1,0 +1,199 @@
+{
+  "tools": [
+    {
+      "name": "list_apps",
+      "description": "List the apps running on the user's computer, frontmost first: name, bundle identifier, process id, number of windows on screen, whether it is hidden, and how the app_ tools may use it: full; click_only (looking, left clicks and scrolling only); blocked. Needs no picture of the screen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "only apps whose name or bundle identifier contains this"},
+          "all": {"type": "boolean", "description": "also list background helpers and menu bar apps; default false"}
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "open_app",
+      "description": "Start an app, or show one that is already running, without bringing it in front of what the user is doing unless foreground is true. app is a name as Finder shows it (such as Notes, 备忘录 or Safari) or a bundle identifier.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name or bundle identifier"},
+          "foreground": {"type": "boolean", "description": "bring the app to the front; default false"}
+        },
+        "required": ["app"]
+      }
+    },
+    {
+      "name": "app_state",
+      "description": "Read one window of a running app without taking the user's screen, pointer or keyboard: a picture of the window, even when other windows cover it, and its controls and text as the app reports them to the accessibility interface. Each element gets a number for the other app_ tools and its center in pixels of the picture. Call it before acting in an app and again to see what an action changed. Numbers stay valid until the next app_state of the same app without inside.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id, as list_apps shows"},
+          "window": {"type": "integer", "minimum": 0, "description": "which window, by its number in the window list this tool shows; default the window with the keyboard focus"},
+          "window_title": {"type": "string", "description": "which window, by part of its title"},
+          "screenshot": {"type": "boolean", "description": "include the picture; default true, or false with inside"},
+          "query": {"type": "string", "description": "list only elements whose text, value or identifier contains this, with where each one is"},
+          "inside": {"type": "integer", "minimum": 1, "description": "list what is inside this element from an earlier app_state of the app, adding numbers instead of replacing them"},
+          "limit": {"type": "integer", "minimum": 20, "maximum": 800, "description": "most elements to list; default 250"}
+        },
+        "required": ["app"]
+      }
+    },
+    {
+      "name": "app_click",
+      "description": "Click in an app: an element by its number from app_state, or a position in pixels of the latest app_state picture of that app. In the background by default: an element is pressed, selected or focused through the accessibility interface, without moving the user's pointer; a position is pressed the same way when the control there allows it, and otherwise gets a click sent to that app alone, which some apps ignore while they are in the background. With foreground true the app is brought to the front, the real pointer clicks, and the pointer goes back to where it was.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
+          "x": {"type": "number", "description": "pixels from the left edge of the latest app_state picture of the app"},
+          "y": {"type": "number", "description": "pixels from the top edge of that picture"},
+          "button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"},
+          "count": {"type": "integer", "enum": [1, 2, 3], "description": "2 for a double click, 3 for a triple click; default 1"},
+          "modifiers": {"type": "array", "items": {"type": "string"}, "description": "keys to hold during the click, named as in press_key, such as [\"shift\"] or [\"mod\"]"},
+          "foreground": {"type": "boolean", "description": "use the real pointer with the app in front; default false"}
+        },
+        "required": ["app"]
+      }
+    },
+    {
+      "name": "app_type",
+      "description": "Type text into an app in the background: into the text field or area given by element, or where the app's keyboard focus is. The text goes in through the accessibility interface where the field allows it, which works for Chinese and every other script whatever input method is on; otherwise it is sent to that app alone as key presses. A line break at the end of text typed into a one-line field presses return. With foreground true the app is brought to the front and the text is typed with the keyboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "text": {"type": "string", "description": "the text, 1 to 2000 characters"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state of a text field or area"},
+          "foreground": {"type": "boolean", "description": "type with the keyboard with the app in front; default false"}
+        },
+        "required": ["app", "text"]
+      }
+    },
+    {
+      "name": "app_key",
+      "description": "Press a key or key combination in an app, such as return, escape, tab, mod+s or ctrl+shift+tab, sent to that app alone in the background, or with foreground true, to the app brought to the front. Key names are those of press_key. For commands in an app's menus, app_menu works in the background more reliably.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "keys": {"type": "string", "description": "a key, with any modifiers before it joined by +"},
+          "count": {"type": "integer", "minimum": 1, "maximum": 20, "description": "how many times to press it; default 1"},
+          "foreground": {"type": "boolean", "description": "press with the app in front; default false"}
+        },
+        "required": ["app", "keys"]
+      }
+    },
+    {
+      "name": "app_scroll",
+      "description": "Scroll in an app without moving the pointer: the scroll area that holds the element given, or otherwise the largest scroll area of the window from the latest app_state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state inside the area to scroll"},
+          "direction": {"type": "string", "enum": ["down", "up", "right", "left"], "description": "default down"},
+          "pages": {"type": "number", "minimum": 0.1, "maximum": 20, "description": "how far, in screenfuls of the area; may be fractional; default 1"},
+          "foreground": {"type": "boolean", "description": "turn the wheel with the real pointer with the app in front; default false"}
+        },
+        "required": ["app"]
+      }
+    },
+    {
+      "name": "app_menu",
+      "description": "Use an app's menu bar in the background. Without path, list the app's menus; with a path of titles such as [\"File\", \"Export…\"], list the items of that menu, with their shortcuts, or choose the item when the path ends at one. Titles match without regard to case or a final ellipsis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "path": {"type": "array", "items": {"type": "string"}, "maxItems": 8, "description": "menu titles from the menu bar down"}
+        },
+        "required": ["app"]
+      }
+    },
+    {
+      "name": "app_set_value",
+      "description": "Set an element's value directly: the whole text of a field, the number of a slider or stepper, or, with attribute, whether the element is selected, focused or expanded, or a window minimized.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
+          "value": {"anyOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "description": "text, a number, or true or false for the attributes other than value"},
+          "attribute": {"type": "string", "enum": ["value", "selected", "focused", "expanded", "minimized"], "description": "default value"}
+        },
+        "required": ["app", "element", "value"]
+      }
+    },
+    {
+      "name": "app_select_text",
+      "description": "Select text inside a text element from app_state, or put the text cursor just before or after it; app_type then replaces the selection or inserts at the cursor. text must be written exactly as it is in the element's value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
+          "text": {"type": "string", "description": "the text to find; empty selects nothing and puts the cursor at the start, or with where after, at the end"},
+          "occurrence": {"type": "integer", "minimum": 1, "description": "which one when the text is there more than once; default 1"},
+          "where": {"type": "string", "enum": ["select", "before", "after"], "description": "default select"}
+        },
+        "required": ["app", "element", "text"]
+      }
+    },
+    {
+      "name": "app_action",
+      "description": "List the accessibility actions an element from app_state offers, or with action, perform one, such as AXShowMenu, AXIncrement, AXDecrement, AXRaise, AXConfirm, AXCancel or AXScrollToVisible.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
+          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
+          "action": {"type": "string", "description": "the action's name as listed"}
+        },
+        "required": ["app", "element"]
+      }
+    },
+    {
+      "name": "read_clipboard",
+      "description": "Read the text on the clipboard of the user's computer.",
+      "inputSchema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+      "name": "write_clipboard",
+      "description": "Put text on the clipboard of the user's computer, replacing what is there.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "description": "the text, up to 2000 characters"}
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "app_batch",
+      "description": "Run several of list_apps, open_app, the app_ tools and the clipboard tools in order in one call, stopping at the first that fails. Each step is {\"tool\": name, \"arguments\": {...}}; the step {\"tool\": \"wait\", \"arguments\": {\"seconds\": 1}} pauses up to 10 seconds. Only the picture of the last app_state step is returned.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool": {"type": "string", "description": "a tool name, or wait"},
+                "arguments": {"type": "object", "description": "the tool's arguments"}
+              },
+              "required": ["tool"]
+            }
+          }
+        },
+        "required": ["steps"]
+      }
+    }
+  ]
+}
