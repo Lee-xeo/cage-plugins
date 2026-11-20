@@ -547,6 +547,48 @@
       "bytes": 99334
     },
     {
+      "name": "computer-use",
+      "version": "0.1.0",
+      "description": "Sees and works the apps of this computer in the background through the accessibility interface, without taking the mouse or keyboard: window pictures, controls, menus, typing, scrolling and the clipboard, with an on-screen cursor and Esc to stop. 通过辅助功能接口在后台查看和操作这台电脑上的应用，不占用鼠标和键盘：窗口截图、界面元素、菜单、输入、滚动和剪贴板，操作时屏幕上显示光标，按 Esc 即可停止。",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "darwin-arm64",
+      "runtime": "python3",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.1.0-darwin-arm64.tar.gz",
+      "sha256": "2a883dc6b5d6685a39e318ceeb0f53b4c5aa1d6a15ebee75e37ad15ebad9e098",
+      "bytes": 74248
+    },
+    {
+      "name": "computer-use",
+      "version": "0.1.0",
+      "description": "Sees and works the apps of this computer in the background through the accessibility interface, without taking the mouse or keyboard: window pictures, controls, menus, typing, scrolling and the clipboard, with an on-screen cursor and Esc to stop. 通过辅助功能接口在后台查看和操作这台电脑上的应用，不占用鼠标和键盘：窗口截图、界面元素、菜单、输入、滚动和剪贴板，操作时屏幕上显示光标，按 Esc 即可停止。",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "target": "darwin-x64",
+      "runtime": "python3",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.1.0-darwin-x64.tar.gz",
+      "sha256": "b1e90578b1694c181715884dbe3fd7a03d9393d58de44b4a2832ebbdfe298659",
+      "bytes": 73701
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
