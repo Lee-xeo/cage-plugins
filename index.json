@@ -116,6 +116,44 @@
       "bytes": 1104
     },
     {
+      "name": "codex-dispatch",
+      "version": "0.1.1",
+      "description": "Delegate a read-only project review to Codex, select a model, and check or cancel the task.",
+      "permissions": [
+        "files",
+        "commands",
+        "network"
+      ],
+      "displayName": "Codex Dispatch",
+      "platforms": [
+        "darwin",
+        "windows"
+      ],
+      "categories": [
+        "developer"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "dispatch",
+            "command": [
+              "node",
+              "server.mjs",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ]
+      },
+      "runtime": "node",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-dispatch-0.1.1.tar.gz",
+      "sha256": "3361898cd6d4bd7c51e86b005d9950b6baa5a721612f61dfac6a25fbbd225ffd",
+      "bytes": 11934
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
