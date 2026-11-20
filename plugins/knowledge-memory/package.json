@@ -1,0 +1,7 @@
+{
+  "name": "knowledge-memory-plugin",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/server-memory": "2.2.1"
+  }
+}

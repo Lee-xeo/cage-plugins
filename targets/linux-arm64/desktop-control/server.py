@@ -1,12 +1,21 @@
 # An MCP server on standard input and output that takes pictures of the
 # screen and sends mouse and keyboard input. Linux with an X11 display only;
 # it needs nothing beyond Python's standard library and the system's own X
-# libraries (libX11 and libXtst).
+# libraries (libX11 and libXtst; libXrandr, when present, tells the displays
+# apart).
+#
+# The tools are described in tools.json beside this file, which the macOS and
+# Windows versions read as well, so all three offer the same tools.
+#
+# Run with --this-desktop, the server finds the X display of the desktop of
+# the account it runs as by itself, instead of reading DISPLAY, and names its
+# tools with a desktop_ prefix.
 import base64
 import contextlib
 import ctypes
 import json
 import os
+import re
 import struct
 import sys
 import time
@@ -14,17 +23,30 @@ import zlib
 from array import array
 from operator import itemgetter
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 # The longest edge of a picture handed back, in pixels.
-LONGEST = 1456
+LONGEST = 1568
+HERE = os.path.dirname(os.path.abspath(__file__))
 
-ref, uint, ulong, c_int = ctypes.c_void_p, ctypes.c_uint, ctypes.c_ulong, ctypes.c_int
+ARGS = sys.argv[1:]
+THIS_DESKTOP = "--this-desktop" in ARGS
+# For testing only: use this display, still found among the account's own.
+CHOSEN = ARGS[ARGS.index("--display") + 1] if "--display" in ARGS[:-1] else None
+PREFIX = "desktop_" if THIS_DESKTOP else ""
+SUBJECT = "the Linux desktop this tool runs on" if THIS_DESKTOP else "the user's computer"
+SERVER = "linux-desktop" if THIS_DESKTOP else "desktop-control"
+
+ref, uint, ulong, c_int, c_long = ctypes.c_void_p, ctypes.c_uint, ctypes.c_ulong, ctypes.c_int, ctypes.c_long
 LIBRARIES = ("The X11 libraries libX11.so.6 and libXtst.so.6 are not installed. Install them (for example the "
              "libx11-6 and libxtst6 packages), then try again.")
 try:
     x11, xtst = ctypes.CDLL("libX11.so.6"), ctypes.CDLL("libXtst.so.6")
 except OSError:
     x11 = xtst = None
+try:
+    xrandr = ctypes.CDLL("libXrandr.so.2") if x11 else None
+except OSError:
+    xrandr = None
 
 
 class Image(ctypes.Structure):
@@ -47,6 +69,21 @@ class ErrorEvent(ctypes.Structure):
                 ("error_code", ctypes.c_ubyte), ("request_code", ctypes.c_ubyte), ("minor_code", ctypes.c_ubyte)]
 
 
+class WindowAttributes(ctypes.Structure):
+    _fields_ = [("x", c_int), ("y", c_int), ("width", c_int), ("height", c_int), ("border_width", c_int),
+                ("depth", c_int), ("visual", ref), ("root", ulong), ("class_", c_int), ("bit_gravity", c_int),
+                ("win_gravity", c_int), ("backing_store", c_int), ("backing_planes", ulong),
+                ("backing_pixel", ulong), ("save_under", c_int), ("colormap", ulong), ("map_installed", c_int),
+                ("map_state", c_int), ("all_event_masks", c_long), ("your_event_mask", c_long),
+                ("do_not_propagate_mask", c_long), ("override_redirect", c_int), ("screen", ref)]
+
+
+class Monitor(ctypes.Structure):
+    _fields_ = [("name", ulong), ("primary", c_int), ("automatic", c_int), ("noutput", c_int), ("x", c_int),
+                ("y", c_int), ("width", c_int), ("height", c_int), ("mwidth", c_int), ("mheight", c_int),
+                ("outputs", ref)]
+
+
 def declare(library, name, result, *arguments):
     function = getattr(library, name)
     function.restype, function.argtypes = result, list(arguments)
@@ -54,7 +91,7 @@ def declare(library, name, result, *arguments):
 
 
 if x11:
-    keycode, number_out = ctypes.c_ubyte, ctypes.POINTER(c_int)
+    keycode, number_out, ulong_out = ctypes.c_ubyte, ctypes.POINTER(c_int), ctypes.POINTER(ulong)
     open_display = declare(x11, "XOpenDisplay", ref, ctypes.c_char_p)
     close_display = declare(x11, "XCloseDisplay", c_int, ref)
     default_screen = declare(x11, "XDefaultScreen", c_int, ref)
@@ -72,12 +109,28 @@ if x11:
     keysym_code = declare(x11, "XKeysymToKeycode", keycode, ref, ulong)
     keyboard_state = declare(x11, "XkbGetState", c_int, ref, uint, ctypes.POINTER(KeyboardState))
     lock_modifiers = declare(x11, "XkbLockModifiers", c_int, ref, uint, uint, uint)
+    intern_atom = declare(x11, "XInternAtom", ulong, ref, ctypes.c_char_p, c_int)
+    get_property = declare(x11, "XGetWindowProperty", c_int, ref, ulong, ulong, c_long, c_long, c_int, ulong,
+                           ulong_out, number_out, ulong_out, ulong_out, ctypes.POINTER(ctypes.c_void_p))
+    query_tree = declare(x11, "XQueryTree", c_int, ref, ulong, ulong_out, ulong_out,
+                         ctypes.POINTER(ctypes.POINTER(ulong)), ctypes.POINTER(uint))
+    window_attributes = declare(x11, "XGetWindowAttributes", c_int, ref, ulong, ctypes.POINTER(WindowAttributes))
+    translate = declare(x11, "XTranslateCoordinates", c_int, ref, ulong, ulong, c_int, c_int, number_out,
+                        number_out, ulong_out)
+    input_focus = declare(x11, "XGetInputFocus", c_int, ref, ulong_out, number_out)
+    query_pointer = declare(x11, "XQueryPointer", c_int, ref, ulong, ulong_out, ulong_out, number_out, number_out,
+                            number_out, number_out, ctypes.POINTER(uint))
     on_error = ctypes.CFUNCTYPE(c_int, ref, ctypes.POINTER(ErrorEvent))
     set_error_handler = declare(x11, "XSetErrorHandler", ref, on_error)
     has_test = declare(xtst, "XTestQueryExtension", c_int, ref, number_out, number_out, number_out, number_out)
     fake_motion = declare(xtst, "XTestFakeMotionEvent", c_int, ref, c_int, c_int, c_int, ulong)
     fake_button = declare(xtst, "XTestFakeButtonEvent", c_int, ref, uint, c_int, ulong)
     fake_key = declare(xtst, "XTestFakeKeyEvent", c_int, ref, uint, c_int, ulong)
+    if xrandr:
+        randr_version = declare(xrandr, "XRRQueryVersion", c_int, ref, number_out, number_out)
+        randr_has = declare(xrandr, "XRRQueryExtension", c_int, ref, number_out, number_out)
+        get_monitors = declare(xrandr, "XRRGetMonitors", ctypes.POINTER(Monitor), ref, ulong, c_int, number_out)
+        free_monitors = declare(xrandr, "XRRFreeMonitors", None, ctypes.POINTER(Monitor))
 
     # Xlib's own handler ends the program on any error; this one notes it.
     errors = []
@@ -89,13 +142,13 @@ if x11:
 
     set_error_handler(note_error)
 
-ALL_PLANES, Z_PIXMAP, MSB_FIRST, LOCK, CORE_KEYBOARD = 0xFFFFFFFFFFFFFFFF, 2, 1, 0x2, 0x100
+ALL_PLANES, Z_PIXMAP, MSB_FIRST, LOCK, CORE_KEYBOARD, VIEWABLE = 0xFFFFFFFFFFFFFFFF, 2, 1, 0x2, 0x100, 2
 BUTTONS = {"left": 1, "middle": 2, "right": 3}
 # X keysyms. Characters are their own keysyms up to U+00FF and
 # 0x01000000 plus the code point above.
 SHIFT, CONTROL, ALT, SUPER = 0xFFE1, 0xFFE3, 0xFFE9, 0xFFEB
-MODIFIERS = {"ctrl": CONTROL, "control": CONTROL, "cmd": CONTROL, "command": CONTROL, "shift": SHIFT,
-             "alt": ALT, "option": ALT, "super": SUPER, "win": SUPER, "windows": SUPER, "meta": SUPER}
+MODIFIERS = {"ctrl": CONTROL, "control": CONTROL, "mod": CONTROL, "shift": SHIFT, "alt": ALT, "option": ALT,
+             "meta": SUPER, "cmd": SUPER, "command": SUPER, "win": SUPER, "windows": SUPER, "super": SUPER}
 KEYS = {
     "return": 0xFF0D, "enter": 0xFF0D, "tab": 0xFF09, "space": 0x20, "backspace": 0xFF08, "delete": 0xFFFF,
     "insert": 0xFF63, "escape": 0xFF1B, "esc": 0xFF1B, "left": 0xFF51, "up": 0xFF52, "right": 0xFF53,
@@ -108,17 +161,91 @@ class Refused(Exception):
     pass
 
 
+# Finding the desktop. Programs started for this tool may come without
+# DISPLAY, so with --this-desktop the X server is looked for among the
+# account's own processes.
+X_SERVERS = {"Xtigervnc", "Xvnc", "Xorg", "X", "Xvfb", "Xwayland", "Xephyr", "Xnest", "Xdummy"}
+NO_DESKTOP = "No desktop is running; open the desktop first."
+
+
+def x_servers(processes):
+    """The X servers among (owner, arguments) pairs: (owner, display number, authority file or None)."""
+    found = []
+    for owner, argv in processes:
+        if not argv or os.path.basename(argv[0]) not in X_SERVERS:
+            continue
+        numbers = [int(arg[1:]) for arg in argv[1:] if re.fullmatch(r":\d{1,4}", arg)]
+        if not numbers:
+            continue
+        auth = argv[argv.index("-auth") + 1] if "-auth" in argv[1:-1] else None
+        found.append((owner, numbers[0], auth))
+    return found
+
+
+def choose_desktop(processes, uid, socket_owner, wanted=None):
+    """The (display number, authority file) of the account's desktop, or None.
+
+    Only servers the account runs count. One whose socket the account owns
+    comes first, then the lowest display number, so the choice is the same
+    every time."""
+    mine = [(number, auth) for owner, number, auth in x_servers(processes) if owner == uid]
+    if wanted is not None:
+        mine = [entry for entry in mine if entry[0] == wanted]
+    if not mine:
+        return None
+    return min(mine, key=lambda entry: (socket_owner(entry[0]) != uid, entry[0]))
+
+
+def read_processes(proc="/proc"):
+    found = []
+    for entry in os.listdir(proc):
+        if not entry.isdigit():
+            continue
+        try:
+            owner = os.stat(os.path.join(proc, entry)).st_uid
+            with open(os.path.join(proc, entry, "cmdline"), "rb") as file:
+                argv = [part.decode("utf-8", "replace") for part in file.read().split(b"\0") if part]
+        except OSError:
+            continue
+        found.append((owner, argv))
+    return found
+
+
+def socket_owner(number):
+    try:
+        return os.stat(f"/tmp/.X11-unix/X{number}").st_uid
+    except OSError:
+        return None
+
+
+def find_desktop():
+    wanted = int(CHOSEN.lstrip(":")) if CHOSEN else None
+    chosen = choose_desktop(read_processes(), os.getuid(), socket_owner, wanted)
+    if chosen is None:
+        raise Refused(NO_DESKTOP)
+    number, auth = chosen
+    os.environ["DISPLAY"] = f":{number}"
+    if auth and os.access(auth, os.R_OK):
+        os.environ["XAUTHORITY"] = auth
+    return f":{number}"
+
+
 @contextlib.contextmanager
 def connect(input=False):
     """A connection to the X display for the length of one call."""
     if not x11:
         raise Refused(LIBRARIES)
-    name = os.environ.get("DISPLAY")
-    if not name:
-        raise Refused("No X11 display is available: DISPLAY is not set. This tool works in X11 sessions; under "
-                      "Wayland it reaches only windows shown through XWayland, and needs DISPLAY set.")
-    display = open_display(None)
+    if THIS_DESKTOP:
+        name = find_desktop()
+    else:
+        name = os.environ.get("DISPLAY")
+        if not name:
+            raise Refused("No X11 display is available: DISPLAY is not set. This tool works in X11 sessions; under "
+                          "Wayland it reaches only windows shown through XWayland, and needs DISPLAY set.")
+    display = open_display(name.encode())
     if not display:
+        if THIS_DESKTOP:
+            raise Refused(NO_DESKTOP)
         raise Refused(f"The X11 display {name} cannot be opened. Make sure the session is running and this "
                       "program may connect to it (XAUTHORITY), then try again.")
     del errors[:]
@@ -133,32 +260,85 @@ def connect(input=False):
         close_display(display)
 
 
+# Displays and positions. A position is in pixels of the latest full
+# screenshot of a display; what each screenshot covered is kept here, so
+# positions keep meaning what the picture showed.
+shots = {}
+
+
 def measure(wide, high):
-    """The size of a picture of the screen, and the pixels of the screen for each of its pixels."""
+    """The size of a picture of an area of the screen, at most LONGEST pixels on its longest side."""
     shrink = max(1.0, max(wide, high) / LONGEST)
-    width, height = round(wide / shrink), round(high / shrink)
-    return width, height, wide / width
+    return max(1, round(wide / shrink)), max(1, round(high / shrink))
 
 
-# Positions are given in pixels of a picture; this turns them into pixels of
-# the screen. Set again with every picture, as the screen may have changed.
-scale = None
+def monitors(display):
+    """The displays as (x, y, width, height, main), main first, then from left to right."""
+    screen = default_screen(display)
+    whole = (0, 0, display_wide(display, screen), display_high(display, screen))
+    found = []
+    major, minor, event, error = c_int(), c_int(), c_int(), c_int()
+    if (xrandr and randr_has(display, ctypes.byref(event), ctypes.byref(error))
+            and randr_version(display, ctypes.byref(major), ctypes.byref(minor))
+            and (major.value, minor.value) >= (1, 5)):
+        count = c_int()
+        listed = get_monitors(display, root_window(display, screen), 1, ctypes.byref(count))
+        if listed:
+            try:
+                found = [(m.x, m.y, m.width, m.height, bool(m.primary)) for m in listed[:count.value]
+                         if m.width > 0 and m.height > 0]
+            finally:
+                free_monitors(listed)
+    if not found:
+        found = [(*whole, True)]
+    found.sort(key=lambda m: (m[0], m[1]))
+    main = next((m for m in found if m[4]), found[0])
+    return [main] + [m for m in found if m is not main]
+
+
+def geometry(display, number):
+    """What a full screenshot of a display covers: x, y, width, height in screen pixels, and the picture's size."""
+    found = monitors(display)
+    if not 0 <= number < len(found):
+        raise Refused(f"there is no display {number}; list_displays shows the displays")
+    x, y, wide, high, _ = found[number]
+    return (x, y, wide, high, *measure(wide, high))
+
+
+def shot(display, number):
+    """The latest full screenshot of a display, or what one would cover now."""
+    return shots.get(number) or geometry(display, number)
+
+
+def display_number(arguments):
+    number = arguments.get("display", 0)
+    if number is None:
+        number = 0
+    if not isinstance(number, int) or isinstance(number, bool) or number < 0:
+        raise Refused("display must be a whole number, as list_displays shows")
+    return number
 
 
 def place(display, arguments, x="x", y="y"):
-    global scale
+    """A position given in pixels of a screenshot, in pixels of the screen."""
     try:
         px, py = float(arguments[x]), float(arguments[y])
     except (KeyError, TypeError, ValueError):
         raise Refused(f"{x} and {y} must be numbers, in pixels of the latest screenshot")
-    screen = default_screen(display)
-    wide, high = display_wide(display, screen), display_high(display, screen)
-    if scale is None:
-        scale = measure(wide, high)[2]
-    sx, sy = round(px * scale), round(py * scale)
-    if not (0 <= sx <= wide and 0 <= sy <= high):
-        raise Refused("that position is outside the screen")
-    return min(sx, wide - 1), min(sy, high - 1)
+    left, top, wide, high, width, height = shot(display, display_number(arguments))
+    if not (0 <= px <= width and 0 <= py <= height):
+        raise Refused(f"that position is outside the display, which is {width}x{height} pixels in its screenshot")
+    sx, sy = left + round(px * wide / width), top + round(py * high / height)
+    return min(sx, left + wide - 1), min(sy, top + high - 1)
+
+
+def where(display, sx, sy):
+    """The display a point of the screen is on, and the point in pixels of its screenshot."""
+    found = monitors(display)
+    inside = [n for n, m in enumerate(found) if m[0] <= sx < m[0] + m[2] and m[1] <= sy < m[1] + m[3]]
+    number = inside[0] if inside else 0
+    left, top, wide, high, width, height = shot(display, number)
+    return number, round((sx - left) * width / wide), round((sy - top) * height / high)
 
 
 def pairs(source, target):
@@ -234,22 +414,250 @@ def png(width, height, rgb):
             + chunk(b"IDAT", zlib.compress(lines, 6)) + chunk(b"IEND", b""))
 
 
-def screenshot(_):
-    global scale
+def capture(display, x, y, wide, high):
+    """A PNG of an area of the screen, in screen pixels, and its size."""
+    screen = default_screen(display)
+    width, height = measure(wide, high)
+    image = get_image(display, root_window(display, screen), x, y, wide, high, ALL_PLANES, Z_PIXMAP)
+    if not image:
+        raise Refused("The screen cannot be read right now.")
+    try:
+        rgb = colours(image.contents, width, height)
+    finally:
+        destroy_image(image)
+    return png(width, height, rgb), width, height
+
+
+def clip(area, bounds):
+    """The part of area (x, y, width, height) inside bounds, or None."""
+    left, top = max(area[0], bounds[0]), max(area[1], bounds[1])
+    right, bottom = min(area[0] + area[2], bounds[0] + bounds[2]), min(area[1] + area[3], bounds[1] + bounds[3])
+    return (left, top, right - left, bottom - top) if right > left and bottom > top else None
+
+
+def region_of(arguments):
+    region = arguments.get("region")
+    try:
+        values = [float(region[key]) for key in ("x", "y", "width", "height")]
+    except (KeyError, TypeError, ValueError):
+        raise Refused("region needs x, y, width and height, numbers in pixels of the latest full screenshot")
+    if values[2] <= 0 or values[3] <= 0:
+        raise Refused("region needs a width and height above 0")
+    return values
+
+
+def screenshot(arguments):
+    if arguments.get("region") is not None and arguments.get("window") is not None:
+        raise Refused("give region or window, not both")
     with connect() as display:
-        screen = default_screen(display)
-        wide, high = display_wide(display, screen), display_high(display, screen)
-        width, height, scale = measure(wide, high)
-        image = get_image(display, root_window(display, screen), 0, 0, wide, high, ALL_PLANES, Z_PIXMAP)
-        if not image:
-            raise Refused("The screen cannot be read right now.")
-        try:
-            rgb = colours(image.contents, width, height)
-        finally:
-            destroy_image(image)
-    data = png(width, height, rgb)
+        if arguments.get("window") is not None:
+            window = arguments["window"]
+            listed = {entry["id"]: entry for entry in windows(display)}
+            if not isinstance(window, int) or window not in listed:
+                raise Refused("there is no such window; list_windows shows the windows and their ids")
+            entry = listed[window]
+            number = entry["display"]
+            area = (entry["x"], entry["y"], entry["width"], entry["height"])
+            label = f"Window {window} on display {number}"
+        elif arguments.get("region") is not None:
+            number = display_number(arguments)
+            shot(display, number)
+            area = region_of(arguments)
+            label = f"Display {number}, region"
+        else:
+            number = display_number(arguments)
+            left, top, wide, high, width, height = shots[number] = geometry(display, number)
+            data, width, height = capture(display, left, top, wide, high)
+            return [{"type": "image", "data": base64.b64encode(data).decode(), "mimeType": "image/png"},
+                    {"type": "text", "text": f"Display {number}: {width}x{height} pixels, showing the area of "
+                                             f"{wide}x{high} at ({left}, {top}) in desktop coordinates. Positions "
+                                             f"for the other tools on display {number} are pixels of this picture."}]
+        left, top, wide, high, width, height = shot(display, number)
+        scale_x, scale_y = wide / width, high / height
+        wanted = (left + round(area[0] * scale_x), top + round(area[1] * scale_y),
+                  round(area[2] * scale_x), round(area[3] * scale_y))
+        part = clip(wanted, (left, top, wide, high))
+        if not part:
+            raise Refused(f"that area is outside display {number}, which is {width}x{height} pixels in its screenshot")
+        data, shown_w, shown_h = capture(display, *part)
+    ax, ay = round((part[0] - left) / scale_x), round((part[1] - top) / scale_y)
+    aw, ah = round(part[2] / scale_x), round(part[3] / scale_y)
     return [{"type": "image", "data": base64.b64encode(data).decode(), "mimeType": "image/png"},
-            {"type": "text", "text": f"{width}x{height} pixels. Positions for the other tools are pixels of this picture."}]
+            {"type": "text", "text": f"{label}: the area at ({ax}, {ay}) of {aw}x{ah} pixels of the latest full "
+                                     f"screenshot, shown at {shown_w}x{shown_h} pixels. This picture is only for "
+                                     f"looking closer: positions for the other tools stay pixels of the full "
+                                     f"screenshot of display {number} ({width}x{height})."}]
+
+
+def list_displays(_):
+    with connect() as display:
+        found = monitors(display)
+        listed = []
+        for number, (x, y, wide, high, _) in enumerate(found):
+            width, height = measure(wide, high)
+            listed.append({"display": number, "main": number == 0, "x": x, "y": y, "width": wide, "height": high,
+                           "scale": 1, "screenshot_width": width, "screenshot_height": height})
+    return json.dumps({"displays": listed}, ensure_ascii=False)
+
+
+# Windows.
+def atom(display, name):
+    return intern_atom(display, name.encode(), 1)
+
+
+def prop(display, window, name, kind=0):
+    """A window property as (format, items): bytes for format 8, a list of numbers for 32; None if unset."""
+    wanted = atom(display, name)
+    if not wanted:
+        return None
+    actual, fmt, count, after, data = ulong(), c_int(), ulong(), ulong(), ctypes.c_void_p()
+    if get_property(display, window, wanted, 0, 1 << 16, 0, kind, ctypes.byref(actual), ctypes.byref(fmt),
+                    ctypes.byref(count), ctypes.byref(after), ctypes.byref(data)) != 0 or not data.value:
+        return None
+    try:
+        if fmt.value == 8:
+            return 8, ctypes.string_at(data.value, count.value)
+        if fmt.value == 32:  # Xlib hands 32-bit items back as C longs
+            return 32, list((ulong * count.value).from_address(data.value))
+        return None
+    finally:
+        free(data)
+
+
+def children(display, window):
+    root, parent, kids, count = ulong(), ulong(), ctypes.POINTER(ulong)(), uint()
+    if not query_tree(display, window, ctypes.byref(root), ctypes.byref(parent), ctypes.byref(kids),
+                      ctypes.byref(count)):
+        return [], 0
+    try:
+        return [kids[i] for i in range(count.value)], parent.value
+    finally:
+        if kids:
+            free(kids)
+
+
+def text_prop(display, window, name):
+    found = prop(display, window, name)
+    if not found or found[0] != 8:
+        return ""
+    raw = found[1]
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("latin-1")
+
+
+def windows(display):
+    """The visible top-level windows, front to back, with their areas in screen pixels."""
+    screen = default_screen(display)
+    root = root_window(display, screen)
+    stacking = prop(display, root, "_NET_CLIENT_LIST_STACKING") or prop(display, root, "_NET_CLIENT_LIST")
+    if stacking and stacking[0] == 32:
+        clients = stacking[1]
+    else:
+        # No window manager that lists its windows: the mapped windows below
+        # the root, or the windows a frame holds.
+        clients = []
+        for top in children(display, root)[0]:
+            if prop(display, top, "WM_STATE"):
+                clients.append(top)
+                continue
+            held = [kid for kid in children(display, top)[0] if prop(display, kid, "WM_STATE")]
+            clients.append(held[0] if held else top)
+    skip_types = {atom(display, "_NET_WM_WINDOW_TYPE_DESKTOP"), atom(display, "_NET_WM_WINDOW_TYPE_DOCK")} - {0}
+    hidden = atom(display, "_NET_WM_STATE_HIDDEN")
+    active = prop(display, root, "_NET_ACTIVE_WINDOW")
+    focus = active[1][0] if active and active[0] == 32 and active[1] else 0
+    if not focus:
+        held, revert = ulong(), c_int()
+        input_focus(display, ctypes.byref(held), ctypes.byref(revert))
+        focus = held.value
+    # The focus may be inside a window: walk up to a listed one.
+    chain, step = set(), focus
+    for _ in range(50):
+        if step in (0, 1, root):
+            break
+        chain.add(step)
+        step = children(display, step)[1]
+    found = []
+    for window in reversed(clients):
+        attributes = WindowAttributes()
+        if not window_attributes(display, window, ctypes.byref(attributes)) or attributes.map_state != VIEWABLE:
+            continue
+        if not stacking and attributes.override_redirect:
+            continue
+        kinds = prop(display, window, "_NET_WM_WINDOW_TYPE")
+        if kinds and kinds[0] == 32 and skip_types & set(kinds[1]):
+            continue
+        states = prop(display, window, "_NET_WM_STATE")
+        if hidden and states and states[0] == 32 and hidden in states[1]:
+            continue
+        x, y, child = c_int(), c_int(), ulong()
+        if not translate(display, window, root, 0, 0, ctypes.byref(x), ctypes.byref(y), ctypes.byref(child)):
+            continue
+        left, top, wide, high = x.value, y.value, attributes.width, attributes.height
+        frame = prop(display, window, "_NET_FRAME_EXTENTS")
+        if frame and frame[0] == 32 and len(frame[1]) == 4:
+            fl, fr, ft, fb = (int(v) for v in frame[1])
+            left, top, wide, high = left - fl, top - ft, wide + fl + fr, high + ft + fb
+        title = text_prop(display, window, "_NET_WM_NAME") or text_prop(display, window, "WM_NAME")
+        names = prop(display, window, "WM_CLASS")
+        app = ""
+        if names and names[0] == 8:
+            parts = [part for part in names[1].decode("utf-8", "replace").split("\0") if part]
+            app = parts[-1] if parts else ""
+        if not app:
+            pid = prop(display, window, "_NET_WM_PID")
+            if pid and pid[0] == 32 and pid[1]:
+                try:
+                    with open(f"/proc/{int(pid[1][0])}/comm", encoding="utf-8") as file:
+                        app = file.read().strip()
+                except OSError:
+                    pass
+        found.append({"window": window, "area": (left, top, wide, high), "app": app, "title": title,
+                      "focused": window in chain})
+    # Each window on the display that holds most of it, in that display's
+    # screenshot pixels.
+    displays = monitors(display)
+    listed = []
+    for entry in found:
+        area = entry["area"]
+        overlaps = [(part[2] * part[3] if part else 0, -n) for n, m in enumerate(displays)
+                    for part in [clip(area, m[:4])]]
+        best, negative = max(overlaps)
+        if best == 0:
+            continue  # wholly off every display
+        number = -negative
+        left, top, wide, high, width, height = shot(display, number)
+        listed.append({"id": int(entry["window"]), "app": entry["app"], "title": entry["title"], "display": number,
+                       "x": round((area[0] - left) * width / wide), "y": round((area[1] - top) * height / high),
+                       "width": round(area[2] * width / wide), "height": round(area[3] * height / high),
+                       "focused": entry["focused"]})
+    return listed
+
+
+def list_windows(_):
+    with connect() as display:
+        listed = windows(display)
+    return json.dumps({"windows": listed}, ensure_ascii=False)
+
+
+def pointer(display):
+    root_back, child, rx, ry, wx, wy, mask = ulong(), ulong(), c_int(), c_int(), c_int(), c_int(), uint()
+    query_pointer(display, root_window(display, default_screen(display)), ctypes.byref(root_back),
+                  ctypes.byref(child), ctypes.byref(rx), ctypes.byref(ry), ctypes.byref(wx), ctypes.byref(wy),
+                  ctypes.byref(mask))
+    return rx.value, ry.value
+
+
+def cursor_position(_):
+    with connect() as display:
+        number, x, y = where(display, *pointer(display))
+    return json.dumps({"display": number, "x": x, "y": y})
+
+
+# Mouse.
+held_buttons = set()
 
 
 def move_to(display, at):
@@ -262,6 +670,35 @@ def button(display, number, pressed):
     flush(display)
 
 
+def button_of(arguments):
+    which = arguments.get("button") or "left"
+    if which not in BUTTONS:
+        raise Refused("button is left, right or middle")
+    return which
+
+
+def modifier_codes(display, names):
+    held = []
+    for name in names:
+        code = keysym_code(display, MODIFIERS[name])
+        if not code:
+            raise Refused(f"the keyboard has no {name} key")
+        if code not in held:
+            held.append(code)
+    return held
+
+
+def modifier_names(arguments):
+    names = arguments.get("modifiers") or []
+    if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        raise Refused("modifiers is a list of modifier names, such as [\"shift\"]")
+    names = [name.lower() for name in names]
+    for name in names:
+        if name not in MODIFIERS:
+            raise Refused(f"unknown modifier {name}; use ctrl, shift, alt, meta or mod")
+    return names
+
+
 def move(arguments):
     with connect(input=True) as display:
         move_to(display, place(display, arguments))
@@ -269,27 +706,39 @@ def move(arguments):
 
 
 def click(arguments):
+    which = button_of(arguments)
+    count = arguments.get("count", 1)
+    if count is None:
+        count = 1
+    if count not in (1, 2, 3) or isinstance(count, bool):
+        raise Refused("count is 1, 2 or 3")
+    names = modifier_names(arguments)
     with connect(input=True) as display:
         point = place(display, arguments)
-        which = arguments.get("button", "left")
-        count = arguments.get("count", 1)
-        if which not in BUTTONS or count not in (1, 2, 3):
-            raise Refused("button is left, right or middle; count is 1, 2 or 3")
+        held = modifier_codes(display, names)
         move_to(display, point)
         time.sleep(0.05)
-        for _ in range(count):
-            for pressed in (True, False):
-                button(display, BUTTONS[which], pressed)
-                time.sleep(0.02)
+        for code in held:
+            fake_key(display, code, 1, 0)
+        try:
+            for _ in range(count):
+                for pressed in (True, False):
+                    button(display, BUTTONS[which], pressed)
+                    time.sleep(0.02)
+        finally:
+            for code in reversed(held):
+                fake_key(display, code, 0, 0)
+            flush(display)
     return "clicked"
 
 
 def drag(arguments):
+    which = button_of(arguments)
     with connect(input=True) as display:
         start, end = place(display, arguments, "from_x", "from_y"), place(display, arguments, "to_x", "to_y")
         move_to(display, start)
         time.sleep(0.05)
-        button(display, 1, True)
+        button(display, BUTTONS[which], True)
         try:
             for step in range(1, 11):
                 time.sleep(0.02)
@@ -297,22 +746,50 @@ def drag(arguments):
                                   round(start[1] + (end[1] - start[1]) * step / 10)))
             time.sleep(0.05)
         finally:
-            button(display, 1, False)
+            button(display, BUTTONS[which], False)
     return "dragged"
 
 
+def mouse_down(arguments):
+    which = button_of(arguments)
+    with connect(input=True) as display:
+        button(display, BUTTONS[which], True)
+    held_buttons.add(which)
+    return f"holding the {which} button"
+
+
+def mouse_up(arguments):
+    which = button_of(arguments)
+    with connect(input=True) as display:
+        button(display, BUTTONS[which], False)
+    held_buttons.discard(which)
+    return f"let go of the {which} button"
+
+
+def release_all():
+    """Let go of buttons still held when the server stops."""
+    if not held_buttons:
+        return
+    try:
+        with connect(input=True) as display:
+            for which in held_buttons:
+                button(display, BUTTONS[which], False)
+    except Refused:
+        pass
+
+
 def scroll(arguments):
+    try:
+        down, right = int(arguments.get("down") or 0), int(arguments.get("right") or 0)
+    except (TypeError, ValueError):
+        raise Refused("down and right must be whole numbers of wheel notches")
+    if not -100 <= down <= 100 or not -100 <= right <= 100 or (down == 0 and right == 0):
+        raise Refused("give down or right, between -100 and 100 wheel notches")
     with connect(input=True) as display:
         point = place(display, arguments)
-        try:
-            down, right = int(arguments.get("down", 0)), int(arguments.get("right", 0))
-        except (TypeError, ValueError):
-            raise Refused("down and right must be whole numbers of wheel steps")
-        if not -100 <= down <= 100 or not -100 <= right <= 100 or (down == 0 and right == 0):
-            raise Refused("give down or right, between -100 and 100 wheel steps")
         move_to(display, point)
         time.sleep(0.05)
-        # The wheel is buttons 4 and 5, and 6 and 7 sideways, one click a step.
+        # The wheel is buttons 4 and 5, and 6 and 7 sideways, one click a notch.
         for steps, forward, back in ((down, 5, 4), (right, 7, 6)):
             for _ in range(abs(steps)):
                 for pressed in (True, False):
@@ -321,6 +798,7 @@ def scroll(arguments):
     return "scrolled"
 
 
+# Keyboard.
 def keysym(character):
     """The keysym of a character, or None for a control character other than newline and tab."""
     if character == "\n":
@@ -467,28 +945,31 @@ def type_text(arguments):
     return "typed"
 
 
+def split_keys(keys):
+    """Modifier names and the key of a combination such as ctrl+shift+a or ctrl++."""
+    keys = keys.lower()
+    if keys == "+" or keys.endswith("++"):
+        return [name for name in keys[:-2].split("+") if name] if keys != "+" else [], "+"
+    names = keys.split("+")
+    return names[:-1], names[-1]
+
+
 def press_key(arguments):
     keys = arguments.get("keys")
     if not isinstance(keys, str) or not keys:
-        raise Refused("keys is a key, or modifiers and a key joined by +, such as ctrl+c")
-    names = keys.lower().split("+") if keys != "+" and not keys.endswith("++") else keys.lower()[:-1].split("+")[:-1] + ["+"]
-    if names[-1] in KEYS:
-        symbol = KEYS[names[-1]]
-    elif len(names[-1]) == 1 and keysym(names[-1]) is not None:
-        symbol = keysym(names[-1])
+        raise Refused("keys is a key, or modifiers and a key joined by +, such as mod+c")
+    names, last = split_keys(keys)
+    if last in KEYS:
+        symbol = KEYS[last]
+    elif len(last) == 1 and keysym(last) is not None:
+        symbol = keysym(last)
     else:
-        raise Refused(f"unknown key {names[-1]}")
-    for name in names[:-1]:
+        raise Refused(f"unknown key {last}")
+    for name in names:
         if name not in MODIFIERS:
-            raise Refused(f"unknown modifier {name}; use ctrl, shift, alt or super")
+            raise Refused(f"unknown modifier {name}; use ctrl, shift, alt, meta or mod")
     with connect(input=True) as display:
-        held = []
-        for name in names[:-1]:
-            code = keysym_code(display, MODIFIERS[name])
-            if not code:
-                raise Refused(f"the keyboard has no {name} key")
-            if code not in held:
-                held.append(code)
+        held = modifier_codes(display, names)
         keyboard = Keyboard(display)
         try:
             keyboard.tap(symbol, tuple(held))
@@ -497,46 +978,50 @@ def press_key(arguments):
     return "pressed"
 
 
-def number(description):
-    return {"type": "number", "description": description}
+def wait(arguments):
+    seconds = arguments.get("seconds")
+    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or not 0 <= seconds <= 30:
+        raise Refused("seconds is a number from 0 to 30")
+    time.sleep(seconds)
+    return "done waiting"
 
 
-SPOT = {"x": number("pixels from the left edge of the latest screenshot"),
-        "y": number("pixels from the top edge of the latest screenshot")}
-TOOLS = [
-    (screenshot, "screenshot", "Take a picture of the screen of the user's computer.", {}, []),
-    (click, "click", "Click the mouse at a position on the screen.",
-     {**SPOT, "button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"},
-      "count": {"type": "integer", "enum": [1, 2, 3], "description": "2 for a double click; default 1"}}, ["x", "y"]),
-    (move, "move_pointer", "Move the mouse pointer to a position on the screen without clicking.", SPOT, ["x", "y"]),
-    (drag, "drag", "Press the left mouse button at one position, move to another and let go.",
-     {"from_x": number("start, pixels from the left"), "from_y": number("start, pixels from the top"),
-      "to_x": number("end, pixels from the left"), "to_y": number("end, pixels from the top")},
-     ["from_x", "from_y", "to_x", "to_y"]),
-    (scroll, "scroll", "Turn the mouse wheel at a position on the screen.",
-     {**SPOT, "down": {"type": "integer", "description": "wheel steps to scroll down; negative scrolls up"},
-      "right": {"type": "integer", "description": "wheel steps to scroll right; negative scrolls left"}}, ["x", "y"]),
-    (type_text, "type_text", "Enter text into whatever has the keyboard focus.",
-     {"text": {"type": "string", "description": "the text to type"}}, ["text"]),
-    (press_key, "press_key", "Press one key, alone or with modifiers, such as return, escape, ctrl+c or ctrl+shift+tab.",
-     {"keys": {"type": "string", "description": "a key name or character, with any of ctrl, shift, alt, super before "
-                                                "it joined by +; win and meta mean super, cmd means ctrl"}},
-     ["keys"]),
-]
-BY_NAME = {name: function for function, name, _, _, _ in TOOLS}
+HANDLERS = {"screenshot": screenshot, "list_displays": list_displays, "list_windows": list_windows,
+            "cursor_position": cursor_position, "click": click, "move_pointer": move, "drag": drag,
+            "mouse_down": mouse_down, "mouse_up": mouse_up, "scroll": scroll, "type_text": type_text,
+            "press_key": press_key, "wait": wait}
+
+
+def load_tools():
+    with open(os.path.join(HERE, "tools.json"), encoding="utf-8") as file:
+        tools = json.loads(file.read().replace("{computer}", SUBJECT))["tools"]
+    # A tool's text that names another tool names it as listed. Only names
+    # with an underscore are tool names in the text; "screenshot" alone is
+    # also the plain word.
+    named = [other for other in HANDLERS if "_" in other] if PREFIX else []
+    for tool in tools:
+        tool["name"] = PREFIX + tool["name"]
+        for other in named:
+            tool["description"] = re.sub(rf"\b{other}\b", PREFIX + other, tool["description"])
+            for spec in tool["inputSchema"]["properties"].values():
+                if "description" in spec:
+                    spec["description"] = re.sub(rf"\b{other}\b", PREFIX + other, spec["description"])
+    return tools
+
+
+TOOLS = load_tools()
 
 
 def answer(message):
     method = message.get("method")
     if method == "initialize":
         return {"protocolVersion": message["params"]["protocolVersion"], "capabilities": {"tools": {}},
-                "serverInfo": {"name": "desktop-control", "version": VERSION}}
+                "serverInfo": {"name": SERVER, "version": VERSION}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": description,
-                           "inputSchema": {"type": "object", "properties": properties, "required": required}}
-                          for _, name, description, properties, required in TOOLS]}
+        return {"tools": TOOLS}
     if method == "tools/call":
-        function = BY_NAME.get(message["params"].get("name"))
+        name = message["params"].get("name", "")
+        function = HANDLERS.get(name[len(PREFIX):]) if name.startswith(PREFIX) else None
         if function is None:
             return None
         try:
@@ -551,18 +1036,26 @@ def answer(message):
     return None
 
 
-for line in sys.stdin:
-    line = line.strip()
-    if not line:
-        continue
-    request = json.loads(line)
-    if "id" not in request:
-        continue  # a notification needs no reply
-    result = answer(request)
-    reply = {"jsonrpc": "2.0", "id": request["id"]}
-    if result is None:
-        reply["error"] = {"code": -32601, "message": "method not found"}
-    else:
-        reply["result"] = result
-    sys.stdout.write(json.dumps(reply) + "\n")
-    sys.stdout.flush()
+def main():
+    try:
+        for line in sys.stdin:
+            line = line.strip()
+            if not line:
+                continue
+            request = json.loads(line)
+            if "id" not in request:
+                continue  # a notification needs no reply
+            result = answer(request)
+            reply = {"jsonrpc": "2.0", "id": request["id"]}
+            if result is None:
+                reply["error"] = {"code": -32601, "message": "method not found"}
+            else:
+                reply["result"] = result
+            sys.stdout.write(json.dumps(reply) + "\n")
+            sys.stdout.flush()
+    finally:
+        release_all()
+
+
+if __name__ == "__main__":
+    main()

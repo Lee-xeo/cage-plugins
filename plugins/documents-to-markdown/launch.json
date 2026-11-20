@@ -1,0 +1,17 @@
+{
+  "name": "documents-to-markdown",
+  "version": "0.1.0",
+  "server": {
+    "command": [
+      "npx",
+      "--yes",
+      "@sylphx/anymd@8.5.13"
+    ]
+  },
+  "requires": [
+    {
+      "program": "npx",
+      "missing": "Node.js (npx) is required to run Documents to Markdown."
+    }
+  ]
+}

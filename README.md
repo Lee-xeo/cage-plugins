@@ -52,14 +52,46 @@
 - 工具的名称、说明和参数说明只描述工具做什么，不提及模型运行在哪里，也不出现本产品的名字或 VM、guest 之类的词。打包脚本只检查清单；工具的文字由应用在加载时检查，不合格的插件无法加载。
 - 以 MIT 许可提交。本仓库采用 [MIT 许可](LICENSE)，提交插件即表示同意以该许可发布；插件带有第三方代码时，在插件目录里附上其许可。
 - 源码可读。不收录只有二进制文件或混淆代码的插件。
-- 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB。
-- 运行时不自行下载并执行代码。需要的依赖在说明里写明，由用户自己安装。
+- 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB，解包后不超过 100 MB 且不超过 2000 个文件。
+- 运行时不自行下载并执行未经锁定的代码。优先使用 `scripts/launcher.py` + `launch.json`：Python 服务通过 `scripts/vendor.py` 生成 `pylock.json`（记录每个预编译 wheel 的 `files.pythonhosted.org` 地址、大小与 SHA-256，在环境内首次启动时校验解包），轻量纯 JS 服务通过 `package-lock.json` 随包携带 `node_modules`（`npm ci --omit=dev --ignore-scripts`）。若直接通过 `npx` 或 `uv`/`uvx` 在启动时获取上游程序，必须写死精确版本：`npx --yes 包名@1.2.3`，或 `uvx`/`uv run --no-project` 配 `--from`/`--with 包名==1.2.3` 和 `--exclude-newer <日期>`。打包脚本会拒绝未写死版本、未匹配 `scripts/launcher.py` 或缺少哈希锁定的写法。
+
+### 基于开源项目的插件
+
+优先收录成熟的开源 MCP 服务，许可证必须允许再分发（MIT、Apache-2.0、BSD 等）；GPL、AGPL 等类许可暂不收录。这类插件：
+
+- 在插件目录放上游的 `LICENSE` 原文，并在 `README.md` 写明上游项目、版本、许可证、链接、数据流向（联网目的地）和运行时依赖。
+- 在插件目录放 `source.json`，打包脚本把它写进索引条目的 `source`，并按启动方式自动写入可选的 `runtime` 字段；Cage 在插件页的「信息」与「上游项目」里显示：
+
+  ```json
+  { "project": "microsoft/playwright-mcp", "version": "0.0.86", "license": "Apache-2.0", "url": "https://github.com/microsoft/playwright-mcp" }
+  ```
+
+  这些信息不要写进 `plugin.json`：较早的 Cage 读取清单时不接受未知字段。
+- 上游默认开启使用统计时，用启动参数或一个小的启动文件关闭它，见 [`plugins/blender`](plugins/blender)。
+- 需要访问用户电脑上的程序或设备（屏幕键鼠、Blender、本机浏览器预览）的用 `"kind": "host"`；能在环境内独立完成的（文档办公、浏览器、Git、网页抓取、SQLite、知识记忆等）优先用 `"kind": "guest"`，三个系统上的行为完全一致，且无需在电脑上安装 `uv` 等额外运行环境。
 
 示例都不需要安装依赖，只用到 Python 标准库、Windows 自带的 PowerShell 或 Linux 桌面自带的 X11 库：
 
-- [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。
-- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下，Linux 版（X11）放在 `targets/linux-x64/` 和 `targets/linux-arm64/` 下。
+- [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。macOS 和 Linux 用 Python 版，Windows 版（PowerShell）放在 `targets/win32-x64/clock` 和 `targets/win32-arm64/clock` 下。
+- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下，Linux 版（X11）放在 `targets/linux-x64/` 和 `targets/linux-arm64/` 下。三个版本读取同一份工具表 `tools.json`，工具名称和参数完全相同。
+- [`plugins/linux-desktop`](plugins/linux-desktop)：环境内插件，用 `desktop-control` 的 Linux 版操作环境自己的桌面，工具名称前加 `desktop_`。
+- [`plugins/local-preview`](plugins/local-preview)：主机插件，在本机浏览器打开回环地址页面并读回标签页。
 - [`plugins/system-status`](plugins/system-status)：环境内插件，一个页面加一个工具。
+
+基于开源 MCP 服务的插件：
+
+| 插件 | 上游与版本 | 许可证 | 运行位置 | 依赖与启动方式 |
+| --- | --- | --- | --- | --- |
+| [`browser`](plugins/browser) | [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) 0.0.86 | Apache-2.0 | 环境内 | 环境自带 Node.js 与 Chromium（`npx` 固定版本） |
+| [`excel-workbooks`](plugins/excel-workbooks) | [haris-musa/excel-mcp-server](https://github.com/haris-musa/excel-mcp-server) 2.3.2 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定，默认限定 `${PROJECT_DIR}`） |
+| [`word-documents`](plugins/word-documents) | [GongRzhe/Office-Word-MCP-Server](https://github.com/GongRzhe/Office-Word-MCP-Server) 1.1.11 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定；转 PDF 另需 LibreOffice） |
+| [`powerpoint-slides`](plugins/powerpoint-slides) | [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server) 2.0.7 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
+| [`documents-to-markdown`](plugins/documents-to-markdown) | [SylphxAI/anymd](https://github.com/SylphxAI/anymd) 8.5.13 | MIT | 环境内 | 环境自带 Node.js 与 Python 3（`launcher.py` + `npx` 固定版本） |
+| [`git-repository`](plugins/git-repository) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2026.11.18 | Apache-2.0 OR MIT | 环境内 | 环境自带 Python 3 与 Git（`pylock.json` SHA-256 锁定） |
+| [`web-fetch`](plugins/web-fetch) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2026.11.18 | Apache-2.0 OR MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
+| [`sqlite`](plugins/sqlite) | [modelcontextprotocol/servers-archived](https://github.com/modelcontextprotocol/servers-archived) 2025.4.25 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
+| [`knowledge-memory`](plugins/knowledge-memory) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 2.2.1 | Apache-2.0 OR MIT | 环境内 | 环境自带 Node.js 与 Python 3（随包锁定依赖，完全离线） |
+| [`blender`](plugins/blender) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) 1.3.1 | MIT | 这台电脑 | 本机 `uv`、Blender 3.0+ 及随附的插件 |
 
 ## 索引格式
 
@@ -77,7 +109,8 @@
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
       "sha256": "…",
-      "bytes": 887
+      "bytes": 887,
+      "source": { "project": "上游项目，可选", "version": "…", "license": "MIT", "url": "https://…" }
     }
   ]
 }

@@ -35,6 +35,8 @@ VERSION = re.compile(r"^[0-9]+(\.[0-9]+){0,2}([-+.][0-9A-Za-z.-]+)?$")
 # are matched whole, as the application does.
 RESERVED = ("cage", "guest", "vm", "virtual machine", "虚拟机", "客机")
 MAX_BYTES = 20 * 1024 * 1024
+MAX_UNPACKED_BYTES = 100 * 1024 * 1024
+MAX_FILES = 2000
 MAX_ICON_BYTES = 256 * 1024
 
 
@@ -55,8 +57,181 @@ def only(where, value, allowed):
         fail(f"{where}: must be an object with fields drawn from {sorted(allowed)}")
 
 
+NPM_PINNED = re.compile(r"^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*@\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
+PYPI_PINNED = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?==\d+(\.\d+)*([-+.][0-9A-Za-z.]+)?$")
+CUTOFF = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
+
+
 def command_ok(command):
     return isinstance(command, list) and command and all(isinstance(part, str) and part for part in command)
+
+
+def fetched_ok(command):
+    """A command that has npx or uv fetch a package names one exact version,
+    so every start runs the same published files: npm and PyPI never change
+    the files of a version once published. uv also takes --exclude-newer, so
+    the packages it depends on resolve as they did on that day."""
+    program = command[0]
+    if program == "npx":
+        packages = [part for part in command[1:] if not part.startswith("-")][:1]
+        return "--yes" in command and bool(packages) and bool(NPM_PINNED.match(packages[0]))
+    if program in ("uv", "uvx"):
+        if program == "uv" and command[1:3] != ["run", "--no-project"]:
+            return False
+        pairs = list(zip(command, command[1:]))
+        wanted = [value for flag, value in pairs if flag in ("--from", "--with")]
+        cutoffs = [value for flag, value in pairs if flag == "--exclude-newer"]
+        return (bool(wanted) and all(PYPI_PINNED.match(value) for value in wanted)
+                and len(cutoffs) == 1 and bool(CUTOFF.match(cutoffs[0])))
+    return program not in ("bunx", "pipx", "pnpx", "pnpm", "yarn", "npm", "pip", "pip3")
+
+
+SOURCE_FIELDS = {"project", "version", "license", "url"}
+LICENSE = re.compile(r"^[A-Za-z0-9.+-]+( (AND|OR|WITH) [A-Za-z0-9.+-]+)*$")
+
+
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
+WHEEL_HOST = "https://files.pythonhosted.org/"
+
+
+def check_wording(where, text):
+    lowered = text.lower()
+    words = set(re.split(r"[^a-z0-9\u0080-\U0010ffff]+", lowered))
+    for word in RESERVED:
+        if (word in lowered) if (" " in word or not word.isascii()) else (word in words):
+            fail(f"{where} mentions {word!r}")
+
+
+def check_tools_file(folder):
+    """If a plugin ships tools.json, check that none of its tool descriptions leak reserved words."""
+    path = folder / "tools.json"
+    if not path.is_file():
+        return
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    tools = raw["tools"] if isinstance(raw, dict) and isinstance(raw.get("tools"), list) else raw
+    if not isinstance(tools, list) or not tools:
+        fail(f"{folder.name}: tools.json must contain a non-empty list of tools")
+    for tool in tools:
+        if not isinstance(tool, dict) or not isinstance(tool.get("name"), str) or not tool["name"]:
+            fail(f"{folder.name}: tools.json has an invalid tool entry")
+        parts = [tool.get("name", ""), tool.get("title", ""), tool.get("description", "")]
+        if isinstance(tool.get("annotations"), dict):
+            parts.append(str(tool["annotations"].get("title", "")))
+        for key in ("inputSchema", "outputSchema"):
+            if tool.get(key) is not None:
+                parts.append(json.dumps(tool[key], ensure_ascii=False))
+        check_wording(f"{folder.name}: tools.json tool {tool['name']}", " ".join(parts))
+
+
+def check_launch(folder, data):
+    """Check a launcher-backed plugin's launch.json, launcher.py, lock file and tools.json."""
+    path = folder / "launch.json"
+    if not path.is_file():
+        return None
+    config = json.loads(path.read_text(encoding="utf-8"))
+    only(f"{folder.name}: launch.json", config, {"name", "version", "server", "python", "env", "requires", "dataDirs", "toolPrefix"})
+    if "toolPrefix" in config and not re.match(r"^[a-z][a-z0-9_]*_$", str(config["toolPrefix"])):
+        fail(f"{folder.name}: launch.json toolPrefix must be lowercase letters, digits and underscores ending with _")
+    if config.get("name") != data["name"] or config.get("version") != data["version"]:
+        fail(f"{folder.name}: launch.json name and version must match plugin.json")
+    launcher = folder / "launcher.py"
+    canonical = ROOT / "scripts" / "launcher.py"
+    if not launcher.is_file() or launcher.read_bytes() != canonical.read_bytes():
+        fail(f"{folder.name}: launcher.py must match scripts/launcher.py")
+    if not (folder / "tools.json").is_file():
+        fail(f"{folder.name}: launch.json requires tools.json")
+    server = config.get("server")
+    if not isinstance(server, dict):
+        fail(f"{folder.name}: launch.json server must be an object")
+    if "entry" in server:
+        only(f"{folder.name}: launch.json server", server, {"entry", "args"})
+        if not isinstance(server["entry"], str) or ":" not in server["entry"]:
+            fail(f"{folder.name}: launch.json server.entry must look like module:attr")
+        if "args" in server and not (isinstance(server["args"], list) and all(isinstance(x, str) for x in server["args"])):
+            fail(f"{folder.name}: launch.json server.args must be a list of strings")
+        python = config.get("python")
+        if not isinstance(python, dict):
+            fail(f"{folder.name}: launch.json server.entry requires a python lock section")
+        only(f"{folder.name}: launch.json python", python, {"requires", "pythons", "resolvedBefore", "lock"})
+        reqs = python.get("requires")
+        if not isinstance(reqs, list) or not reqs or not all(isinstance(r, str) and PYPI_PINNED.match(r) for r in reqs):
+            fail(f"{folder.name}: launch.json python.requires must pin exact package==version entries")
+        if "resolvedBefore" in python and not CUTOFF.match(str(python["resolvedBefore"])):
+            fail(f"{folder.name}: launch.json python.resolvedBefore must be an ISO date")
+        lock_name = python.get("lock")
+        if not inside(folder, lock_name, (".json",)):
+            fail(f"{folder.name}: launch.json python.lock must point to a JSON file inside the plugin")
+        lock = json.loads((folder / lock_name).read_text(encoding="utf-8"))
+        if lock.get("requires") != reqs:
+            fail(f"{folder.name}: {lock_name} requires does not match launch.json python.requires")
+        envs = lock.get("environments")
+        if not isinstance(envs, dict) or not envs:
+            fail(f"{folder.name}: {lock_name} environments must be a non-empty object")
+        for env_key, items in envs.items():
+            if not isinstance(items, list) or not items:
+                fail(f"{folder.name}: {lock_name} environment {env_key} must be a non-empty list")
+            for item in items:
+                url = str(item.get("url", ""))
+                if not url.startswith(WHEEL_HOST) or not str(item.get("file", "")).endswith(".whl"):
+                    fail(f"{folder.name}: {lock_name} {env_key}: wheel must come from {WHEEL_HOST}")
+                if not isinstance(item.get("size"), int) or item["size"] <= 0 or not HEX64.match(str(item.get("sha256", ""))):
+                    fail(f"{folder.name}: {lock_name} {env_key}: wheel {item.get('file')!r} needs size and sha256")
+    elif "command" in server:
+        only(f"{folder.name}: launch.json server", server, {"command"})
+        if not command_ok(server["command"]) or not fetched_ok(server["command"]):
+            fail(f"{folder.name}: launch.json server.command is invalid or fetches an unpinned package")
+        if server["command"][0] == "node" and (folder / "package.json").is_file():
+            if not (folder / "package-lock.json").is_file() or not (folder / "node_modules").is_dir():
+                fail(f"{folder.name}: a Node.js launcher plugin must include package-lock.json and vendored node_modules")
+    else:
+        fail(f"{folder.name}: launch.json server needs entry or command")
+    return config
+
+
+def runtime_of(folder, data, launch_config):
+    """The runtime program a plugin needs, for the market's index."""
+    if launch_config:
+        if "python" in launch_config:
+            return "python3"
+        program = launch_config["server"]["command"][0]
+    else:
+        servers = data.get("contributes", {}).get("mcpServers", [])
+        command = servers[0]["command"] if servers else data.get("command", [])
+        if not command:
+            return ""
+        program = command[0]
+    base = pathlib.PurePosixPath(program.replace("\\", "/")).name.lower()
+    if base in ("powershell.exe", "powershell", "pwsh"):
+        return "powershell"
+    if base in ("uv", "uvx"):
+        return "uv"
+    if base == "npx":
+        return "npx"
+    if base == "node":
+        return "node"
+    if base in ("python3", "python"):
+        return "python3"
+    return ""
+
+
+def source(folder):
+    """The open-source project a plugin builds on, from its source.json. It
+    stays out of plugin.json, which older applications read strictly."""
+    path = folder / "source.json"
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    only(f"{folder.name}: source.json", data, SOURCE_FIELDS)
+    plain = lambda text, limit: isinstance(text, str) and len(text) <= limit and not re.search(r"[\x00-\x1f\x7f]", text)
+    if not plain(data.get("project"), 100) or not data["project"].strip():
+        fail(f"{folder.name}: source.json needs a project")
+    if not plain(data.get("version", ""), 40) or not LICENSE.match(str(data.get("license", "MIT"))):
+        fail(f"{folder.name}: source.json version must be short and license an SPDX expression")
+    if "url" in data and not (plain(data["url"], 300) and re.match(r"^https://[a-z0-9.-]+\.[a-z]{2,}(/[^\s]*)?$", data["url"])):
+        fail(f"{folder.name}: source.json url must be https")
+    if data.get("license") and not (folder / "LICENSE").is_file():
+        fail(f"{folder.name}: a plugin built on another project keeps that project's LICENSE beside it")
+    return data
 
 
 def open_url_ok(pattern):
@@ -93,6 +268,9 @@ def contributes(folder, data):
         only(f"{name}: mcpServers", server, {"id", "command"})
         if not NAME.match(str(server.get("id", ""))) or server["id"] in servers or not command_ok(server.get("command")):
             fail(f"{name}: mcpServers needs a unique id and a command")
+        if not fetched_ok(server["command"]):
+            fail(f"{name}: mcpServers {server['id']}: a package fetched at start must name one exact version "
+                 "(npx --yes pkg@1.2.3, or uv with --from/--with pkg==1.2.3 and --exclude-newer)")
         servers.append(server["id"])
     for view in c.get("views", []):
         only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls"})
@@ -155,8 +333,8 @@ def manifest(folder):
         contributes(folder, data)
     else:
         # The first format: one command, and nothing the second format added.
-        if not command_ok(data.get("command")):
-            fail(f"{folder.name}: command is missing")
+        if not command_ok(data.get("command")) or not fetched_ok(data["command"]):
+            fail(f"{folder.name}: command is missing, or fetches a package without an exact version")
         if data.get("kind", "host") != "host" or "engines" in data or "activationEvents" in data:
             fail(f"{folder.name}: kind, engines and activationEvents need contributes")
     icon = data.get("icon")
@@ -168,17 +346,15 @@ def manifest(folder):
     # Only what is shown to people and models; kind and engines are structure.
     shown = [data["name"], data.get("displayName", ""), data["description"]]
     shown += [view["title"] for view in data.get("contributes", {}).get("views", [])]
-    lowered = json.dumps(shown, ensure_ascii=False).lower()
-    words = set(re.split(r"[^a-z0-9\u0080-\U0010ffff]+", lowered))
-    for word in RESERVED:
-        if (word in lowered) if (" " in word or not word.isascii()) else (word in words):
-            fail(f"{folder.name}: the manifest mentions {word!r}")
+    check_wording(f"{folder.name}: the manifest", json.dumps(shown, ensure_ascii=False))
+    check_tools_file(folder)
     return data
 
 
 def pack(folder):
     """A tar.gz whose bytes depend only on the files' paths and contents."""
     raw = io.BytesIO()
+    file_count, unpacked = 0, 0
     with tarfile.open(fileobj=raw, mode="w", format=tarfile.PAX_FORMAT) as archive:
         for path in sorted(folder.rglob("*")):
             relative = path.relative_to(folder).as_posix()
@@ -195,6 +371,10 @@ def pack(folder):
                 archive.addfile(info)
             elif path.is_file():
                 data = path.read_bytes()
+                file_count += 1
+                unpacked += len(data)
+                if file_count > MAX_FILES or unpacked > MAX_UNPACKED_BYTES:
+                    fail(f"{folder.name}: unpacked plugin exceeds {MAX_FILES} files or {MAX_UNPACKED_BYTES // 1024 // 1024} MB")
                 info.size, info.mode = len(data), 0o755
                 archive.addfile(info, io.BytesIO(data))
     packed = io.BytesIO()
@@ -220,9 +400,18 @@ def folders():
 
 def main():
     check = "--check" in sys.argv[1:]
-    entries, wanted = [], {}
+    entries, wanted, seen_tools = [], {}, {}
     for folder, target_name in folders():
         data = manifest(folder)
+        launch_config = check_launch(folder, data)
+        if not target_name and (folder / "tools.json").is_file() and data["name"] != "linux-desktop":
+            raw = json.loads((folder / "tools.json").read_text(encoding="utf-8"))
+            tools = raw["tools"] if isinstance(raw, dict) and isinstance(raw.get("tools"), list) else raw
+            for tool in tools:
+                tname = tool["name"]
+                if tname in seen_tools:
+                    fail(f"{folder.name}: tool name {tname!r} collides with plugin {seen_tools[tname]!r}")
+                seen_tools[tname] = folder.name
         name = f"{data['name']}-{data['version']}{'-' + target_name if target_name else ''}.tar.gz"
         target = ROOT / "dist" / name
         packed = pack(folder)
@@ -235,6 +424,12 @@ def main():
                 entry[key] = data[key]
         if target_name:
             entry["target"] = target_name
+        runtime = runtime_of(folder, data, launch_config)
+        if runtime:
+            entry["runtime"] = runtime
+        upstream = source(folder)
+        if upstream:
+            entry["source"] = upstream
         # The application takes pictures only from plugins/<name>/; a build
         # for one target shows the picture of the plugin's folder there.
         if data.get("icon") and (not target_name or (ROOT / "plugins" / data["name"] / data["icon"]).is_file()):
