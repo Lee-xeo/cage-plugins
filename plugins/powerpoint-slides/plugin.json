@@ -1,0 +1,33 @@
+{
+  "name": "powerpoint-slides",
+  "displayName": "PowerPoint Slides",
+  "version": "0.1.0",
+  "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.1.8"
+  },
+  "kind": "host",
+  "permissions": [
+    "files"
+  ],
+  "categories": [
+    "productivity",
+    "files"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "powerpoint",
+        "command": [
+          "uvx",
+          "--exclude-newer",
+          "2026-01-01T00:00:00Z",
+          "--from",
+          "office-powerpoint-mcp-server==2.0.7",
+          "ppt_mcp_server"
+        ]
+      }
+    ]
+  }
+}

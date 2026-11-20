@@ -1,0 +1,33 @@
+{
+  "name": "word-documents",
+  "displayName": "Word Documents",
+  "version": "0.1.0",
+  "description": "Creates, reads and edits Word documents (.docx): text, headings, tables, images, styles and comments. Microsoft Word is not needed.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.1.8"
+  },
+  "kind": "host",
+  "permissions": [
+    "files"
+  ],
+  "categories": [
+    "productivity",
+    "files"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "word",
+        "command": [
+          "uvx",
+          "--exclude-newer",
+          "2026-01-01T00:00:00Z",
+          "--from",
+          "office-word-mcp-server==1.1.11",
+          "word_mcp_server"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "blender",
+  "displayName": "Blender",
+  "version": "0.1.0",
+  "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.1.8"
+  },
+  "kind": "host",
+  "permissions": [
+    "commands",
+    "files",
+    "network"
+  ],
+  "categories": [
+    "productivity",
+    "desktop"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "blender",
+        "command": [
+          "uv",
+          "run",
+          "--no-project",
+          "--exclude-newer",
+          "2025-10-21T00:00:00Z",
+          "--with",
+          "blender-mcp==1.3.1",
+          "python",
+          "server.py"
+        ]
+      }
+    ]
+  }
+}
