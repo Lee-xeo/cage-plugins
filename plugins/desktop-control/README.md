@@ -25,7 +25,7 @@
 
 `press_key` 的键名在三个系统上相同：
 
-- 修饰键：`ctrl`、`shift`、`alt`（macOS 上即 Option）、`meta`（macOS 上为 Command，Windows 上为 Windows 键，Linux 上为 Super；也可写 `cmd`、`command`、`win`、`super`），以及 `mod`：各系统常用的快捷键修饰键，macOS 上为 Command，Windows 和 Linux 上为 Ctrl。写 `mod+c`、`mod+v` 就能在三个系统上复制、粘贴。
+- 修饰键：`ctrl`、`shift`、`alt`（macOS 上即 Option）、`meta`（macOS 上为 Command，Windows 上为 Windows 键，Linux 上为 Super；也可写 `win`、`super`），以及 `mod`：各系统常用的快捷键修饰键，macOS 上为 Command，Windows 和 Linux 上为 Ctrl；也可写 `cmd`、`command`，与 0.2 版一致。写 `mod+c`、`mod+v` 就能在三个系统上复制、粘贴。
 - 键：单个字符，或 `return`/`enter`、`tab`、`space`、`backspace`、`delete`、`insert`（macOS 上为 Help 键）、`escape`、`up`、`down`、`left`、`right`、`home`、`end`、`pageup`、`pagedown`、`f1`–`f12`。键名不分大小写；按 `+` 键写 `ctrl++`。
 
 ## 使用前

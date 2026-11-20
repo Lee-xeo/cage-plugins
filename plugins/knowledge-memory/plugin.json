@@ -1,7 +1,7 @@
 {
   "name": "knowledge-memory",
   "displayName": "Knowledge Memory",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
   "icon": "icon.svg",
   "engines": {

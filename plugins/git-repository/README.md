@@ -4,7 +4,7 @@
 
 ## 来源
 
-基于官方参考实现 [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 中的 `mcp-server-git` 2026.11.18，Apache-2.0 OR MIT 许可，许可全文见 [LICENSE](LICENSE)。本插件不修改上游代码，通过 `launcher.py` 按 `pylock.json` 校验并启动。
+基于官方参考实现 [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 中的 `mcp-server-git` 2026.11.18（随上游 [v2.5.0](https://github.com/modelcontextprotocol/servers/releases/tag/v2.5.0) 发布，提交 `c799c85`）。PyPI 包声明 MIT 许可，版权归 Anthropic, PBC.，许可全文见 [LICENSE](LICENSE)（取自该包随附的许可文件）。本插件不修改上游代码，通过 `launcher.py` 按 `pylock.json` 校验并启动。
 
 ## 运行位置与依赖
 

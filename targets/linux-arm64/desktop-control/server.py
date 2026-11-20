@@ -23,7 +23,7 @@ import zlib
 from array import array
 from operator import itemgetter
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 # The longest edge of a picture handed back, in pixels.
 LONGEST = 1568
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -147,8 +147,9 @@ BUTTONS = {"left": 1, "middle": 2, "right": 3}
 # X keysyms. Characters are their own keysyms up to U+00FF and
 # 0x01000000 plus the code point above.
 SHIFT, CONTROL, ALT, SUPER = 0xFFE1, 0xFFE3, 0xFFE9, 0xFFEB
-MODIFIERS = {"ctrl": CONTROL, "control": CONTROL, "mod": CONTROL, "shift": SHIFT, "alt": ALT, "option": ALT,
-             "meta": SUPER, "cmd": SUPER, "command": SUPER, "win": SUPER, "windows": SUPER, "super": SUPER}
+# cmd and command mean the shortcut modifier, as mod does: ctrl here.
+MODIFIERS = {"ctrl": CONTROL, "control": CONTROL, "mod": CONTROL, "cmd": CONTROL, "command": CONTROL, "shift": SHIFT,
+             "alt": ALT, "option": ALT, "meta": SUPER, "win": SUPER, "windows": SUPER, "super": SUPER}
 KEYS = {
     "return": 0xFF0D, "enter": 0xFF0D, "tab": 0xFF09, "space": 0x20, "backspace": 0xFF08, "delete": 0xFFFF,
     "insert": 0xFF63, "escape": 0xFF1B, "esc": 0xFF1B, "left": 0xFF51, "up": 0xFF52, "right": 0xFF53,

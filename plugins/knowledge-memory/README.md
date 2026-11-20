@@ -4,7 +4,7 @@
 
 ## 来源
 
-基于官方参考实现 [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 中的 `@modelcontextprotocol/server-memory` 2.2.1，Apache-2.0 OR MIT 许可，许可全文见 [LICENSE](LICENSE)。本插件通过 `package-lock.json` 锁定并随包携带运行所需依赖（`npm ci --omit=dev --ignore-scripts`），未修改上游代码。
+基于官方参考实现 [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) 中的 `@modelcontextprotocol/server-memory` 2.2.1（随上游 [v2.5.0](https://github.com/modelcontextprotocol/servers/releases/tag/v2.5.0) 发布，提交 `c799c85`）。npm 包的许可字段为 `SEE LICENSE IN LICENSE`，指向上游仓库的 [LICENSE](LICENSE)：项目正从 MIT 过渡到 Apache-2.0，新代码采用 Apache-2.0，尚未获准重新授权的旧贡献仍为 MIT，两者分别适用于各自的部分，因此记为 `Apache-2.0 AND MIT`。本插件通过 `package-lock.json` 锁定并随包携带运行所需依赖（`npm ci --omit=dev --ignore-scripts`），未修改上游代码。
 
 ## 运行位置与依赖
 

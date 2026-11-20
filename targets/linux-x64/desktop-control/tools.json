@@ -131,7 +131,7 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "keys": {"type": "string", "description": "a key, with any modifiers before it joined by +. Modifiers: ctrl, shift, alt (option on macOS), meta (cmd on macOS, the Windows key on Windows, Super on Linux; also written cmd, command, win or super) and mod (cmd on macOS, ctrl elsewhere). Keys: a single character, or return, enter, tab, space, backspace, delete, insert, escape, up, down, left, right, home, end, pageup, pagedown, f1 to f12"}
+          "keys": {"type": "string", "description": "a key, with any modifiers before it joined by +. Modifiers: ctrl, shift, alt (option on macOS), meta (cmd on macOS, the Windows key on Windows, Super on Linux; also written win or super) and mod (cmd on macOS, ctrl elsewhere; also written cmd or command). Keys: a single character, or return, enter, tab, space, backspace, delete, insert, escape, up, down, left, right, home, end, pageup, pagedown, f1 to f12"}
         },
         "required": ["keys"]
       }
