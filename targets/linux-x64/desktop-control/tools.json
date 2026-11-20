@@ -1,0 +1,149 @@
+{
+  "tools": [
+    {
+      "name": "screenshot",
+      "description": "Take a picture of one display of {computer}. The picture's longest side is at most 1568 pixels. Positions taken by the other tools are pixels of the latest full screenshot of that display; a picture of a region or a window is only for looking closer and does not change them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "display": {"type": "integer", "minimum": 0, "description": "which display, numbered as list_displays shows; default 0, the main display"},
+          "region": {
+            "type": "object",
+            "description": "show only this part of the display, given in pixels of the latest full screenshot of the display",
+            "properties": {
+              "x": {"type": "number", "description": "left edge"},
+              "y": {"type": "number", "description": "top edge"},
+              "width": {"type": "number", "description": "width"},
+              "height": {"type": "number", "description": "height"}
+            },
+            "required": ["x", "y", "width", "height"]
+          },
+          "window": {"type": "integer", "description": "show only the part of the screen covered by this window, an id from list_windows; the display is the window's own"}
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "list_displays",
+      "description": "List the displays of {computer}. For each: its number, whether it is the main display, its position and size in desktop coordinates (points on macOS, pixels elsewhere), its scaling factor (2 at 200%), and the size of a full screenshot of it.",
+      "inputSchema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+      "name": "list_windows",
+      "description": "List the visible windows of {computer} from front to back. For each: an id, the application, the title, the display it is mostly on, its position and size in pixels of the latest full screenshot of that display, and whether it has the keyboard focus. On macOS, titles are shown only once seeing the screen is allowed.",
+      "inputSchema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+      "name": "cursor_position",
+      "description": "Tell where the mouse pointer is: the display, and the position in pixels of the latest full screenshot of that display.",
+      "inputSchema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+      "name": "click",
+      "description": "Click the mouse at a position on a display, optionally holding modifier keys during the click.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {"type": "number", "description": "pixels from the left edge of the latest full screenshot of the display"},
+          "y": {"type": "number", "description": "pixels from the top edge of the latest full screenshot of the display"},
+          "display": {"type": "integer", "minimum": 0, "description": "which display; default 0, the main display"},
+          "button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"},
+          "count": {"type": "integer", "enum": [1, 2, 3], "description": "2 for a double click, 3 for a triple click; default 1"},
+          "modifiers": {"type": "array", "items": {"type": "string"}, "description": "modifier keys to hold during the click, named as in press_key, such as [\"shift\"] or [\"mod\"]"}
+        },
+        "required": ["x", "y"]
+      }
+    },
+    {
+      "name": "move_pointer",
+      "description": "Move the mouse pointer to a position on a display without clicking. While a button is held with mouse_down, this drags.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {"type": "number", "description": "pixels from the left edge of the latest full screenshot of the display"},
+          "y": {"type": "number", "description": "pixels from the top edge of the latest full screenshot of the display"},
+          "display": {"type": "integer", "minimum": 0, "description": "which display; default 0, the main display"}
+        },
+        "required": ["x", "y"]
+      }
+    },
+    {
+      "name": "drag",
+      "description": "Press a mouse button at one position, move to another and let go. Both positions are on the same display.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_x": {"type": "number", "description": "start, pixels from the left of the latest full screenshot of the display"},
+          "from_y": {"type": "number", "description": "start, pixels from the top"},
+          "to_x": {"type": "number", "description": "end, pixels from the left"},
+          "to_y": {"type": "number", "description": "end, pixels from the top"},
+          "display": {"type": "integer", "minimum": 0, "description": "which display; default 0, the main display"},
+          "button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"}
+        },
+        "required": ["from_x", "from_y", "to_x", "to_y"]
+      }
+    },
+    {
+      "name": "mouse_down",
+      "description": "Press and hold a mouse button where the pointer is. Move with move_pointer, then let go with mouse_up.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"}},
+        "required": []
+      }
+    },
+    {
+      "name": "mouse_up",
+      "description": "Let go of a mouse button held with mouse_down, where the pointer is.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"}},
+        "required": []
+      }
+    },
+    {
+      "name": "scroll",
+      "description": "Turn the mouse wheel at a position on a display. Amounts are wheel notches; one notch scrolls about as far as one click of a mouse wheel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "x": {"type": "number", "description": "pixels from the left edge of the latest full screenshot of the display"},
+          "y": {"type": "number", "description": "pixels from the top edge of the latest full screenshot of the display"},
+          "display": {"type": "integer", "minimum": 0, "description": "which display; default 0, the main display"},
+          "down": {"type": "integer", "minimum": -100, "maximum": 100, "description": "notches to scroll down; negative scrolls up"},
+          "right": {"type": "integer", "minimum": -100, "maximum": 100, "description": "notches to scroll right; negative scrolls left"}
+        },
+        "required": ["x", "y"]
+      }
+    },
+    {
+      "name": "type_text",
+      "description": "Type text into whatever has the keyboard focus, character by character, without using the clipboard. A line break presses return and a tab presses tab. An active input method for Chinese, Japanese or Korean may take in the letters; switch it to direct input first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"text": {"type": "string", "description": "the text to type, 1 to 5000 characters"}},
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "press_key",
+      "description": "Press one key, alone or with modifiers joined by +, such as return, escape, mod+c or ctrl+shift+tab. mod is the usual shortcut modifier: cmd on macOS, ctrl elsewhere.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keys": {"type": "string", "description": "a key, with any modifiers before it joined by +. Modifiers: ctrl, shift, alt (option on macOS), meta (cmd on macOS, the Windows key on Windows, Super on Linux; also written cmd, command, win or super) and mod (cmd on macOS, ctrl elsewhere). Keys: a single character, or return, enter, tab, space, backspace, delete, insert, escape, up, down, left, right, home, end, pageup, pagedown, f1 to f12"}
+        },
+        "required": ["keys"]
+      }
+    },
+    {
+      "name": "wait",
+      "description": "Wait a number of seconds, for example for a program or page to finish loading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"seconds": {"type": "number", "minimum": 0, "maximum": 30, "description": "0 to 30"}},
+        "required": ["seconds"]
+      }
+    }
+  ]
+}

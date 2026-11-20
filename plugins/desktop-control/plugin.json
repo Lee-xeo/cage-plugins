@@ -1,6 +1,6 @@
 {
   "name": "desktop-control",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Sees the screen and uses the mouse and keyboard of this computer.",
   "platforms": ["darwin"],
   "permissions": ["screen", "input"],

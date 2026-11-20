@@ -1,18 +1,32 @@
 # desktop-control
 
-让 Claude 查看这台电脑的屏幕，并使用鼠标和键盘。支持 macOS、Windows 和 Linux。
+让 Claude 查看这台电脑的屏幕，并使用鼠标和键盘。支持 macOS、Windows 和 Linux（X11），三个系统提供同样的工具、参数和用法。
 
 ## 工具
 
+工具的名称、说明和参数写在插件目录的 `tools.json` 里，三个系统的程序读取的是同一份文件。
+
 | 工具 | 作用 |
 | --- | --- |
-| `screenshot` | 拍下主屏幕（Linux 上为整个 X 屏幕）。其余工具的位置都以这张图的像素为准 |
-| `click` | 在指定位置单击、双击或三击，可选左、右、中键 |
-| `move_pointer` | 移动指针，不点击 |
-| `drag` | 按住左键从一处拖到另一处 |
-| `scroll` | 在指定位置滚动。macOS 上按行计，Windows 和 Linux 上按滚轮格数计 |
-| `type_text` | 向当前有键盘焦点的地方输入文字 |
-| `press_key` | 按一个键或组合键，如 `return`、`ctrl+c`、`ctrl+shift+tab`。macOS 上修饰键为 `cmd`、`shift`、`ctrl`、`alt`；Windows 上为 `ctrl`、`shift`、`alt`、`win`；Linux 上为 `ctrl`、`shift`、`alt`、`super`，写 `win` 或 `meta` 时按 `super` 处理。Windows 和 Linux 上写 `cmd` 时按 `ctrl` 处理 |
+| `screenshot` | 拍下一块显示器（`display`，默认 0 为主显示器）。图片最长边不超过 1568 像素，结果文字说明显示器编号、图片尺寸和它覆盖的桌面区域。可选 `region`（该显示器上一张完整截图里的 `x`、`y`、`width`、`height`）只拍其中一块，或 `window`（`list_windows` 给出的编号）只拍某个窗口所占的屏幕区域；这两种图片只用来放大细看，不改变其他工具的坐标 |
+| `list_displays` | 列出显示器：编号、是否主显示器、在桌面坐标里的位置和大小（macOS 上为点，其他系统为像素）、缩放比例（200% 时为 2），以及完整截图的尺寸 |
+| `list_windows` | 从前到后列出可见的窗口：编号、所属应用、标题、主要所在的显示器、以该显示器截图像素计的位置和大小，以及哪个窗口有键盘焦点 |
+| `cursor_position` | 返回指针所在的显示器，以及它在该显示器截图里的位置 |
+| `click` | 在某个位置单击、双击或三击（`count` 为 1–3），可选左、右、中键（`button`），可在点击时按住修饰键（`modifiers`，名称同 `press_key`，例如 `["shift"]`、`["mod"]`） |
+| `move_pointer` | 移动指针，不点击。用 `mouse_down` 按住按键时，移动即为拖动 |
+| `drag` | 按住一个鼠标键（默认左键）从一处拖到同一显示器上的另一处 |
+| `mouse_down` / `mouse_up` | 在指针当前位置按下 / 松开一个鼠标键，配合 `move_pointer` 做按住不放的拖动。插件退出时会松开仍按着的键 |
+| `scroll` | 在某个位置滚动，`down`、`right` 以滚轮格数计（负数向上、向左），每格约等于转动一格鼠标滚轮 |
+| `type_text` | 向有键盘焦点的地方逐字输入文字，不经过剪贴板。换行按回车键，制表符按 Tab 键 |
+| `press_key` | 按一个键或组合键，如 `return`、`escape`、`mod+c`、`ctrl+shift+tab` |
+| `wait` | 等待 0–30 秒，例如等程序或页面加载 |
+
+所有带坐标的工具都可以用 `display` 选显示器（默认 0）。坐标始终是该显示器**最近一张完整截图**的像素：插件记住每块显示器上一张完整截图的位置和缩放，把坐标换算成屏幕上的点或像素（包括 macOS 的 Retina 点与像素之差、Windows 的显示缩放）。还没截过图时，按显示器当前的大小换算。
+
+`press_key` 的键名在三个系统上相同：
+
+- 修饰键：`ctrl`、`shift`、`alt`（macOS 上即 Option）、`meta`（macOS 上为 Command，Windows 上为 Windows 键，Linux 上为 Super；也可写 `cmd`、`command`、`win`、`super`），以及 `mod`：各系统常用的快捷键修饰键，macOS 上为 Command，Windows 和 Linux 上为 Ctrl。写 `mod+c`、`mod+v` 就能在三个系统上复制、粘贴。
+- 键：单个字符，或 `return`/`enter`、`tab`、`space`、`backspace`、`delete`、`insert`（macOS 上为 Help 键）、`escape`、`up`、`down`、`left`、`right`、`home`、`end`、`pageup`、`pagedown`、`f1`–`f12`。键名不分大小写；按 `+` 键写 `ctrl++`。
 
 ## 使用前
 
@@ -20,7 +34,7 @@
 
 第一次调用时，系统会要求授权。在「系统设置 → 隐私与安全性」里，为运行本插件的应用打开：
 
-- **录屏与系统录音**：截图需要。打开后要重新启动该应用。
+- **录屏与系统录音**：截图需要，`list_windows` 读取窗口标题也需要。打开后要重新启动该应用。
 - **辅助功能**：鼠标和键盘操作需要。
 
 ### Windows
@@ -33,18 +47,29 @@
 
 ### Linux
 
-需要 X11 图形会话，并能找到 `python3` 和系统的 X11 库 `libX11.so.6`、`libXtst.so.6`。常见桌面发行版都已自带；缺少时安装对应的包，例如 Debian 和 Ubuntu 上的 `libx11-6`、`libxtst6`，Fedora 上的 `libX11`、`libXtst`。不需要额外授权。
+需要 X11 图形会话，并能找到 `python3` 和系统的 X11 库 `libX11.so.6`、`libXtst.so.6`（有 `libXrandr.so.2` 时能分辨多块显示器）。常见桌面发行版都已自带；缺少时安装对应的包，例如 Debian 和 Ubuntu 上的 `libx11-6`、`libxtst6`、`libxrandr2`，Fedora 上的 `libX11`、`libXtst`、`libXrandr`。不需要额外授权。
 
 - 插件通过环境变量 `DISPLAY` 找到屏幕。没有 `DISPLAY` 时，所有工具都会报错说明原因。
 - Wayland 会话里，插件只能经 XWayland 看到和操作 X11 窗口：Wayland 原生窗口、桌面和面板在截图里可能是黑的或缺失，鼠标和键盘输入也到不了它们。需要完整功能时，登录时请选择 X11（Xorg）会话。
 - 屏幕锁定时，锁屏程序会截住鼠标和键盘输入。
 
+## 各系统的差别
+
+工具和参数相同，以下是系统本身带来的差别：
+
+- **桌面坐标**：`list_displays` 和截图说明里的桌面坐标，macOS 上以点计，Windows 和 Linux 上以像素计。截图坐标在三个系统上含义相同。
+- **缩放比例**：macOS 为每点的像素数（Retina 为 2）；Windows 为显示缩放（150% 为 1.5）；Linux 总是 1。
+- **显示器**：Linux 上用 RandR 区分显示器，系统没有 `libXrandr` 或 X 服务器不支持 RandR 1.5 时，整个 X 屏幕算作一块显示器。
+- **窗口**：macOS 上列出普通层级的窗口，最前面的那个算作有焦点；没有录屏权限时标题为空。Windows 上列出有标题、未最小化、未被隐藏的顶层窗口，应用名为进程名（商店应用可能显示为 `ApplicationFrameHost`）。Linux 上优先使用窗口管理器提供的窗口列表（EWMH），应用名取自窗口的 `WM_CLASS`；没有窗口管理器时列出根窗口下已映射的窗口，此时可能没有焦点窗口。
+- **滚动**：Windows 每格发送一个标准滚轮刻度（120），实际滚动行数按系统设置；Linux 每格发送一次滚轮按键；macOS 每格发送一个 3 行的滚动事件，与另外两个系统默认每格滚动的距离相近。
+- **输入文字**：
+  - macOS 上，`type_text` 用键盘事件携带文字（每个事件最多 20 个 UTF-16 字符），不经过剪贴板。
+  - Windows 上，`type_text` 逐字发送字符本身，不受键盘布局影响。
+  - Linux 上，`type_text` 按键输入，不受键盘布局影响：键盘上没有的字符，会在输入期间暂时放到没有用到的键上，输入结束后恢复原样。这类不同的字符很多时，输入会慢一些。大写锁定在输入期间暂时关闭，之后恢复。
+  - 三个系统上，中文、日文、韩文输入法处于输入状态时，字母都可能先进入输入法，请先切换到英文或直接输入状态。
+- **单个字符的按键**：Windows 和 Linux 按当前键盘布局找到字符所在的键；macOS 按美式键盘的键位，`!`、`?` 这类需要 Shift 的字符会自动加上 Shift。键盘上没有的字符（如 `é`）单独按时直接输入该字符；在 Windows 和 macOS 上，它不能与修饰键组合。
+
 ## 须知
 
 - 截图会把屏幕上当时显示的一切交给模型，包括其他应用的窗口和通知。调用前请留意屏幕上有什么。
-- 输入文字的方式：
-  - macOS 上，`type_text` 经剪贴板粘贴文字，这样输入法不会改写内容。原先剪贴板里的文字会在之后放回；图片、文件等非文字内容不会保留。
-  - Windows 上，`type_text` 逐字发送字符本身，不经过剪贴板，也不受键盘布局和输入法影响。
-  - Linux 上，`type_text` 按键输入，不经过剪贴板，也不受键盘布局影响：键盘上没有的字符，会在输入期间暂时放到没有用到的键上，输入结束后恢复原样。这类不同的字符很多时，输入会慢一些。大写锁定在输入期间暂时关闭，之后恢复。中文等输入法处于输入状态时，字母可能先进入输入法，请先切换到英文状态。
-- macOS 和 Windows 上只处理主屏幕。Linux 上截图是整个 X 屏幕，接了多台显示器时，它们拼在同一张图里。
 - 不需要安装依赖：macOS 上只用到 Python 标准库和系统自带的框架，Windows 上只用到 PowerShell 和系统自带的库，Linux 上只用到 Python 标准库和系统的 X11 库。

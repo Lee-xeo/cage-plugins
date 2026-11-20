@@ -72,8 +72,9 @@
 
 示例都不需要安装依赖，只用到 Python 标准库、Windows 自带的 PowerShell 或 Linux 桌面自带的 X11 库：
 
-- [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。
-- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下，Linux 版（X11）放在 `targets/linux-x64/` 和 `targets/linux-arm64/` 下。
+- [`plugins/clock`](plugins/clock)：最小的主机插件，一个工具。macOS 和 Linux 用 Python 版，Windows 版（PowerShell）放在 `targets/win32-x64/clock` 和 `targets/win32-arm64/clock` 下。
+- [`plugins/desktop-control`](plugins/desktop-control)：主机插件，查看屏幕并使用键鼠。macOS 版在 `plugins/` 下，Windows 版按目标放在 `targets/win32-x64/` 和 `targets/win32-arm64/` 下，Linux 版（X11）放在 `targets/linux-x64/` 和 `targets/linux-arm64/` 下。三个版本读取同一份工具表 `tools.json`，工具名称和参数完全相同。
+- [`plugins/linux-desktop`](plugins/linux-desktop)：环境内插件，用 `desktop-control` 的 Linux 版操作环境自己的桌面，工具名称前加 `desktop_`。
 - [`plugins/system-status`](plugins/system-status)：环境内插件，一个页面加一个工具。
 
 基于开源 MCP 服务的插件：

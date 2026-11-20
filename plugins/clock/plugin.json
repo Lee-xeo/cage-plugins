@@ -1,6 +1,6 @@
 {
   "name": "clock",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Tells the current time on this computer.",
   "platforms": ["darwin", "linux"],
   "permissions": [],
