@@ -98,6 +98,45 @@
       "bytes": 5859
     },
     {
+      "name": "chrome-devtools",
+      "version": "0.1.0",
+      "description": "Debugs web pages in a headless Chromium with DevTools: console messages, network requests, performance traces, Lighthouse audits, CSS styles, memory snapshots, device emulation and page input.",
+      "permissions": [
+        "network"
+      ],
+      "displayName": "Chrome DevTools",
+      "categories": [
+        "developer",
+        "network"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "devtools",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "npx",
+      "source": {
+        "project": "ChromeDevTools/chrome-devtools-mcp",
+        "version": "1.13.0",
+        "license": "Apache-2.0",
+        "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/chrome-devtools/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/chrome-devtools-0.1.0.tar.gz",
+      "sha256": "ce5355a650c3b5ecc37fd5ef342190bb1d1e8ed05c0a43c937d92e523862f5aa",
+      "bytes": 19370
+    },
+    {
       "name": "clock",
       "version": "0.1.3",
       "description": "Tells the current time on this computer.",
