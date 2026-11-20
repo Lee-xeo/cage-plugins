@@ -180,17 +180,30 @@ def filter_unexpanded(args):
     return out
 
 
+def expand_home(value):
+    if value == "~" or value.startswith("~/"):
+        return os.path.expanduser(value)
+    return value
+
+
+def ensure_data_dirs(config):
+    for rel in config.get("dataDirs", []):
+        os.makedirs(expand_home(rel), exist_ok=True)
+
+
 def server_command(config, extra_args=()):
     """The command that runs the real server, once its files are ready."""
     missing(config)
-    extra = filter_unexpanded(extra_args)
+    ensure_data_dirs(config)
+    extra = [expand_home(arg) for arg in filter_unexpanded(extra_args)]
     server = config["server"]
     if "entry" in server:
         site = install(config["name"], load(config["python"]["lock"]))
         # -I -S: neither the environment's variables nor the system's own
         # packages; only the plugin's.
-        return [sys.executable, "-I", "-S", os.path.abspath(__file__), "--run", site, server["entry"]] + server.get("args", []) + extra
-    return server["command"] + extra
+        args = [expand_home(arg) for arg in server.get("args", [])]
+        return [sys.executable, "-I", "-S", os.path.abspath(__file__), "--run", site, server["entry"]] + args + extra
+    return [expand_home(arg) for arg in server["command"]] + extra
 
 
 def run(site, entry, args):
@@ -240,7 +253,8 @@ class Proxy:
         try:
             command = server_command(self.config, self.extra_args)
             env = dict(os.environ)
-            env.update(self.config.get("env", {}))
+            for key, value in self.config.get("env", {}).items():
+                env[key] = expand_home(value)
             self.child = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=HERE, env=env)
             threading.Thread(target=self.read_child, daemon=True).start()
             answer = self.ask("initialize", self.client_init)
@@ -299,6 +313,9 @@ class Proxy:
         if self.problem:
             self.reply(ident, {"content": [{"type": "text", "text": self.problem}], "isError": True})
             return
+        prefix = self.config.get("toolPrefix", "")
+        if prefix and isinstance(params, dict) and isinstance(params.get("name"), str) and params["name"].startswith(prefix):
+            params = dict(params, name=params["name"][len(prefix):])
         answer = self.ask("tools/call", params)
         if "error" in answer:
             self.reply(ident, error=answer["error"])

@@ -129,7 +129,9 @@ def check_launch(folder, data):
     if not path.is_file():
         return None
     config = json.loads(path.read_text(encoding="utf-8"))
-    only(f"{folder.name}: launch.json", config, {"name", "version", "server", "python", "env", "requires"})
+    only(f"{folder.name}: launch.json", config, {"name", "version", "server", "python", "env", "requires", "dataDirs", "toolPrefix"})
+    if "toolPrefix" in config and not re.match(r"^[a-z][a-z0-9_]*_$", str(config["toolPrefix"])):
+        fail(f"{folder.name}: launch.json toolPrefix must be lowercase letters, digits and underscores ending with _")
     if config.get("name") != data["name"] or config.get("version") != data["version"]:
         fail(f"{folder.name}: launch.json name and version must match plugin.json")
     launcher = folder / "launcher.py"
@@ -398,10 +400,18 @@ def folders():
 
 def main():
     check = "--check" in sys.argv[1:]
-    entries, wanted = [], {}
+    entries, wanted, seen_tools = [], {}, {}
     for folder, target_name in folders():
         data = manifest(folder)
         launch_config = check_launch(folder, data)
+        if not target_name and (folder / "tools.json").is_file() and data["name"] != "linux-desktop":
+            raw = json.loads((folder / "tools.json").read_text(encoding="utf-8"))
+            tools = raw["tools"] if isinstance(raw, dict) and isinstance(raw.get("tools"), list) else raw
+            for tool in tools:
+                tname = tool["name"]
+                if tname in seen_tools:
+                    fail(f"{folder.name}: tool name {tname!r} collides with plugin {seen_tools[tname]!r}")
+                seen_tools[tname] = folder.name
         name = f"{data['name']}-{data['version']}{'-' + target_name if target_name else ''}.tar.gz"
         target = ROOT / "dist" / name
         packed = pack(folder)

@@ -71,8 +71,16 @@ def score(filename, version, machine):
 
 
 def pypi_files(name, version):
-    with urllib.request.urlopen("https://pypi.org/pypi/%s/%s/json" % (name, version), timeout=60) as response:
-        return json.load(response)["urls"]
+    import time
+    url = "https://pypi.org/pypi/%s/%s/json" % (name, version)
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                return json.load(response)["urls"]
+        except Exception:
+            if attempt == 3:
+                raise
+            time.sleep(1 + attempt * 2)
 
 
 def resolve(uv, requires, python, machine, exclude_newer):
@@ -153,6 +161,12 @@ def check_tools_wording(tools):
 
 
 def capture_command(folder, config, uv, env):
+    def expand(value):
+        if value == "~" or value.startswith("~/"):
+            return os.path.join(env["HOME"], value[2:]) if value.startswith("~/") else env["HOME"]
+        return value
+    for rel in config.get("dataDirs", []):
+        os.makedirs(expand(rel), exist_ok=True)
     if "python" in config and sys.platform != "linux":
         # pylock.json locks Linux wheels; on macOS/Windows run the same pinned
         # requirements via uv to capture tools.json.
@@ -172,7 +186,8 @@ def capture_command(folder, config, uv, env):
             "[target := getattr(target, p) for p in attr.split('.')]; "
             "sys.exit(target())"
         )
-        return command + ["python", "-c", runner, server["entry"]] + server.get("args", [])
+        args = [expand(arg) for arg in server.get("args", [])]
+        return command + ["python", "-c", runner, server["entry"]] + args
     return json.loads(subprocess.run([sys.executable, "-I", str(folder / "launcher.py"), "--prepare"],
                                      env=env, capture_output=True, text=True, check=True).stdout)
 
@@ -184,7 +199,8 @@ def capture_tools(folder, config, uv):
     try:
         command = capture_command(folder, config, uv, env)
         child_env = dict(env)
-        child_env.update(config.get("env", {}))
+        for key, value in config.get("env", {}).items():
+            child_env[key] = os.path.join(home, value[2:]) if value.startswith("~/") else (home if value == "~" else value)
         child = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=folder, env=child_env)
 
         def send(message):
@@ -211,6 +227,11 @@ def capture_tools(folder, config, uv):
         child.wait(10)
     finally:
         shutil.rmtree(home, ignore_errors=True)
+    prefix = config.get("toolPrefix", "")
+    if prefix:
+        for tool in tools:
+            if not tool["name"].startswith(prefix):
+                tool["name"] = prefix + tool["name"]
     check_tools_wording(tools)
     (folder / "tools.json").write_text(json.dumps(tools, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print("  %d tools" % len(tools))

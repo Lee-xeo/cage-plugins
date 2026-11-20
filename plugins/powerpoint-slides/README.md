@@ -9,6 +9,7 @@
 ## 运行位置与依赖
 
 - 运行在环境内（`"kind": "guest"`），直接使用环境自带的 Python 3，不需要在电脑上安装 `uv` 或额外运行环境。macOS、Windows 和 Linux 上用法和工具完全一致。
+- 工具名称统一带有 `ppt_` 前缀，避免与 `word-documents` 等其他文档插件重名，可同时安装使用。
 - 首次启动时，`launcher.py` 按 `pylock.json` 中记录的精确文件名、字节大小与 SHA-256 摘要，从 `files.pythonhosted.org` 下载锁定版本的预编译包并解包到环境内的 `~/.cache/mcp-plugins/powerpoint-slides/`（依赖按 `2026-01-01` 之前解析，以保持与 MCP Python SDK 1.x 兼容）；之后启动直接复用缓存，不再联网。
 
 ## 数据流与权限

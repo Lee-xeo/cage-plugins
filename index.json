@@ -136,6 +136,43 @@
       "bytes": 15254
     },
     {
+      "name": "documents-to-markdown",
+      "version": "0.1.0",
+      "description": "Reads, outlines and searches PDF, Word, Excel, PowerPoint, EPUB and HTML documents as clean Markdown.",
+      "permissions": [],
+      "displayName": "Documents to Markdown",
+      "categories": [
+        "files",
+        "productivity"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "documents",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "npx",
+      "source": {
+        "project": "SylphxAI/anymd",
+        "version": "8.5.13",
+        "license": "MIT",
+        "url": "https://github.com/SylphxAI/anymd"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/documents-to-markdown/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.0.tar.gz",
+      "sha256": "6f9e2893d1553cb1403a411eabab2f162d6806f3b4e35664b7b171bc99b70821",
+      "bytes": 11862
+    },
+    {
       "name": "excel-workbooks",
       "version": "0.2.0",
       "description": "Creates, reads and edits Excel workbooks (.xlsx): cells, formulas, formatting, charts, pivot tables and sheets. Microsoft Excel is not needed.",
@@ -171,8 +208,81 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/excel-workbooks/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/excel-workbooks-0.2.0.tar.gz",
-      "sha256": "1eecfc329139e7e20fa1db93b6232368daa90249d0d6c2d21fa651fc71abca20",
-      "bytes": 32849
+      "sha256": "3801270fb8316e78a98f116e700c386a45347ec0366f94bf1bb05e2093c71911",
+      "bytes": 33039
+    },
+    {
+      "name": "git-repository",
+      "version": "0.1.0",
+      "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",
+      "permissions": [],
+      "displayName": "Git Repository",
+      "categories": [
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "git",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "source": {
+        "project": "modelcontextprotocol/servers",
+        "version": "2026.11.18",
+        "license": "Apache-2.0 OR MIT",
+        "url": "https://github.com/modelcontextprotocol/servers"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/git-repository/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.0.tar.gz",
+      "sha256": "8e4fdc9a99c86183110cea6de12f07f0c04af91f103e9c8d71333c2b2f6062f4",
+      "bytes": 22352
+    },
+    {
+      "name": "knowledge-memory",
+      "version": "0.1.0",
+      "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
+      "permissions": [],
+      "displayName": "Knowledge Memory",
+      "categories": [
+        "productivity",
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "memory",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "node",
+      "source": {
+        "project": "modelcontextprotocol/servers",
+        "version": "2.2.1",
+        "license": "Apache-2.0 OR MIT",
+        "url": "https://github.com/modelcontextprotocol/servers"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/knowledge-memory/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.0.tar.gz",
+      "sha256": "3e260692d24ce3daa96bc3ea64248861bde2e8d6842c0f96053f7bd41be966d6",
+      "bytes": 3252157
     },
     {
       "name": "linux-desktop",
@@ -278,8 +388,45 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/powerpoint-slides/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/powerpoint-slides-0.2.0.tar.gz",
-      "sha256": "c0444995f25667bdff15de4deadf7e7f8652eb0030b381f99d1d46cce3fa8065",
-      "bytes": 25670
+      "sha256": "2c7edb8fb41eb46ecc59cf39584b69989159c1b3b701142d7e6a4c51407475d4",
+      "bytes": 25949
+    },
+    {
+      "name": "sqlite",
+      "version": "0.1.0",
+      "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
+      "permissions": [],
+      "displayName": "SQLite",
+      "categories": [
+        "developer",
+        "files"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "sqlite",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "source": {
+        "project": "modelcontextprotocol/servers-archived",
+        "version": "2025.4.25",
+        "license": "MIT",
+        "url": "https://github.com/modelcontextprotocol/servers-archived"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/sqlite/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/sqlite-0.1.0.tar.gz",
+      "sha256": "29d66eca13104e3002a39c4ae0066b15adea924e2a75b75dfe39cf9a555cebd7",
+      "bytes": 17395
     },
     {
       "name": "system-status",
@@ -322,6 +469,45 @@
       "bytes": 3604
     },
     {
+      "name": "web-fetch",
+      "version": "0.1.0",
+      "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
+      "permissions": [
+        "network"
+      ],
+      "displayName": "Web Fetch",
+      "categories": [
+        "network",
+        "productivity"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "fetch",
+            "command": [
+              "python3",
+              "launcher.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "source": {
+        "project": "modelcontextprotocol/servers",
+        "version": "2026.11.18",
+        "license": "Apache-2.0 OR MIT",
+        "url": "https://github.com/modelcontextprotocol/servers"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/web-fetch/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.0.tar.gz",
+      "sha256": "d327354fdcfd1d23eeea0a62029bf60a41b326ad564d20c95141bac408016c58",
+      "bytes": 22844
+    },
+    {
       "name": "word-documents",
       "version": "0.2.0",
       "description": "Creates, reads and edits Word documents (.docx): text, headings, tables, images, styles and comments. Microsoft Word is not needed.",
@@ -355,8 +541,8 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/word-documents/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/word-documents-0.2.0.tar.gz",
-      "sha256": "5caa416d2f4f544f3e47b50d1ab6aea3adffec0df656009ebccbf1fb2e92829a",
-      "bytes": 99128
+      "sha256": "8303d7744e5811706a8a7f726e45ef15bb2a3b0bfd5aba65b637cecc32aeffc0",
+      "bytes": 99334
     },
     {
       "name": "desktop-control",

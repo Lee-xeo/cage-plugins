@@ -1,6 +1,6 @@
 [
  {
-  "name": "create_presentation",
+  "name": "ppt_create_presentation",
   "description": "Create a new PowerPoint presentation.",
   "inputSchema": {
    "properties": {
@@ -39,7 +39,7 @@
   }
  },
  {
-  "name": "create_presentation_from_template",
+  "name": "ppt_create_presentation_from_template",
   "description": "Create a new PowerPoint presentation from a template file.",
   "inputSchema": {
    "properties": {
@@ -85,7 +85,7 @@
   }
  },
  {
-  "name": "open_presentation",
+  "name": "ppt_open_presentation",
   "description": "Open an existing PowerPoint presentation from a file.",
   "inputSchema": {
    "properties": {
@@ -132,7 +132,7 @@
   }
  },
  {
-  "name": "save_presentation",
+  "name": "ppt_save_presentation",
   "description": "Save a presentation to a file.",
   "inputSchema": {
    "properties": {
@@ -179,7 +179,7 @@
   }
  },
  {
-  "name": "get_presentation_info",
+  "name": "ppt_get_presentation_info",
   "description": "Get information about a presentation.",
   "inputSchema": {
    "properties": {
@@ -219,7 +219,7 @@
   }
  },
  {
-  "name": "get_template_file_info",
+  "name": "ppt_get_template_file_info",
   "description": "Get information about a template file including layouts and properties.",
   "inputSchema": {
    "properties": {
@@ -254,7 +254,7 @@
   }
  },
  {
-  "name": "set_core_properties",
+  "name": "ppt_set_core_properties",
   "description": "Set core document properties.",
   "inputSchema": {
    "properties": {
@@ -353,7 +353,7 @@
   }
  },
  {
-  "name": "add_slide",
+  "name": "ppt_add_slide",
   "description": "Add a new slide to the presentation with optional background styling.",
   "inputSchema": {
    "properties": {
@@ -449,7 +449,7 @@
   }
  },
  {
-  "name": "get_slide_info",
+  "name": "ppt_get_slide_info",
   "description": "Get information about a specific slide.",
   "inputSchema": {
    "properties": {
@@ -496,7 +496,7 @@
   }
  },
  {
-  "name": "extract_slide_text",
+  "name": "ppt_extract_slide_text",
   "description": "Extract all text content from a specific slide.",
   "inputSchema": {
    "properties": {
@@ -543,7 +543,7 @@
   }
  },
  {
-  "name": "extract_presentation_text",
+  "name": "ppt_extract_presentation_text",
   "description": "Extract all text content from all slides in the presentation.",
   "inputSchema": {
    "properties": {
@@ -588,7 +588,7 @@
   }
  },
  {
-  "name": "populate_placeholder",
+  "name": "ppt_populate_placeholder",
   "description": "Populate a placeholder with text.",
   "inputSchema": {
    "properties": {
@@ -644,7 +644,7 @@
   }
  },
  {
-  "name": "add_bullet_points",
+  "name": "ppt_add_bullet_points",
   "description": "Add bullet points to a placeholder.",
   "inputSchema": {
    "properties": {
@@ -703,7 +703,7 @@
   }
  },
  {
-  "name": "manage_text",
+  "name": "ppt_manage_text",
   "description": "Unified text management tool for adding, formatting, validating text, and formatting multiple text runs.",
   "inputSchema": {
    "properties": {
@@ -941,7 +941,7 @@
   }
  },
  {
-  "name": "manage_image",
+  "name": "ppt_manage_image",
   "description": "Unified image management tool for adding and enhancing images.",
   "inputSchema": {
    "properties": {
@@ -1097,7 +1097,7 @@
   }
  },
  {
-  "name": "add_table",
+  "name": "ppt_add_table",
   "description": "Add a table to a slide with enhanced formatting options.",
   "inputSchema": {
    "properties": {
@@ -1251,7 +1251,7 @@
   }
  },
  {
-  "name": "format_table_cell",
+  "name": "ppt_format_table_cell",
   "description": "Format a specific table cell.",
   "inputSchema": {
    "properties": {
@@ -1414,7 +1414,7 @@
   }
  },
  {
-  "name": "add_shape",
+  "name": "ppt_add_shape",
   "description": "Add an auto shape to a slide with enhanced options.",
   "inputSchema": {
    "properties": {
@@ -1566,7 +1566,7 @@
   }
  },
  {
-  "name": "add_chart",
+  "name": "ppt_add_chart",
   "description": "Add a chart to a slide with comprehensive formatting options.",
   "inputSchema": {
    "properties": {
@@ -1727,7 +1727,7 @@
   }
  },
  {
-  "name": "apply_professional_design",
+  "name": "ppt_apply_professional_design",
   "description": "Unified professional design tool for themes, slides, and visual enhancements.\n        This applies professional styling and themes rather than structural layout changes.",
   "inputSchema": {
    "properties": {
@@ -1847,7 +1847,7 @@
   }
  },
  {
-  "name": "apply_picture_effects",
+  "name": "ppt_apply_picture_effects",
   "description": "Apply multiple picture effects in combination.",
   "inputSchema": {
    "properties": {
@@ -1907,7 +1907,7 @@
   }
  },
  {
-  "name": "manage_fonts",
+  "name": "ppt_manage_fonts",
   "description": "Unified font management tool for analysis, optimization, and recommendations.",
   "inputSchema": {
    "properties": {
@@ -1975,7 +1975,7 @@
   }
  },
  {
-  "name": "list_slide_templates",
+  "name": "ppt_list_slide_templates",
   "description": "List all available slide layout templates.",
   "inputSchema": {
    "properties": {},
@@ -2002,7 +2002,7 @@
   }
  },
  {
-  "name": "apply_slide_template",
+  "name": "ppt_apply_slide_template",
   "description": "\n        Apply a structured layout template to an existing slide.\n        This modifies slide layout and content structure using predefined templates.\n        \n        Args:\n            slide_index: Index of the slide to apply template to\n            template_id: ID of the template to apply (e.g., 'title_slide', 'text_with_image')\n            color_scheme: Color scheme to use ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')\n            content_mapping: Dictionary mapping element roles to custom content\n            image_paths: Dictionary mapping image element roles to file paths\n            presentation_id: Presentation ID (uses current if None)\n        ",
   "inputSchema": {
    "properties": {
@@ -2088,7 +2088,7 @@
   }
  },
  {
-  "name": "create_slide_from_template",
+  "name": "ppt_create_slide_from_template",
   "description": "\n        Create a new slide using a layout template.\n        \n        Args:\n            template_id: ID of the template to use (e.g., 'title_slide', 'text_with_image')\n            color_scheme: Color scheme to use ('modern_blue', 'corporate_gray', 'elegant_green', 'warm_red')\n            content_mapping: Dictionary mapping element roles to custom content\n            image_paths: Dictionary mapping image element roles to file paths\n            layout_index: PowerPoint layout index to use as base (default: 1)\n            presentation_id: Presentation ID (uses current if None)\n        ",
   "inputSchema": {
    "properties": {
@@ -2174,7 +2174,7 @@
   }
  },
  {
-  "name": "create_presentation_from_templates",
+  "name": "ppt_create_presentation_from_templates",
   "description": "\n        Create a complete presentation from a sequence of templates.\n        \n        Args:\n            template_sequence: List of template configurations, each containing:\n                - template_id: Template to use\n                - content: Content mapping for the template\n                - images: Image path mapping for the template\n            color_scheme: Color scheme to apply to all slides\n            presentation_title: Optional title for the presentation\n            presentation_id: Presentation ID (uses current if None)\n        \n        Example template_sequence:\n        [\n            {\n                \"template_id\": \"title_slide\",\n                \"content\": {\n                    \"title\": \"My Presentation\",\n                    \"subtitle\": \"Annual Report 2024\",\n                    \"author\": \"John Doe\"\n                }\n            },\n            {\n                \"template_id\": \"text_with_image\",\n                \"content\": {\n                    \"title\": \"Key Results\",\n                    \"content\": \"• Achievement 1\\n• Achievement 2\"\n                },\n                \"images\": {\n                    \"supporting\": \"/path/to/image.jpg\"\n                }\n            }\n        ]\n        ",
   "inputSchema": {
    "properties": {
@@ -2241,7 +2241,7 @@
   }
  },
  {
-  "name": "get_template_info",
+  "name": "ppt_get_template_info",
   "description": "\n        Get detailed information about a specific template.\n        \n        Args:\n            template_id: ID of the template to get information about\n        ",
   "inputSchema": {
    "properties": {
@@ -2276,7 +2276,7 @@
   }
  },
  {
-  "name": "auto_generate_presentation",
+  "name": "ppt_auto_generate_presentation",
   "description": "\n        Automatically generate a presentation based on topic and preferences.\n        \n        Args:\n            topic: Main topic/theme for the presentation\n            slide_count: Number of slides to generate (3-20)\n            presentation_type: Type of presentation ('business', 'academic', 'creative')\n            color_scheme: Color scheme to use\n            include_charts: Whether to include chart slides\n            include_images: Whether to include image placeholders\n            presentation_id: Presentation ID (uses current if None)\n        ",
   "inputSchema": {
    "properties": {
@@ -2347,7 +2347,7 @@
   }
  },
  {
-  "name": "optimize_slide_text",
+  "name": "ppt_optimize_slide_text",
   "description": "\n        Optimize text elements on a slide for better readability and fit.\n        \n        Args:\n            slide_index: Index of the slide to optimize\n            auto_resize: Whether to automatically resize fonts to fit containers\n            auto_wrap: Whether to apply intelligent text wrapping\n            optimize_spacing: Whether to optimize line spacing\n            min_font_size: Minimum allowed font size\n            max_font_size: Maximum allowed font size\n            presentation_id: Presentation ID (uses current if None)\n        ",
   "inputSchema": {
    "properties": {
@@ -2418,7 +2418,7 @@
   }
  },
  {
-  "name": "manage_hyperlinks",
+  "name": "ppt_manage_hyperlinks",
   "description": "\n        Manage hyperlinks in text shapes and runs.\n        \n        Args:\n            operation: Operation type (\"add\", \"remove\", \"list\", \"update\")\n            slide_index: Index of the slide (0-based)\n            shape_index: Index of the shape on the slide (0-based)\n            text: Text to make into hyperlink (for \"add\" operation)\n            url: URL for the hyperlink\n            run_index: Index of text run within the shape (0-based)\n            presentation_id: Optional presentation ID (uses current if not provided)\n            \n        Returns:\n            Dictionary with operation results\n        ",
   "inputSchema": {
    "properties": {
@@ -2482,7 +2482,7 @@
   }
  },
  {
-  "name": "update_chart_data",
+  "name": "ppt_update_chart_data",
   "description": "\n        Replace existing chart data with new categories and series.\n        \n        Args:\n            slide_index: Index of the slide (0-based)\n            shape_index: Index of the chart shape (0-based)\n            categories: List of category names\n            series_data: List of dictionaries with 'name' and 'values' keys\n            presentation_id: Optional presentation ID (uses current if not provided)\n            \n        Returns:\n            Dictionary with operation results\n        ",
   "inputSchema": {
    "properties": {
@@ -2543,7 +2543,7 @@
   }
  },
  {
-  "name": "add_connector",
+  "name": "ppt_add_connector",
   "description": "\n        Add connector lines/arrows between points on a slide.\n        \n        Args:\n            slide_index: Index of the slide (0-based)\n            connector_type: Type of connector (\"straight\", \"elbow\", \"curved\")\n            start_x: Starting X coordinate in inches\n            start_y: Starting Y coordinate in inches\n            end_x: Ending X coordinate in inches  \n            end_y: Ending Y coordinate in inches\n            line_width: Width of the connector line in points\n            color: RGB color as [r, g, b] list\n            presentation_id: Optional presentation ID (uses current if not provided)\n            \n        Returns:\n            Dictionary with operation results\n        ",
   "inputSchema": {
    "properties": {
@@ -2620,7 +2620,7 @@
   }
  },
  {
-  "name": "manage_slide_masters",
+  "name": "ppt_manage_slide_masters",
   "description": "\n        Access and manage slide master properties and layouts.\n        \n        Args:\n            operation: Operation type (\"list\", \"get_layouts\", \"get_info\")\n            master_index: Index of the slide master (0-based)\n            layout_index: Index of specific layout within master (0-based)\n            presentation_id: Optional presentation ID (uses current if not provided)\n            \n        Returns:\n            Dictionary with slide master information\n        ",
   "inputSchema": {
    "properties": {
@@ -2669,7 +2669,7 @@
   }
  },
  {
-  "name": "manage_slide_transitions",
+  "name": "ppt_manage_slide_transitions",
   "description": "\n        Manage slide transitions and timing.\n        \n        Args:\n            slide_index: Index of the slide (0-based)\n            operation: Operation type (\"set\", \"remove\", \"get\")\n            transition_type: Type of transition (basic support)\n            duration: Duration of transition in seconds\n            presentation_id: Optional presentation ID (uses current if not provided)\n            \n        Returns:\n            Dictionary with transition information\n        ",
   "inputSchema": {
    "properties": {
@@ -2723,7 +2723,7 @@
   }
  },
  {
-  "name": "list_presentations",
+  "name": "ppt_list_presentations",
   "description": "List all loaded presentations.",
   "inputSchema": {
    "properties": {},
@@ -2746,7 +2746,7 @@
   }
  },
  {
-  "name": "switch_presentation",
+  "name": "ppt_switch_presentation",
   "description": "Switch to a different loaded presentation.",
   "inputSchema": {
    "properties": {
@@ -2777,7 +2777,7 @@
   }
  },
  {
-  "name": "get_server_info",
+  "name": "ppt_get_server_info",
   "description": "Get information about the MCP server.",
   "inputSchema": {
    "properties": {},
