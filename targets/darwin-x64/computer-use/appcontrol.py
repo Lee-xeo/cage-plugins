@@ -13,6 +13,7 @@ import sys
 import tempfile
 import threading
 import time
+from urllib.parse import unquote, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LONGEST = 1568        # longest side of a picture handed back, in pixels
@@ -62,6 +63,7 @@ class CFRange(c.Structure):
 CFRelease = _fn(_CF, "CFRelease", None, vp)
 CFRetain = _fn(_CF, "CFRetain", vp, vp)
 CFEqual = _fn(_CF, "CFEqual", c.c_bool, vp, vp)
+CFHash = _fn(_CF, "CFHash", c.c_ulong, vp)
 CFGetTypeID = _fn(_CF, "CFGetTypeID", c.c_ulong, vp)
 CFStringCreateWithCString = _fn(_CF, "CFStringCreateWithCString", vp, vp, c.c_char_p, c.c_uint32)
 CFStringGetLength = _fn(_CF, "CFStringGetLength", CFIndex, vp)
@@ -76,6 +78,9 @@ CFNumberGetValue = _fn(_CF, "CFNumberGetValue", c.c_bool, vp, CFIndex, vp)
 CFNumberIsFloatType = _fn(_CF, "CFNumberIsFloatType", c.c_bool, vp)
 CFAttributedStringGetString = _fn(_CF, "CFAttributedStringGetString", vp, vp)
 CFURLGetString = _fn(_CF, "CFURLGetString", vp, vp)
+CFURLCopyAbsoluteURL = _fn(_CF, "CFURLCopyAbsoluteURL", vp, vp)
+CFURLIsFileReferenceURL = _fn(_CF, "CFURLIsFileReferenceURL", c.c_bool, vp)
+CFURLCreateFilePathURL = _fn(_CF, "CFURLCreateFilePathURL", vp, vp, vp, vp)
 CFDictionaryGetValue = _fn(_CF, "CFDictionaryGetValue", vp, vp, vp)
 CFDictionaryCreate = _fn(_CF, "CFDictionaryCreate", vp, vp, c.POINTER(vp), c.POINTER(vp), CFIndex, vp, vp)
 CFRunLoopRunInMode = _fn(_CF, "CFRunLoopRunInMode", c.c_int32, vp, c.c_double, c.c_bool)
@@ -279,8 +284,21 @@ def to_py(ref):
         return ax_value(ref)
     if kind == T_ATTRIBUTED:
         return cf_text(CFAttributedStringGetString(ref))
-    if kind == T_URL:
-        return cf_text(CFURLGetString(ref))
+    if kind == T_URL:  # a file list's items name their files by reference, or relative to the folder
+        if CFURLIsFileReferenceURL(ref):
+            path = CFURLCreateFilePathURL(None, ref, None)
+            if path:
+                try:
+                    return cf_text(CFURLGetString(path))
+                finally:
+                    CFRelease(path)
+        absolute = CFURLCopyAbsoluteURL(ref)
+        if not absolute:
+            return cf_text(CFURLGetString(ref))
+        try:
+            return cf_text(CFURLGetString(absolute))
+        finally:
+            CFRelease(absolute)
     return None
 
 
@@ -816,24 +834,61 @@ def text(words):
 
 # ------------------------------------------------------------------- views
 VIEWS = {}  # process id: what the latest app_state of that app showed
+NUMBERS = {}  # process id: the numbers given to that app's elements
+KEPT = 5000  # elements of one app kept by number; the oldest numbers go first
+
+
+class Numbers(object):
+    """The numbers of one app's elements. An element keeps its number for as long as it is there, from one app_state
+    to the next, and a number never goes to another element, so an old number can fail but not hit the wrong thing."""
+
+    def __init__(self):
+        self.elements, self.notes, self.keys, self.by_key, self.next = {}, {}, {}, {}, 1
+
+    def lookup(self, element):
+        for number in self.by_key.get(CFHash(element.ref), ()):
+            if self.elements[number].same(element):
+                return number
+        return None
+
+    def number(self, element, note):
+        found = self.lookup(element)
+        if found is not None:
+            self.notes[found] = note
+            return found
+        number, self.next = self.next, self.next + 1
+        key = CFHash(element.ref)
+        self.elements[number], self.notes[number], self.keys[number] = element, note, key
+        self.by_key.setdefault(key, []).append(number)
+        if len(self.elements) > KEPT:
+            for old in sorted(self.elements)[:len(self.elements) - KEPT]:
+                held = self.by_key.get(self.keys[old], [])
+                if old in held:
+                    held.remove(old)
+                if not held:
+                    self.by_key.pop(self.keys[old], None)
+                del self.elements[old], self.notes[old], self.keys[old]
+        return number
 
 
 class View(object):
     def __init__(self, app, window):
         self.pid, self.name, self.window = app["pid"], app["name"], window
-        self.elements, self.notes = [None], [None]
+        self.numbers = NUMBERS.setdefault(app["pid"], Numbers())
+        self.notes = self.numbers.notes
+        self.shown = []  # the numbers this app_state listed
         self.geometry = None  # window left, top, width, height in points; picture width, height
 
     def add(self, element, note):
-        self.elements.append(element)
-        self.notes.append(note)
-        return len(self.elements) - 1
+        number = self.numbers.number(element, note)
+        self.shown.append(number)
+        return number
 
     def find(self, element):
-        for number in range(1, len(self.elements)):
-            if self.elements[number].same(element):
-                return number
-        return None
+        return self.numbers.lookup(element)
+
+    def listed(self):
+        return [self.numbers.elements[n] for n in self.shown if n in self.numbers.elements]
 
 
 def need_view(app):
@@ -844,10 +899,10 @@ def need_view(app):
 
 
 def element_at(view, number):
-    if not isinstance(number, int) or isinstance(number, bool) or not 1 <= number < len(view.elements):
-        raise Refused("there is no element %s for %s; the latest app_state numbered 1 to %d"
-                      % (number, view.name, len(view.elements) - 1))
-    return view.elements[number]
+    if not isinstance(number, int) or isinstance(number, bool) or number not in view.numbers.elements:
+        raise Refused("there is no element %s for %s now; call app_state for the numbers of what is there"
+                      % (number, view.name))
+    return view.numbers.elements[number]
 
 
 def fresh(element, number):
@@ -927,7 +982,7 @@ class Walker(object):
         self.view, self.limit = view, limit
         self.query = query.lower() if query else None
         self.deadline = time.time() + TIME_LIMIT
-        self.visited, self.listed, self.cut = 0, 0, False
+        self.visited, self.listed, self.cut, self.hidden = 0, 0, False, 0
         self.lines, self.memo, self.kids = [], {}, {}
 
     def stopped(self):
@@ -1055,6 +1110,8 @@ class Walker(object):
 
     def matches(self, values, name):
         for key in ("AXValue", "AXIdentifier", "AXPlaceholderValue", "AXHelp", "AXURL", "AXDescription", "AXTitle"):
+            if key == "AXURL" and values.get("AXRole") != "AXLink":
+                continue  # an item of a file list holds its whole path there
             found = values.get(key)
             if isinstance(found, str) and self.query in found.lower():
                 return True
@@ -1072,7 +1129,7 @@ class Walker(object):
             where += " %dx%d" % (round(frame[2] * width / wide), round(frame[3] * height / high))
         return where
 
-    def walk(self, element, depth=0, indent=0, clip=None, around="", trail=()):
+    def walk(self, element, depth=0, indent=0, clip=None, around="", trail=(), unseen=False):
         if self.stopped():
             return
         values = self.values(element)
@@ -1080,14 +1137,17 @@ class Walker(object):
         if role in SKIPPED:
             return
         frame = frame_of(values)
-        if frame and frame[2] > 0 and frame[3] > 0 and clip and not overlap(frame, clip):
-            return  # scrolled out of sight
+        if not unseen and frame and frame[2] > 0 and frame[3] > 0 and clip and not overlap(frame, clip):
+            if self.query is None:
+                self.hidden += 1
+                return  # scrolled out of sight; a query still finds it
+            unseen = True
         name = self.label(element, values, role)
         line = self.entry(values, role, name, around)
         if line is not None:
             if self.query is None or self.matches(values, name):
                 number = self.view.add(element, line)
-                where = self.place(frame, role)
+                where = "(scrolled out of sight)" if unseen else self.place(frame, role)
                 if self.query is None:
                     self.lines.append("%s[%d] %s%s" % ("  " * min(indent, 12), number, line, " " + where if where else ""))
                 else:
@@ -1109,7 +1169,7 @@ class Walker(object):
         for child in items:
             if self.stopped():
                 break
-            self.walk(child, depth + 1, indent, clip, around, trail)
+            self.walk(child, depth + 1, indent, clip, around, trail, unseen)
         if total > len(items) and self.query is None and not self.cut:
             self.lines.append("%s… %d more inside, not read" % ("  " * min(indent, 12), total - len(items)))
 
@@ -1215,6 +1275,9 @@ def tool_app_state(arguments):
                 values.get("AXDescription")), "") or ROLE_NAMES.get(role, role[2:].lower() or "element")
             number = view.add(focused, line)
         lines.append("Keyboard focus: [%d] %s" % (number, short(view.notes[number], 160)))
+    if walker.hidden and query is None:
+        lines.append("Parts scrolled out of sight are left out; query finds what is in them too, and the app_ tools "
+                     "act on such elements without scrolling.")
     if walker.cut:
         lines.append("The listing stopped at %d elements%s. Use query to find something, or inside with a number to "
                      "look within one part." % (walker.listed, "" if walker.listed >= limit else " (time or size limit)"))
@@ -1403,11 +1466,11 @@ def covering(app, point):
     return None
 
 
-def window_under(app, point, view=None):
+def window_under(app, point, view=None, strict=False):
     for window in screen_windows():
         if window["pid"] == app["pid"] and window["layer"] == 0 and inside(point, window["frame"]):
             return window["id"]
-    return view.window.get("number") if view else None
+    return None if strict or view is None else view.window.get("number")
 
 
 def click_in_background(app, view, point, button, count, flags):
@@ -1463,14 +1526,80 @@ def select_item(element, add=False):
                     held = ax_get(parent, attribute)
                     chosen = [e for e in (held if isinstance(held, list) else [])
                               if isinstance(e, Element) and not e.same(node)] + [node]
-                return ax_set_elements(parent, attribute, chosen) == 0
+                if ax_set_elements(parent, attribute, chosen) == 0:
+                    return True
+                # a list shown for another process, as in an open dialog, can report a failure and still select
+                for _ in range(6):
+                    held = ax_get(parent, attribute)
+                    if isinstance(held, list) and any(isinstance(e, Element) and e.same(node) for e in held):
+                        return True
+                    time.sleep(0.05)
+                return False
         node = parent
     return False
 
 
+def holder(element, roles, most=12):
+    """The nearest element around this one with one of these roles."""
+    node = element
+    for _ in range(most):
+        node = ax_get(node, "AXParent")
+        if not isinstance(node, Element):
+            return None
+        if ax_get(node, "AXRole") in roles:
+            return node
+    return None
+
+
+def file_of(element):
+    """The file or folder an item of a file list stands for, as a path, or None."""
+    for node in (element, ax_get(element, "AXParent")):
+        url = ax_get(node, "AXURL") if isinstance(node, Element) else None
+        if isinstance(url, str) and url.startswith("file://"):
+            return unquote(urlparse(url).path)
+    return None
+
+
+def default_button(dialog):
+    """The button of a dialog that return presses. An open or save dialog shown for another app does not say which
+    it is, but names it OKButton."""
+    button = ax_get(dialog, "AXDefaultButton")
+    if isinstance(button, Element):
+        return button
+    layer = [dialog]
+    for _ in range(3):
+        below = []
+        for node in layer:
+            for child in ax_slice(node, "AXChildren", 80) or []:
+                values, _ = ax_many(child, ["AXRole", "AXIdentifier"])
+                if values.get("AXRole") == "AXButton" and values.get("AXIdentifier") == "OKButton":
+                    return child
+                if values.get("AXRole") in ("AXSplitGroup", "AXGroup"):
+                    below.append(child)
+        layer = below[:20]
+    return None
+
+
 def open_item(element):
-    """Open an item the way a double click does: select it, then have it, or what holds it, open."""
-    select_item(element)
+    """Open an item the way a double click does: select it, then have it, or what holds it, open. In an open or
+    save dialog this is done without the actions that would bring the app to the front: a place in the sidebar or a
+    folder in column view opens once selected, and a file is chosen with the dialog's default button."""
+    path = file_of(element)
+    selected = select_item(element)
+    dialog = holder(element, {"AXSheet", "AXWindow"})
+    button = default_button(dialog) if dialog is not None else None
+    if selected and isinstance(button, Element):
+        folder = path is not None and os.path.isdir(path) and not path.rstrip("/").endswith(
+            (".app", ".bundle", ".pkg"))
+        if path is None or (folder and holder(element, {"AXBrowser"}) is not None):
+            time.sleep(0.2)
+            return True
+        if not folder and "AXPress" in actions_of(button):
+            deadline = time.time() + 1.5  # the button turns on once the dialog has taken in the selection
+            while ax_get(button, "AXEnabled") is False and time.time() < deadline:
+                time.sleep(0.05)
+            if ax_get(button, "AXEnabled") is not False:
+                return perform(button, "AXPress") == 0
     node = element
     for _ in range(3):
         offered = actions_of(node)
@@ -1590,11 +1719,16 @@ def center_of(values):
 
 def show(app, what, point=None, kind="look"):
     """Put the banner up, and move Claude's cursor to where it is about to act."""
+    if isinstance(app, dict):
+        _acted["pid"] = app["pid"]
     order = {"op": "act", "app": app["name"] if isinstance(app, dict) else app, "what": what, "kind": kind}
-    if point is not None:
-        order["x"], order["y"] = point.x, point.y
-        if isinstance(app, dict):  # the cursor shows only on the window acted in
-            order["window"] = window_under(app, point, VIEWS.get(app["pid"])) or 0
+    if point is not None and isinstance(app, dict):
+        # The cursor shows only on the window acted in, just above it, so whatever covers that window covers the
+        # cursor too; a place outside the app's windows, such as an element scrolled out of sight, gets none.
+        window = window_under(app, point, strict=True)
+        point = point if window else None
+        if window:
+            order["x"], order["y"], order["window"] = point.x, point.y, window
     if overlay_send(order) and point is not None and kind != "look":
         time.sleep(0.3)  # let the cursor arrive before the action
 
@@ -1612,6 +1746,47 @@ def shutdown():
         except subprocess.TimeoutExpired:
             process.kill()
         _overlay["process"] = None
+
+
+_acted = {"pid": None}  # the app the current call works in
+UNGUARDED = {"list_apps", "read_clipboard", "write_clipboard", "app_batch"}
+
+
+def keep_front(before):
+    """When the app a background call worked in came to the front on its own, as some do when a dialog opens or an
+    item is opened, put back in front the app the user had there. True when that was needed."""
+    acted = _acted["pid"]
+    if before is None or acted is None or before == acted:
+        return False
+    for wait in (0.0, 0.1):
+        time.sleep(wait)
+        if front_pid() == acted:
+            break
+    else:
+        return False
+    ax_set(app_element(before), "AXFrontmost", True)
+    return True
+
+
+def run_tool(name, arguments):
+    """One tool, keeping the user's app in front unless the call asks for the foreground."""
+    function = HANDLERS[name]
+    if name in UNGUARDED or arguments.get("foreground") is True:
+        return function(arguments)
+    before, _acted["pid"] = front_pid(), None
+    try:
+        result = function(arguments)
+    except Refused:
+        keep_front(before)
+        raise
+    if keep_front(before):
+        note = ("The app came to the front on its own; the app the user had in front was put back. Its window may "
+                "still be above others.")
+        if isinstance(result, str):
+            result += " " + note
+        elif isinstance(result, list):
+            result = result + [text(note)]
+    return result
 
 
 def check_stopped():
@@ -1784,7 +1959,7 @@ def focused_field(app):
         return focused
     view = VIEWS.get(app["pid"])
     fields, areas = [], []
-    for element in (view.elements[1:] if view else []):
+    for element in (view.listed() if view else []):
         values, _ = ax_many(element, ["AXRole", "AXFocused"])
         if values.get("AXRole") in TEXT_INPUTS:
             if values.get("AXFocused") is True:
@@ -2280,7 +2455,23 @@ def tool_open_app(arguments):
     if any(mark in wanted for mark in "/\\\"*") or any(ord(ch) < 0x20 for ch in wanted):
         raise Refused("app is an app's name or bundle identifier, not a path")
     foreground = arguments.get("foreground") is True
+    url = arguments.get("url")
+    if url is not None:
+        if not isinstance(url, str) or not re.match(r"^https?://[^\s]+$", url.strip()) or len(url) > 4000:
+            raise Refused("url is a web address that starts with http:// or https://")
+        url = url.strip()
+    flags = [] if foreground else ["-g"]
     app = lookup_app(wanted)
+    if app is not None and url is not None:
+        admit(app)
+        target = ["-b", app["bundle_id"]] if app["bundle_id"] else ["-a", app["path"]]
+        run = subprocess.run(["/usr/bin/open"] + flags + target + [url], capture_output=True, timeout=30)
+        if run.returncode != 0:
+            raise Refused("%s could not open that address: %s" % (app["name"], clean(run.stderr.decode(
+                "utf-8", "replace"), 200) or "the system did not say why"))
+        show(app, "打开网址")
+        time.sleep(0.5)
+        return "%s is opening %s%s." % (app["name"], url, " in front" if foreground else " in the background")
     if app is not None:
         admit(app)
         if foreground:
@@ -2288,19 +2479,20 @@ def tool_open_app(arguments):
             return "%s was running and is now in front." % app["name"]
         return "%s is already running%s." % (app["name"], ", hidden; open_app with foreground true shows it"
                                              if app["hidden"] else "")
-    flags = [] if foreground else ["-g"]
     path = None
+    extra = [url] if url else []
     if BUNDLE_ID.match(wanted):
-        run = subprocess.run(["/usr/bin/open"] + flags + ["-b", wanted], capture_output=True, timeout=30)
+        run = subprocess.run(["/usr/bin/open"] + flags + ["-b", wanted] + extra, capture_output=True, timeout=30)
     else:
-        run = subprocess.run(["/usr/bin/open"] + flags + ["-a", wanted], capture_output=True, timeout=30)
+        run = subprocess.run(["/usr/bin/open"] + flags + ["-a", wanted] + extra, capture_output=True, timeout=30)
         if run.returncode != 0:  # perhaps a name in the system's language, which Spotlight knows
             found = subprocess.run(["/usr/bin/mdfind", 'kMDItemContentType == "com.apple.application-bundle" && '
                                     'kMDItemDisplayName == "%s"c' % wanted], capture_output=True, timeout=20)
             paths = [line for line in found.stdout.decode("utf-8", "replace").splitlines() if line.endswith(".app")]
             if paths:
                 path = sorted(paths, key=len)[0]
-                run = subprocess.run(["/usr/bin/open"] + flags + ["-a", path], capture_output=True, timeout=30)
+                run = subprocess.run(["/usr/bin/open"] + flags + ["-a", path] + extra, capture_output=True,
+                                     timeout=30)
     if run.returncode != 0:
         raise Refused("no app %s could be opened: %s" % (quoted(wanted), clean(run.stderr.decode(
             "utf-8", "replace"), 200) or "the system did not say why"))
@@ -2375,7 +2567,7 @@ def tool_app_batch(arguments):
             report.append("%d. %s cannot run in a batch. Stopped here." % (number, name))
             return {"content": ([picture] if picture else []) + [text("\n".join(report))], "isError": True}
         try:
-            result = HANDLERS[name](given)
+            result = run_tool(name, given)
         except Refused as refusal:
             report.append("%d. %s failed: %s Stopped here." % (number, name, refusal))
             return {"content": ([picture] if picture else []) + [text("\n".join(report))], "isError": True}
@@ -2404,7 +2596,7 @@ def call(name, arguments):
     try:
         if name != "list_apps":
             check_stopped()
-        result = function(arguments if isinstance(arguments, dict) else {})
+        result = run_tool(name, arguments if isinstance(arguments, dict) else {})
         if isinstance(result, dict):
             return result
         return {"content": result if isinstance(result, list) else [text(result)]}

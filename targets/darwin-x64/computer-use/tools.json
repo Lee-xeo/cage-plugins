@@ -6,39 +6,84 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "query": {"type": "string", "description": "only apps whose name or bundle identifier contains this"},
-          "all": {"type": "boolean", "description": "also list background helpers and menu bar apps; default false"}
+          "query": {
+            "type": "string",
+            "description": "only apps whose name or bundle identifier contains this"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "also list background helpers and menu bar apps; default false"
+          }
         },
         "required": []
       }
     },
     {
       "name": "open_app",
-      "description": "Start an app, or show one that is already running, without bringing it in front of what the user is doing unless foreground is true. app is a name as Finder shows it (such as Notes, 备忘录 or Safari) or a bundle identifier.",
+      "description": "Start an app, or show one that is already running, without bringing it in front of what the user is doing unless foreground is true; with url, have it open a web address, as a browser does, in the background as well. app is a name as Finder shows it (such as Notes, 备忘录 or Safari) or a bundle identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name or bundle identifier"},
-          "foreground": {"type": "boolean", "description": "bring the app to the front; default false"}
+          "app": {
+            "type": "string",
+            "description": "app name or bundle identifier"
+          },
+          "foreground": {
+            "type": "boolean",
+            "description": "bring the app to the front; default false"
+          },
+          "url": {
+            "type": "string",
+            "description": "a web address starting with http:// or https:// for the app to open"
+          }
         },
-        "required": ["app"]
+        "required": [
+          "app"
+        ]
       }
     },
     {
       "name": "app_state",
-      "description": "Read one window of a running app without taking the user's screen, pointer or keyboard: a picture of the window, even when other windows cover it, and its controls and text as the app reports them to the accessibility interface. Each element gets a number for the other app_ tools and its center in pixels of the picture. Call it before acting in an app and again to see what an action changed. Numbers stay valid until the next app_state of the same app without inside.",
+      "description": "Read one window of a running app without taking the user's screen, pointer or keyboard: a picture of the window, even when other windows cover it, and its controls and text as the app reports them to the accessibility interface. Each element gets a number for the other app_ tools and its center in pixels of the picture. Call it before acting in an app and again to see what an action changed. An element keeps its number from one app_state to the next for as long as it is there, and a number never passes to another element. Parts scrolled out of sight are left out of a full listing; query finds what is in them too.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id, as list_apps shows"},
-          "window": {"type": "integer", "minimum": 0, "description": "which window, by its number in the window list this tool shows; default the window with the keyboard focus"},
-          "window_title": {"type": "string", "description": "which window, by part of its title"},
-          "screenshot": {"type": "boolean", "description": "include the picture; default true, or false with inside"},
-          "query": {"type": "string", "description": "list only elements whose text, value or identifier contains this, with where each one is"},
-          "inside": {"type": "integer", "minimum": 1, "description": "list what is inside this element from an earlier app_state of the app, adding numbers instead of replacing them"},
-          "limit": {"type": "integer", "minimum": 20, "maximum": 800, "description": "most elements to list; default 250"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id, as list_apps shows"
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "which window, by its number in the window list this tool shows; default the window with the keyboard focus"
+          },
+          "window_title": {
+            "type": "string",
+            "description": "which window, by part of its title"
+          },
+          "screenshot": {
+            "type": "boolean",
+            "description": "include the picture; default true, or false with inside"
+          },
+          "query": {
+            "type": "string",
+            "description": "list only elements whose text, value or identifier contains this, with where each one is"
+          },
+          "inside": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "list what is inside this element from an earlier app_state of the app, adding numbers instead of replacing them"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 800,
+            "description": "most elements to list; default 250"
+          }
         },
-        "required": ["app"]
+        "required": [
+          "app"
+        ]
       }
     },
     {
@@ -47,16 +92,56 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
-          "x": {"type": "number", "description": "pixels from the left edge of the latest app_state picture of the app"},
-          "y": {"type": "number", "description": "pixels from the top edge of that picture"},
-          "button": {"type": "string", "enum": ["left", "right", "middle"], "description": "default left"},
-          "count": {"type": "integer", "enum": [1, 2, 3], "description": "2 for a double click, 3 for a triple click; default 1"},
-          "modifiers": {"type": "array", "items": {"type": "string"}, "description": "keys to hold during the click, named as in press_key, such as [\"shift\"] or [\"mod\"]"},
-          "foreground": {"type": "boolean", "description": "use the real pointer with the app in front; default false"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state"
+          },
+          "x": {
+            "type": "number",
+            "description": "pixels from the left edge of the latest app_state picture of the app"
+          },
+          "y": {
+            "type": "number",
+            "description": "pixels from the top edge of that picture"
+          },
+          "button": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right",
+              "middle"
+            ],
+            "description": "default left"
+          },
+          "count": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3
+            ],
+            "description": "2 for a double click, 3 for a triple click; default 1"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "keys to hold during the click, named as in press_key, such as [\"shift\"] or [\"mod\"]"
+          },
+          "foreground": {
+            "type": "boolean",
+            "description": "use the real pointer with the app in front; default false"
+          }
         },
-        "required": ["app"]
+        "required": [
+          "app"
+        ]
       }
     },
     {
@@ -65,12 +150,28 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "text": {"type": "string", "description": "the text, 1 to 2000 characters"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state of a text field or area"},
-          "foreground": {"type": "boolean", "description": "type with the keyboard with the app in front; default false"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "text": {
+            "type": "string",
+            "description": "the text, 1 to 2000 characters"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state of a text field or area"
+          },
+          "foreground": {
+            "type": "boolean",
+            "description": "type with the keyboard with the app in front; default false"
+          }
         },
-        "required": ["app", "text"]
+        "required": [
+          "app",
+          "text"
+        ]
       }
     },
     {
@@ -79,12 +180,29 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "keys": {"type": "string", "description": "a key, with any modifiers before it joined by +"},
-          "count": {"type": "integer", "minimum": 1, "maximum": 20, "description": "how many times to press it; default 1"},
-          "foreground": {"type": "boolean", "description": "press with the app in front; default false"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "keys": {
+            "type": "string",
+            "description": "a key, with any modifiers before it joined by +"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "how many times to press it; default 1"
+          },
+          "foreground": {
+            "type": "boolean",
+            "description": "press with the app in front; default false"
+          }
         },
-        "required": ["app", "keys"]
+        "required": [
+          "app",
+          "keys"
+        ]
       }
     },
     {
@@ -93,13 +211,39 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state inside the area to scroll"},
-          "direction": {"type": "string", "enum": ["down", "up", "right", "left"], "description": "default down"},
-          "pages": {"type": "number", "minimum": 0.1, "maximum": 20, "description": "how far, in screenfuls of the area; may be fractional; default 1"},
-          "foreground": {"type": "boolean", "description": "turn the wheel with the real pointer with the app in front; default false"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state inside the area to scroll"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "down",
+              "up",
+              "right",
+              "left"
+            ],
+            "description": "default down"
+          },
+          "pages": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 20,
+            "description": "how far, in screenfuls of the area; may be fractional; default 1"
+          },
+          "foreground": {
+            "type": "boolean",
+            "description": "turn the wheel with the real pointer with the app in front; default false"
+          }
         },
-        "required": ["app"]
+        "required": [
+          "app"
+        ]
       }
     },
     {
@@ -108,10 +252,22 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "path": {"type": "array", "items": {"type": "string"}, "maxItems": 8, "description": "menu titles from the menu bar down"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "description": "menu titles from the menu bar down"
+          }
         },
-        "required": ["app"]
+        "required": [
+          "app"
+        ]
       }
     },
     {
@@ -120,12 +276,46 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
-          "value": {"anyOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}], "description": "text, a number, or true or false for the attributes other than value"},
-          "attribute": {"type": "string", "enum": ["value", "selected", "focused", "expanded", "minimized"], "description": "default value"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "description": "text, a number, or true or false for the attributes other than value"
+          },
+          "attribute": {
+            "type": "string",
+            "enum": [
+              "value",
+              "selected",
+              "focused",
+              "expanded",
+              "minimized"
+            ],
+            "description": "default value"
+          }
         },
-        "required": ["app", "element", "value"]
+        "required": [
+          "app",
+          "element",
+          "value"
+        ]
       }
     },
     {
@@ -134,13 +324,39 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
-          "text": {"type": "string", "description": "the text to find; empty selects nothing and puts the cursor at the start, or with where after, at the end"},
-          "occurrence": {"type": "integer", "minimum": 1, "description": "which one when the text is there more than once; default 1"},
-          "where": {"type": "string", "enum": ["select", "before", "after"], "description": "default select"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state"
+          },
+          "text": {
+            "type": "string",
+            "description": "the text to find; empty selects nothing and puts the cursor at the start, or with where after, at the end"
+          },
+          "occurrence": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "which one when the text is there more than once; default 1"
+          },
+          "where": {
+            "type": "string",
+            "enum": [
+              "select",
+              "before",
+              "after"
+            ],
+            "description": "default select"
+          }
         },
-        "required": ["app", "element", "text"]
+        "required": [
+          "app",
+          "element",
+          "text"
+        ]
       }
     },
     {
@@ -149,17 +365,34 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "app": {"type": "string", "description": "app name, bundle identifier or process id"},
-          "element": {"type": "integer", "minimum": 1, "description": "element number from app_state"},
-          "action": {"type": "string", "description": "the action's name as listed"}
+          "app": {
+            "type": "string",
+            "description": "app name, bundle identifier or process id"
+          },
+          "element": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "element number from app_state"
+          },
+          "action": {
+            "type": "string",
+            "description": "the action's name as listed"
+          }
         },
-        "required": ["app", "element"]
+        "required": [
+          "app",
+          "element"
+        ]
       }
     },
     {
       "name": "read_clipboard",
       "description": "Read the text on the clipboard of the user's computer.",
-      "inputSchema": {"type": "object", "properties": {}, "required": []}
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
     },
     {
       "name": "write_clipboard",
@@ -167,9 +400,14 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "text": {"type": "string", "description": "the text, up to 2000 characters"}
+          "text": {
+            "type": "string",
+            "description": "the text, up to 2000 characters"
+          }
         },
-        "required": ["text"]
+        "required": [
+          "text"
+        ]
       }
     },
     {
@@ -185,14 +423,24 @@
             "items": {
               "type": "object",
               "properties": {
-                "tool": {"type": "string", "description": "a tool name, or wait"},
-                "arguments": {"type": "object", "description": "the tool's arguments"}
+                "tool": {
+                  "type": "string",
+                  "description": "a tool name, or wait"
+                },
+                "arguments": {
+                  "type": "object",
+                  "description": "the tool's arguments"
+                }
               },
-              "required": ["tool"]
+              "required": [
+                "tool"
+              ]
             }
           }
         },
-        "required": ["steps"]
+        "required": [
+          "steps"
+        ]
       }
     }
   ]
