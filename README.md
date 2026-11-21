@@ -10,9 +10,10 @@
 
 ## 提交插件
 
-1. 在 `plugins/` 下新建一个以插件名命名的目录，放入清单 `plugin.json` 和程序文件。
-2. 运行 `python3 scripts/build.py`。它检查清单，把插件打包到 `dist/`，并更新 `index.json`。
-3. 把 `plugins/`、`dist/`、`index.json` 的改动一起提交，发起 Pull Request。
+1. 在 `plugins/` 下新建一个以插件名命名的目录，放入清单 `plugin.json`、多语言说明 `i18n.json` 和程序文件。
+2. 在仓库根目录的 `authors.json` 中登记你的插件名与 GitHub 用户名（如 `"my-plugin": "your-github-username"`）。
+3. 运行 `python3 scripts/build.py`。它检查清单、作者与多语言说明，把插件打包到 `dist/`，并更新 `index.json`。
+4. 把 `plugins/`、`authors.json`、`dist/`、`index.json` 的改动一起提交，发起 Pull Request。
 
 修改已发布的插件时，必须同时提高 `plugin.json` 里的版本号。已发布版本的压缩包不会被改写；旧版本的压缩包可以从 `dist/` 删除。
 
@@ -46,10 +47,46 @@
 
 带有按系统编译的程序的插件，放在 `targets/<目标>/<插件名>/` 下，每个目标一份，目标为 `darwin-arm64`、`darwin-x64`、`linux-arm64`、`linux-x64`、`win32-arm64` 或 `win32-x64`。不分系统的插件放在 `plugins/` 下。
 
+### 作者归属 `authors.json`
+
+仓库根目录的 [`authors.json`](authors.json) 记录每个插件的作者 GitHub 用户名。`scripts/build.py` 会按维护者名单自动生成 `index.json` 的 `author` 字段：官方维护的插件展示为「Cage 官方」，社区贡献的插件直接展示贡献者的 GitHub 用户名。不要把作者字段写进 `plugin.json`（较早的 Cage 读取清单时不接受未知字段）。
+
+### 多国语言说明 `i18n.json`
+
+Cage 客户端会根据当前界面语言自动显示插件名称与说明（若未匹配到对应语言，则回退到 `plugin.json` 中的默认英文 `displayName` 和 `description`）。
+
+每个插件目录（含 `targets/<目标>/<插件名>/` 下的每个目标目录）都必须提供 `i18n.json`，完整包含 Cage 支持的全部 **15 种界面语言**；`scripts/build.py --check` 会校验语言是否齐全，并检查保留词与长度（`displayName` 不超过 80 字符，`description` 不超过 600 字符）：
+
+```json
+{
+  "zh-CN": {
+    "displayName": "系统状态",
+    "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+  },
+  "zh-TW": {
+    "displayName": "系統狀態",
+    "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+  }
+}
+```
+
+必须包含的 15 个语言代码（与 Cage 的 `languages.json` 一致）：
+
+| 语言代码 | 语言 | 语言代码 | 语言 | 语言代码 | 语言 |
+| --- | --- | --- | --- | --- | --- |
+| `zh-CN` | 简体中文 | `ko` | 한국어 | `prs` | دری |
+| `zh-TW` | 繁體中文 | `es` | Español | `am` | አማርኛ |
+| `ru` | Русский | `my` | မြန်မာဘာသာ | `so` | Soomaali |
+| `ar` | العربية | `be` | Беларуская | `ti` | ትግርኛ |
+| `fa` | فارسی | `ps` | پښتو | `fr` | Français |
+
+`plugin.json` 中的 `displayName` 和 `description` 请保持简洁的英文，不要把中英文混写在同一段里；多语言内容统一放在 `i18n.json` 中（同样不要写进 `plugin.json`，以兼容较早版本的 Cage）。
+
 ### 收录要求
 
 - 权限如实声明。插件做了清单没有声明的事，会被移除。
-- 工具的名称、说明和参数说明只描述工具做什么，不提及模型运行在哪里，也不出现本产品的名字或 VM、guest 之类的词。打包脚本只检查清单；工具的文字由应用在加载时检查，不合格的插件无法加载。
+- 必须填写作者与多语言说明：在 `authors.json` 登记有效的 GitHub 用户名，并在插件目录提供覆盖全部 15 种 Cage 界面语言的 `i18n.json`。
+- 工具的名称、说明、参数说明以及 `i18n.json` 的文案只描述工具做什么，不提及模型运行在哪里，也不出现本产品的名字或 VM、guest 之类的词。打包脚本会检查清单、`i18n.json` 和 `tools.json`；工具的文字由应用在加载时检查，不合格的插件无法加载。
 - 以 MIT 许可提交。本仓库采用 [MIT 许可](LICENSE)，提交插件即表示同意以该许可发布；插件带有第三方代码时，在插件目录里附上其许可。
 - 源码可读。不收录只有二进制文件或混淆代码的插件。
 - 插件目录里只有普通文件和文件夹，不含链接；打包后不超过 20 MB，解包后不超过 100 MB 且不超过 2000 个文件。
@@ -83,6 +120,8 @@
 | 插件 | 上游与版本 | 许可证 | 运行位置 | 依赖与启动方式 |
 | --- | --- | --- | --- | --- |
 | [`browser`](plugins/browser) | [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) 0.0.86 | Apache-2.0 | 环境内 | 环境自带 Node.js 与 Chromium（`npx` 固定版本） |
+| [`chrome-devtools`](plugins/chrome-devtools) | [ChromeDevTools/chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) 1.13.0 | Apache-2.0 | 环境内 | 环境自带 Node.js 与 Chromium（`launcher.py` + `npx` 固定版本） |
+| [`codex-dispatch`](plugins/codex-dispatch) | 社区自研（[@SLEEPYBQ](https://github.com/SLEEPYBQ)） | MIT | 这台电脑 | 本机 Node.js 22 与 Codex CLI |
 | [`excel-workbooks`](plugins/excel-workbooks) | [haris-musa/excel-mcp-server](https://github.com/haris-musa/excel-mcp-server) 2.3.2 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定，默认限定 `${PROJECT_DIR}`） |
 | [`word-documents`](plugins/word-documents) | [GongRzhe/Office-Word-MCP-Server](https://github.com/GongRzhe/Office-Word-MCP-Server) 1.1.11 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定；转 PDF 另需 LibreOffice） |
 | [`powerpoint-slides`](plugins/powerpoint-slides) | [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server) 2.0.7 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
@@ -103,11 +142,13 @@
   "plugins": [
     {
       "name": "clock",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "description": "Tells the current time on this computer.",
+      "author": { "name": "Lee-xeo", "official": true },
+      "i18n": { "zh-CN": { "displayName": "时钟", "description": "获取这台电脑上的当前时间。" } },
       "permissions": [],
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.1.tar.gz",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.4.tar.gz",
       "sha256": "…",
       "bytes": 887,
       "source": { "project": "上游项目，可选", "version": "…", "license": "MIT", "url": "https://…" }

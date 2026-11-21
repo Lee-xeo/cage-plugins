@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "Linux 桌面",
+    "description": "查看环境内的 Linux 桌面，并使用其中的鼠标和键盘来操作屏幕上显示的程序。"
+  },
+  "zh-TW": {
+    "displayName": "Linux 桌面",
+    "description": "檢視環境內的 Linux 桌面，並使用其中的滑鼠與鍵盤來操作畫面上顯示的程式。"
+  },
+  "ru": {
+    "displayName": "Рабочий стол Linux",
+    "description": "Просматривает рабочий стол Linux внутри среды и управляет его мышью и клавиатурой для работы с отображаемыми программами."
+  },
+  "ar": {
+    "displayName": "سطح مكتب Linux",
+    "description": "يعرض سطح مكتب Linux داخل البيئة ويستخدم فأرته ولوحة مفاتيحه للتعامل مع البرامج المعروضة هناك."
+  },
+  "fa": {
+    "displayName": "دسکتاپ Linux",
+    "description": "دسکتاپ Linux موجود در محیط را می‌بیند و با ماوس و صفحه‌کلید آن با برنامه‌های نمایش‌داده‌شده کار می‌کند."
+  },
+  "ko": {
+    "displayName": "Linux 데스크톱",
+    "description": "환경 내부의 Linux 데스크톱 화면을 보고 마우스와 키보드를 조작해 표시된 프로그램을 사용합니다."
+  },
+  "es": {
+    "displayName": "Escritorio Linux",
+    "description": "Ve el escritorio Linux del entorno y usa su ratón y teclado para trabajar con los programas que se muestran allí."
+  },
+  "my": {
+    "displayName": "Linux ဒက်စ်တော့",
+    "description": "ပတ်ဝန်းကျင်အတွင်းရှိ Linux ဒက်စ်တော့ကို ကြည့်ရှုပြီး ၎င်း၏ မောက်စ်နှင့် ကီးဘုတ်ဖြင့် ပြသထားသော ပရိုဂရမ်များကို အသုံးပြုသည်။"
+  },
+  "be": {
+    "displayName": "Працоўны стол Linux",
+    "description": "Бачыць працоўны стол Linux унутры асяроддзя і выкарыстоўвае яго мыш і клавіятуру для працы з паказанымі праграмамі."
+  },
+  "ps": {
+    "displayName": "د Linux ډېسکټاپ",
+    "description": "د چاپېریال دننه د Linux ډېسکټاپ ګوري او د هغه موږک او کیبورډ کاروي تر څو هلته ښکاره شوي پروګرامونه وکاروي."
+  },
+  "prs": {
+    "displayName": "دسکتاپ Linux",
+    "description": "دسکتاپ Linux داخل محیط را می‌بیند و از ماوس و کیبورد آن برای کار با برنامه‌های نمایش‌داده‌شده استفاده می‌کند."
+  },
+  "am": {
+    "displayName": "የLinux ዴስክቶፕ",
+    "description": "በአካባቢው ውስጥ ያለውን የLinux ዴስክቶፕ ያያል እንዲሁም እዚያ የሚታዩ ፕሮግራሞችን ለመጠቀም መዳፊቱንና ቁልፍ ሰሌዳውን ይጠቀማል።"
+  },
+  "so": {
+    "displayName": "Shaashadda Linux",
+    "description": "Waxay aragtaa shaashadda Linux ee deegaanka gudihiisa waxayna adeegsataa jiirkeeda iyo kiiboodhkeeda si ay ula shaqeyso barnaamijyada halkaas ka muuqda."
+  },
+  "ti": {
+    "displayName": "ደስክቶፕ Linux",
+    "description": "ኣብ ውሽጢ ከባቢ ዘሎ ደስክቶፕ Linux ይርኢ፡ ኣብኡ ዝርኣዩ ፕሮግራማት ንምጥቃም ድማ ማውስን ኪቦርድን ይጥቀም።"
+  },
+  "fr": {
+    "displayName": "Bureau Linux",
+    "description": "Voit le bureau Linux de l'environnement et utilise sa souris et son clavier pour interagir avec les programmes qui y sont affichés."
+  }
+}

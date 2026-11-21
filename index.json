@@ -3,13 +3,79 @@
   "plugins": [
     {
       "name": "blender",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
       "permissions": [
         "commands",
         "files",
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Blender",
+          "description": "操作本机已打开的 Blender：读取场景、创建和修改物体与材质、在 Blender 中运行 Python 以及截取视口画面。需在 Blender 中安装随附插件。"
+        },
+        "zh-TW": {
+          "displayName": "Blender",
+          "description": "操作本機已開啟的 Blender：讀取場景、建立與修改物件和材質、在 Blender 中執行 Python 以及擷取視埠畫面。需在 Blender 中安裝隨附外掛。"
+        },
+        "ru": {
+          "displayName": "Blender",
+          "description": "Работает с открытым Blender: читает сцену, создаёт и изменяет объекты и материалы, запускает Python в Blender и делает снимки вьюпорта. Требуется Blender со встроенным дополнением."
+        },
+        "ar": {
+          "displayName": "Blender",
+          "description": "يعمل مع تطبيق Blender المفتوح: يقرأ المشهد، وينشئ ويعدّل الكائنات والمواد، ويشغّل Python داخل Blender ويلتقط صور منفذ العرض. يتطلب Blender مع الإضافة المرفقة."
+        },
+        "fa": {
+          "displayName": "Blender",
+          "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و متریال‌ها را ایجاد و ویرایش می‌کند، پایتون را در Blender اجرا کرده و از نمای سه‌بعدی عکس می‌گیرد. نیازمند Blender و افزونه همراه است."
+        },
+        "ko": {
+          "displayName": "Blender",
+          "description": "열려 있는 Blender와 연동하여 장면을 읽고, 오브젝트와 재질을 생성·수정하며, Blender 내에서 Python을 실행하고 뷰포트를 캡처합니다. 포함된 애드온이 설치된 Blender가 필요합니다."
+        },
+        "es": {
+          "displayName": "Blender",
+          "description": "Trabaja con un Blender abierto: lee la escena, crea y modifica objetos y materiales, ejecuta Python en Blender y captura la vista. Requiere Blender con el complemento incluido."
+        },
+        "my": {
+          "displayName": "Blender",
+          "description": "ဖွင့်ထားသော Blender နှင့် တွဲဖက်အလုပ်လုပ်သည်- မြင်ကွင်းကိုဖတ်ခြင်း၊ အရာဝတ္ထုနှင့် ပစ္စည်းများ ဖန်တီးပြင်ဆင်ခြင်း၊ Blender အတွင်း Python run ခြင်းနှင့် viewport ပုံရိုက်ခြင်းတို့ လုပ်နိုင်သည်။ ပါဝင်သည့် add-on တပ်ဆင်ထားသော Blender လိုအပ်သည်။"
+        },
+        "be": {
+          "displayName": "Blender",
+          "description": "Працуе з адкрытым Blender: чытае сцэну, стварае і змяняе аб'екты і матэрыялы, выконвае Python у Blender і робіць здымкі акна прагляду. Патрабуецца Blender з дадаткам з камплекта."
+        },
+        "ps": {
+          "displayName": "Blender",
+          "description": "له خلاص شوي Blender سره کار کوي: صحنه لولي، شیان او مواد جوړوي او بدلوي، په Blender کې Python چلوي او د لید انځور اخلي. له ملګري افزونې سره Blender ته اړتیا لري."
+        },
+        "prs": {
+          "displayName": "Blender",
+          "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و مواد را ایجاد و تغییر می‌دهد، Python را در Blender اجرا می‌کند و از نمای دید عکس می‌گیرد. به Blender با افزونه همراه نیاز دارد."
+        },
+        "am": {
+          "displayName": "Blender",
+          "description": "ከተከፈተው Blender ጋር ይሰራል፦ ትዕይንቱን ያነባል፣ ቁሶችንና ቁሳቁሶችን ይፈጥራል ያስተካክላል፣ በBlender ውስጥ Python ያስኬዳል እንዲሁም የእይታ መስኮቱን ፎቶ ያነሳል። የተካተተው ተጨማሪ የተጫነበት Blender ያስፈልጋል።"
+        },
+        "so": {
+          "displayName": "Blender",
+          "description": "Waxay la shaqeysaa Blender furan: waxay akhrisaa goobta, waxay abuurtaa oo beddeshaa walxaha iyo agabyada, waxay ku socodsiisaa Python gudaha Blender waxayna qabataa sawirka muuqaalka. Waxay u baahan tahay Blender leh add-on-ka la socda."
+        },
+        "ti": {
+          "displayName": "Blender",
+          "description": "ምስ ዝተኸፍተ Blender ይሰርሕ፡ ትዕይንቲ የንብብ፡ ኣቕሑን ንዋትን ይፈጥርን ይቕይርን፡ ኣብ ውሽጢ Blender Python የካይድ፡ ካብ መርኣዪ ድማ ስእሊ የልዕል። ዝተሓወሰ ተወሳኺ ዘለዎ Blender የድሊ።"
+        },
+        "fr": {
+          "displayName": "Blender",
+          "description": "Interagit avec une instance ouverte de Blender : lit la scène, crée et modifie objets et matériaux, exécute du Python dans Blender et capture la vue. Nécessite Blender avec le module complémentaire fourni."
+        }
+      },
       "displayName": "Blender",
       "categories": [
         "productivity",
@@ -45,17 +111,83 @@
         "url": "https://github.com/ahujasid/blender-mcp"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/blender/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/blender-0.1.0.tar.gz",
-      "sha256": "78ac56449282f5931bb72f3227880aa5c3b87292ce455eef4cdb42bc2c4b1710",
-      "bytes": 18112
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/blender-0.1.1.tar.gz",
+      "sha256": "bcc35935154ccdd4451cdfc7af112a3e51dc9b34b11d1fd1aded37e1546e308c",
+      "bytes": 20666
     },
     {
       "name": "browser",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Opens web pages in a headless Chromium, reads them as an accessibility snapshot, and clicks, types, fills forms and takes screenshots.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "浏览器",
+          "description": "在无界面 Chromium 中打开网页，读取可访问性快照，并执行点击、输入、填表和截图。"
+        },
+        "zh-TW": {
+          "displayName": "瀏覽器",
+          "description": "在無介面 Chromium 中開啟網頁，讀取無障礙快照，並執行點擊、輸入、填表與截圖。"
+        },
+        "ru": {
+          "displayName": "Браузер",
+          "description": "Открывает веб-страницы в безголовом Chromium, читает снимок доступности, выполняет клики, ввод текста, заполнение форм и снимки экрана."
+        },
+        "ar": {
+          "displayName": "المتصفح",
+          "description": "يفتح صفحات الويب في متصفح Chromium بدون واجهة رسومية، ويقرأ لقطة إمكانية الوصول، وينقر ويكتب ويملأ النماذج ويلتقط لقطات شاشة."
+        },
+        "fa": {
+          "displayName": "مرورگر",
+          "description": "صفحات وب را در Chromium بدون رابط گرافیکی باز می‌کند، نمای دسترس‌پذیری را می‌خواند و کلیک، تایپ، پر کردن فرم و اسکرین‌شات را انجام می‌دهد."
+        },
+        "ko": {
+          "displayName": "브라우저",
+          "description": "헤드리스 Chromium에서 웹 페이지를 열고 접근성 스냅샷을 읽으며 클릭, 입력, 양식 작성 및 스크린샷 촬영을 수행합니다."
+        },
+        "es": {
+          "displayName": "Navegador",
+          "description": "Abre páginas web en un Chromium sin interfaz gráfica, lee su árbol de accesibilidad y realiza clics, escritura, relleno de formularios y capturas de pantalla."
+        },
+        "my": {
+          "displayName": "ဘရောက်ဇာ",
+          "description": "မျက်နှာပြင်မပါသော Chromium တွင် ဝဘ်စာမျက်နှာများ ဖွင့်ပြီး accessibility snapshot ဖတ်ခြင်း၊ ကလစ်နှိပ်ခြင်း၊ စာရိုက်ခြင်း၊ ဖောင်ဖြည့်ခြင်းနှင့် စခရင်ပုံရိုက်ခြင်းတို့ လုပ်ဆောင်သည်။"
+        },
+        "be": {
+          "displayName": "Браўзер",
+          "description": "Адкрывае вэб-старонкі ў Chromium без інтэрфейсу, чытае здымак даступнасці, выконвае клікі, увод тэксту, запаўненне форм і скрыншоты."
+        },
+        "ps": {
+          "displayName": "براوزر",
+          "description": "په بې‌مخ Chromium کې وېبپاڼې پرانیزي، د لاسرسي انځور لولي، او کلیک، ټایپ، د فورمو ډکول او سکرین‌شاټ اخیستل ترسره کوي."
+        },
+        "prs": {
+          "displayName": "مرورگر",
+          "description": "صفحات وب را در Chromium بدون رابط گرافیکی باز می‌کند، تصویر دسترسی‌پذیری آن‌ها را می‌خواند و کلیک، تایپ، پر کردن فرم و اسکرین‌شات انجام می‌دهد."
+        },
+        "am": {
+          "displayName": "አሳሽ",
+          "description": "ድረ-ገጾችን ያለ መስኮት በChromium ይከፍታል፣ የተደራሽነት ቅጽበታዊ እይታ ያነባል፣ እንዲሁም ጠቅ ያደርጋል፣ ይተይባል፣ ቅጾችን ይሞላል እና ቅጽበታዊ ገጽ እይታ ያነሳል።"
+        },
+        "so": {
+          "displayName": "Baraawsar",
+          "description": "Wuxuu boggaga webka ku furaa Chromium aan shaashad lahayn, wuxuu akhriyaa qaabka helitaanka, wuxuuna sameeyaa gujin, qoris, buuxinta foomamka iyo qaadista shaashadda."
+        },
+        "ti": {
+          "displayName": "መርበብ ሓበሬታ",
+          "description": "ኣብ ርእሲ ዘይብሉ Chromium መርበብ ገጻት ይኸፍት፡ ቅጽበታዊ ስእሊ ተበጻሕነት የንብብ፡ ከምኡውን ምጥዋቕ፡ ምጽሓፍ፡ ፎርም ምምላእን ቅጽበታዊ ስእሊ ምልዓልን ይፍጽም።"
+        },
+        "fr": {
+          "displayName": "Navigateur",
+          "description": "Ouvre des pages web dans un Chromium sans interface graphique, lit leur instantané d'accessibilité et effectue des clics, saisies, remplissages de formulaires et captures d'écran."
+        }
+      },
       "displayName": "Browser",
       "categories": [
         "network",
@@ -93,17 +225,82 @@
         "url": "https://github.com/microsoft/playwright-mcp"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/browser/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/browser-0.1.0.tar.gz",
-      "sha256": "66aa1c65c539df134e74d5a3b14e723b5091f261512592e23620cbfe0124c8d9",
-      "bytes": 5859
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/browser-0.1.1.tar.gz",
+      "sha256": "dc2b4bc121fb6e59b5ab4b6ac5d1a8dbae02f4043fa803cc1dc73afe22666c2d",
+      "bytes": 7899
     },
     {
       "name": "chrome-devtools",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Debugs web pages in a headless Chromium with DevTools: console messages, network requests, performance traces, Lighthouse audits, CSS styles, memory snapshots, device emulation and page input.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "caihao373-star"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Chrome DevTools",
+          "description": "在无界面 Chromium 中使用 DevTools 调试网页：查看控制台消息和网络请求、录制性能跟踪、运行 Lighthouse 审计、检查 CSS 样式、抓取内存堆快照、模拟设备及交互操作。"
+        },
+        "zh-TW": {
+          "displayName": "Chrome DevTools",
+          "description": "在無介面 Chromium 中使用 DevTools 偵錯網頁：檢視主控台訊息與網路請求、錄製效能追蹤、執行 Lighthouse 稽核、檢查 CSS 樣式、擷取記憶體堆積快照、模擬裝置與頁面操作。"
+        },
+        "ru": {
+          "displayName": "Chrome DevTools",
+          "description": "Отлаживает веб-страницы в безголовом Chromium через DevTools: консоль, сетевые запросы, трассировка производительности, аудит Lighthouse, стили CSS, снимки памяти, эмуляция устройств и ввод."
+        },
+        "ar": {
+          "displayName": "Chrome DevTools",
+          "description": "يصحح صفحات الويب في Chromium بدون واجهة باستخدام DevTools: رسائل وحدة التحكم، طلبات الشبكة، تتبع الأداء، تدقيق Lighthouse، أنماط CSS، لقطات الذاكرة، محاكاة الأجهزة والتفاعل مع الصفحة."
+        },
+        "fa": {
+          "displayName": "Chrome DevTools",
+          "description": "صفحات وب را در Chromium بدون رابط با DevTools اشکال‌زدایی می‌کند: پیام‌های کنسول، درخواست‌های شبکه، ردیابی عملکرد، ممیزی Lighthouse، استایل‌های CSS، اسنپ‌شات حافظه، شبیه‌سازی دستگاه و تعامل با صفحه."
+        },
+        "ko": {
+          "displayName": "Chrome DevTools",
+          "description": "헤드리스 Chromium에서 DevTools로 웹 페이지를 디버깅합니다: 콘솔 메시지, 네트워크 요청, 성능 추적, Lighthouse 감사, CSS 스타일, 메모리 스냅샷, 기기 에뮬레이션 및 페이지 입력."
+        },
+        "es": {
+          "displayName": "Chrome DevTools",
+          "description": "Depura páginas web en un Chromium sin interfaz con DevTools: mensajes de consola, solicitudes de red, trazas de rendimiento, auditorías Lighthouse, estilos CSS, volcados de memoria, emulación de dispositivos e interacción."
+        },
+        "my": {
+          "displayName": "Chrome DevTools",
+          "description": "မျက်နှာပြင်မပါသော Chromium တွင် DevTools ဖြင့် ဝဘ်စာမျက်နှာများ စစ်ဆေးပြင်ဆင်သည်- console မက်ဆေ့ချ်၊ ကွန်ရက်တောင်းဆိုမှု၊ စွမ်းဆောင်ရည်ခြေရာခံမှု၊ Lighthouse စစ်ဆေးမှု၊ CSS စတိုင်၊ မန်မိုရီပုံရိပ်၊ စက်တုပခြင်းနှင့် စာမျက်နှာထည့်သွင်းမှု။"
+        },
+        "be": {
+          "displayName": "Chrome DevTools",
+          "description": "Адладжвае вэб-старонкі ў безінтэрфейсным Chromium праз DevTools: паведамленні кансолі, сеткавыя запыты, трасіроўка прадукцыйнасці, аўдыт Lighthouse, стылі CSS, здымкі памяці, эмуляцыя прылад і ўвод."
+        },
+        "ps": {
+          "displayName": "Chrome DevTools",
+          "description": "په بې‌مخ Chromium کې د DevTools له لارې وېبپاڼې تېروتنه مومي: د کنسول پیغامونه، د شبکې غوښتنې، د فعالیت تعقیب، د Lighthouse پلټنه، د CSS سټایلونه، د حافظې انځورونه، د وسیلې تقلید او د پاڼې کارول."
+        },
+        "prs": {
+          "displayName": "Chrome DevTools",
+          "description": "صفحات وب را در Chromium بدون رابط با DevTools اشکال‌زدایی می‌کند: پیام‌های کنسول، درخواست‌های شبکه، ردیابی کارایی، ارزیابی Lighthouse، استایل‌های CSS، عکس‌های حافظه، شبیه‌سازی دستگاه و ورودی صفحه."
+        },
+        "am": {
+          "displayName": "Chrome DevTools",
+          "description": "ድረ-ገጾችን በDevTools ያለ መስኮት በChromium ውስጥ ያርማል፦ የኮንሶል መልእክቶች፣ የኔትወርክ ጥያቄዎች፣ የአፈጻጸም ክትትል፣ የLighthouse ኦዲት፣ የCSS ቅጦች፣ የማህደረ ትውስታ ቅጽበታዊ ገጽታዎች፣ የመሣሪያ ማስመሰል እና የገጽ ግብዓት።"
+        },
+        "so": {
+          "displayName": "Chrome DevTools",
+          "description": "Wuxuu boggaga webka ku baaraa Chromium aan shaashad lahayn isagoo adeegsanaya DevTools: fariimaha konsoolka, codsiyada shabakadda, raad-raaca waxqabadka, hubinta Lighthouse, qaababka CSS, sawirrada xusuusta, jilitaanka qalabka iyo gelinta bogga."
+        },
+        "ti": {
+          "displayName": "Chrome DevTools",
+          "description": "ኣብ ርእሲ ዘይብሉ Chromium ብDevTools መርበብ ገጻት ይምርምር፡ መልእኽትታት ኮንሶል፡ ሕቶታት መርበብ፡ ምክትታል ብቕዓት፡ ኦዲት Lighthouse፡ ቅዲ CSS፡ ቅጽበታዊ ስእሊ ዝኽሪ፡ ምምሳል መሳርሕን ምትእትታው ገጽን።"
+        },
+        "fr": {
+          "displayName": "Chrome DevTools",
+          "description": "Débogue des pages web dans un Chromium sans interface avec DevTools : messages console, requêtes réseau, traces de performance, audits Lighthouse, styles CSS, instantanés mémoire, émulation d'appareils et interactions."
+        }
+      },
       "displayName": "Chrome DevTools",
       "categories": [
         "developer",
@@ -132,15 +329,81 @@
         "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/chrome-devtools/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/chrome-devtools-0.1.0.tar.gz",
-      "sha256": "ce5355a650c3b5ecc37fd5ef342190bb1d1e8ed05c0a43c937d92e523862f5aa",
-      "bytes": 19370
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/chrome-devtools-0.1.1.tar.gz",
+      "sha256": "1d2bd3f26ac6417a80014a0ac097a435f8e11488136c574f44ad905ebd48618d",
+      "bytes": 21936
     },
     {
       "name": "clock",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "description": "Tells the current time on this computer.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "时钟",
+          "description": "获取这台电脑上的当前时间。"
+        },
+        "zh-TW": {
+          "displayName": "時鐘",
+          "description": "取得這台電腦上的目前時間。"
+        },
+        "ru": {
+          "displayName": "Часы",
+          "description": "Сообщает текущее время на этом компьютере."
+        },
+        "ar": {
+          "displayName": "الساعة",
+          "description": "يعرض الوقت الحالي على هذا الكمبيوتر."
+        },
+        "fa": {
+          "displayName": "ساعت",
+          "description": "زمان کنونی این رایانه را گزارش می‌دهد."
+        },
+        "ko": {
+          "displayName": "시계",
+          "description": "이 컴퓨터의 현재 시각을 알려줍니다."
+        },
+        "es": {
+          "displayName": "Reloj",
+          "description": "Informa la hora actual en este equipo."
+        },
+        "my": {
+          "displayName": "နာရီ",
+          "description": "ဤကွန်ပျူတာရှိ လက်ရှိအချိန်ကို ပြောပြသည်။"
+        },
+        "be": {
+          "displayName": "Гадзіннік",
+          "description": "Паведамляе бягучы час на гэтым камп'ютары."
+        },
+        "ps": {
+          "displayName": "ساعت",
+          "description": "په دې کمپیوټر کې اوسنی وخت ښيي."
+        },
+        "prs": {
+          "displayName": "ساعت",
+          "description": "زمان فعلی این کمپیوتر را نشان می‌دهد."
+        },
+        "am": {
+          "displayName": "ሰዓት",
+          "description": "በዚህ ኮምፒውተር ላይ ያለውን የአሁኑን ሰዓት ይነግራል።"
+        },
+        "so": {
+          "displayName": "Saacad",
+          "description": "Waxay sheegtaa waqtiga hadda ka jira kombiyuutarkan."
+        },
+        "ti": {
+          "displayName": "ሰዓት",
+          "description": "ኣብዛ ኮምፒተር ዘሎ ህሉው ሰዓት ይነግር።"
+        },
+        "fr": {
+          "displayName": "Horloge",
+          "description": "Indique l'heure actuelle sur cet ordinateur."
+        }
+      },
       "platforms": [
         "darwin",
         "linux"
@@ -150,19 +413,84 @@
       ],
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3.tar.gz",
-      "sha256": "317e889044234bec059964fc82b5d3d635c382e379b542fffb810c18aabe98f0",
-      "bytes": 1104
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.4.tar.gz",
+      "sha256": "263f9ff344ace131a3bcaec45f968e09a7db2bf62562a57f6c4ab4dc3b716ff2",
+      "bytes": 2081
     },
     {
       "name": "codex-dispatch",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Delegate a read-only project review to Codex, select a model, and check or cancel the task.",
       "permissions": [
         "files",
         "commands",
         "network"
       ],
+      "author": {
+        "name": "SLEEPYBQ"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Codex 审查调度",
+          "description": "将当前项目的只读代码审查任务交给本机 Codex，支持选择模型与推理强度，并随时查询进度或取消任务。"
+        },
+        "zh-TW": {
+          "displayName": "Codex 審查調度",
+          "description": "將目前專案的唯讀程式碼審查任務交給本機 Codex，支援選擇模型與推理強度，並隨時查詢進度或取消任務。"
+        },
+        "ru": {
+          "displayName": "Codex Dispatch",
+          "description": "Передаёт локальному Codex проверку проекта в режиме только чтения с выбором модели, отслеживанием прогресса и отменой задачи."
+        },
+        "ar": {
+          "displayName": "Codex Dispatch",
+          "description": "يفوّض مراجعة مشروع للقراءة فقط إلى Codex، مع اختيار النموذج ومتابعة حالة المهمة أو إلغائها."
+        },
+        "fa": {
+          "displayName": "Codex Dispatch",
+          "description": "بررسی فقط‌خواندنی پروژه را به Codex می‌سپارد، امکان انتخاب مدل را فراهم می‌کند و وضعیت کار را پیگیری یا لغو می‌کند."
+        },
+        "ko": {
+          "displayName": "Codex Dispatch",
+          "description": "읽기 전용 프로젝트 코드 리뷰를 Codex에 위임하고, 모델을 선택하며 작업 상태를 확인하거나 취소합니다."
+        },
+        "es": {
+          "displayName": "Codex Dispatch",
+          "description": "Delega una revisión de solo lectura del proyecto a Codex, permite elegir el modelo y consultar o cancelar la tarea."
+        },
+        "my": {
+          "displayName": "Codex Dispatch",
+          "description": "ဖတ်ရုံသာ ပရောဂျက်စစ်ဆေးမှုကို Codex ထံ လွှဲအပ်ပြီး မော်ဒယ်ရွေးချယ်ခြင်း၊ အလုပ်အခြေအနေ စစ်ဆေးခြင်း သို့မဟုတ် ပယ်ဖျက်ခြင်းတို့ လုပ်နိုင်သည်။"
+        },
+        "be": {
+          "displayName": "Codex Dispatch",
+          "description": "Даручае Codex праверку праекта ў рэжыме толькі для чытання, дазваляе выбраць мадэль, правяраць ход або адмяняць задачу."
+        },
+        "ps": {
+          "displayName": "Codex Dispatch",
+          "description": "د پروژې یوازې لوستلو بیاکتنه Codex ته سپاري، ماډل ټاکي او د دندې حالت ګوري یا یې لغوه کوي."
+        },
+        "prs": {
+          "displayName": "Codex Dispatch",
+          "description": "بررسی فقط‌خواندنی پروژه را به Codex واگذار می‌کند، مدل را انتخاب می‌کند و وضعیت کار را بررسی یا لغو می‌نماید."
+        },
+        "am": {
+          "displayName": "Codex Dispatch",
+          "description": "የንባብ ብቻ የፕሮጀክት ግምገማን ለCodex ይሰጣል፣ ሞዴል ይመርጣል፣ እንዲሁም የሥራውን ሂደት ያረጋግጣል ወይም ይሰርዛል።"
+        },
+        "so": {
+          "displayName": "Codex Dispatch",
+          "description": "Wuxuu u xilsaaraa Codex dib-u-eegista mashruuca ee akhriska oo keliya, wuxuu doortaa moodalka, wuuna hubiyaa ama joojiyaa hawsha."
+        },
+        "ti": {
+          "displayName": "Codex Dispatch",
+          "description": "ንንባብ ጥራይ ዝኾነ ግምገማ ፕሮጀክት ናብ Codex የመሓላልፍ፡ ሞዴል ይመርጽ፡ ከምኡውን ኩነታት ዕዮ ይከታተል ወይ ይስርዝ።"
+        },
+        "fr": {
+          "displayName": "Codex Dispatch",
+          "description": "Délègue une revue en lecture seule du projet à Codex, permet de choisir le modèle et de suivre ou d'annuler la tâche."
+        }
+      },
       "displayName": "Codex Dispatch",
       "platforms": [
         "darwin",
@@ -189,18 +517,84 @@
       },
       "runtime": "node",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/codex-dispatch/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-dispatch-0.1.1.tar.gz",
-      "sha256": "99d5960174ca7de7daa4b0d9e8595f926145e9782ed03982572c087067a00502",
-      "bytes": 12820
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-dispatch-0.1.2.tar.gz",
+      "sha256": "912668555d9f701206531f8a9124e4cecb671c49af47b143d66784a5af4bd728",
+      "bytes": 14604
     },
     {
       "name": "desktop-control",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "桌面控制",
+          "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+        },
+        "zh-TW": {
+          "displayName": "桌面控制",
+          "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
       "platforms": [
         "darwin"
       ],
@@ -209,17 +603,83 @@
       ],
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1.tar.gz",
-      "sha256": "5d7c315f8c110752cc3b2ab6c31b8ea7b849dba77749a6c9fce789c63ae7cbbb",
-      "bytes": 15294
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.2.tar.gz",
+      "sha256": "92997ce568ccadfa79097edff8e51026fa7ae193d1b3a887e4651bf83895da69",
+      "bytes": 16783
     },
     {
       "name": "documents-to-markdown",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Reads, outlines and searches PDF, Word, Excel, PowerPoint, EPUB and HTML documents as clean Markdown.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "文档转 Markdown",
+          "description": "将 PDF、Word、Excel、PowerPoint、EPUB 和 HTML 文档读取、提取大纲并搜索为整洁的 Markdown。"
+        },
+        "zh-TW": {
+          "displayName": "文件轉 Markdown",
+          "description": "將 PDF、Word、Excel、PowerPoint、EPUB 與 HTML 文件讀取、擷取大綱並搜尋為整潔的 Markdown。"
+        },
+        "ru": {
+          "displayName": "Документы в Markdown",
+          "description": "Читает, строит оглавление и ищет по документам PDF, Word, Excel, PowerPoint, EPUB и HTML в виде чистого Markdown."
+        },
+        "ar": {
+          "displayName": "تحويل المستندات إلى Markdown",
+          "description": "يقرأ مستندات PDF وWord وExcel وPowerPoint وEPUB وHTML ويلخّص هيكلها ويبحث فيها بصيغة Markdown منظّمة."
+        },
+        "fa": {
+          "displayName": "تبدیل اسناد به Markdown",
+          "description": "اسناد PDF، Word، Excel، PowerPoint، EPUB و HTML را به صورت Markdown تمیز می‌خواند، فهرست‌بندی و جستجو می‌کند."
+        },
+        "ko": {
+          "displayName": "문서 Markdown 변환",
+          "description": "PDF, Word, Excel, PowerPoint, EPUB, HTML 문서를 깔끔한 Markdown으로 읽고 개요를 추출하며 검색합니다."
+        },
+        "es": {
+          "displayName": "Documentos a Markdown",
+          "description": "Lee, esquematiza y busca en documentos PDF, Word, Excel, PowerPoint, EPUB y HTML como Markdown limpio."
+        },
+        "my": {
+          "displayName": "စာရွက်စာတမ်းမှ Markdown သို့",
+          "description": "PDF၊ Word၊ Excel၊ PowerPoint၊ EPUB နှင့် HTML စာရွက်စာတမ်းများကို သန့်ရှင်းသော Markdown အဖြစ် ဖတ်ခြင်း၊ အကျဉ်းချုပ်ထုတ်ခြင်းနှင့် ရှာဖွေခြင်းတို့ ပြုလုပ်သည်။"
+        },
+        "be": {
+          "displayName": "Дакументы ў Markdown",
+          "description": "Чытае, стварае структуру і шукае ў дакументах PDF, Word, Excel, PowerPoint, EPUB і HTML у выглядзе чыстага Markdown."
+        },
+        "ps": {
+          "displayName": "اسناد Markdown ته",
+          "description": "د PDF، Word، Excel، PowerPoint، EPUB او HTML اسناد د پاک Markdown په بڼه لولي، لنډیز یې جوړوي او پلټنه پکې کوي."
+        },
+        "prs": {
+          "displayName": "اسناد به Markdown",
+          "description": "اسناد PDF، Word، Excel، PowerPoint، EPUB و HTML را به شکل Markdown منظم می‌خواند، فهرست می‌سازد و جستجو می‌کند."
+        },
+        "am": {
+          "displayName": "ሰነዶች ወደ Markdown",
+          "description": "የPDF፣ Word፣ Excel፣ PowerPoint፣ EPUB እና HTML ሰነዶችን እንደ ንጹህ Markdown ያነባል፣ ዝርዝር ያወጣል እንዲሁም ይፈልጋል።"
+        },
+        "so": {
+          "displayName": "Dukumentiyada loo beddelo Markdown",
+          "description": "Waxay akhrisaa, soo koobtaa oo ka baartaa dukumentiyada PDF, Word, Excel, PowerPoint, EPUB iyo HTML iyagoo ah Markdown nadiif ah."
+        },
+        "ti": {
+          "displayName": "ሰነዳት ናብ Markdown",
+          "description": "ሰነዳት PDF፡ Word፡ Excel፡ PowerPoint፡ EPUB ከምኡውን HTML ከም ጽሩይ Markdown የንብብ፡ ሓፈሻዊ መስመር የውጽእን ይደልን።"
+        },
+        "fr": {
+          "displayName": "Documents vers Markdown",
+          "description": "Lit, structure et recherche dans des documents PDF, Word, Excel, PowerPoint, EPUB et HTML sous forme de Markdown propre."
+        }
+      },
       "displayName": "Documents to Markdown",
       "categories": [
         "files",
@@ -248,15 +708,81 @@
         "url": "https://github.com/SylphxAI/anymd"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/documents-to-markdown/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.1.tar.gz",
-      "sha256": "d616414f034986777349ef93f77f11e77fc53824e542fcdf53cd98e05822528f",
-      "bytes": 12283
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.2.tar.gz",
+      "sha256": "7a527ab11c201603bdbe61067d5efc44a6cab727273a9cc8365483ef5aecd5f5",
+      "bytes": 13753
     },
     {
       "name": "excel-workbooks",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Creates, reads and edits Excel workbooks (.xlsx): cells, formulas, formatting, charts, pivot tables and sheets. Microsoft Excel is not needed.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Excel 工作簿",
+          "description": "创建、读取和编辑 Excel 工作簿（.xlsx）：单元格、公式、格式、图表、数据透视表与工作表。无需安装 Microsoft Excel。"
+        },
+        "zh-TW": {
+          "displayName": "Excel 活頁簿",
+          "description": "建立、讀取與編輯 Excel 活頁簿（.xlsx）：儲存格、公式、格式、圖表、樞紐分析表與工作表。無需安裝 Microsoft Excel。"
+        },
+        "ru": {
+          "displayName": "Книги Excel",
+          "description": "Создаёт, читает и редактирует книги Excel (.xlsx): ячейки, формулы, форматирование, диаграммы, сводные таблицы и листы. Microsoft Excel не требуется."
+        },
+        "ar": {
+          "displayName": "مصنفات Excel",
+          "description": "ينشئ مصنفات Excel (.xlsx) ويقرأها ويعدلها: الخلايا والصيغ والتنسيق والمخططات والجداول المحورية والأوراق. لا يتطلب Microsoft Excel."
+        },
+        "fa": {
+          "displayName": "کارپوشه‌های Excel",
+          "description": "فایل‌های Excel (.xlsx) را ایجاد، خواندن و ویرایش می‌کند: سلول‌ها، فرمول‌ها، قالب‌بندی، نمودارها، جداول محوری و کاربرگ‌ها. بدون نیاز به Microsoft Excel."
+        },
+        "ko": {
+          "displayName": "Excel 통합 문서",
+          "description": "Excel 통합 문서(.xlsx)를 생성·읽기·편집합니다: 셀, 수식, 서식, 차트, 피벗 테이블, 시트. Microsoft Excel이 필요하지 않습니다."
+        },
+        "es": {
+          "displayName": "Libros de Excel",
+          "description": "Crea, lee y edita libros de Excel (.xlsx): celdas, fórmulas, formato, gráficos, tablas dinámicas y hojas. No requiere Microsoft Excel."
+        },
+        "my": {
+          "displayName": "Excel စာရင်းဇယားများ",
+          "description": "Excel ဖိုင်များ (.xlsx) ကို ဖန်တီးခြင်း၊ ဖတ်ခြင်းနှင့် ပြင်ဆင်ခြင်း- ဆဲလ်များ၊ ဖော်မြူလာများ၊ ပုံစံချခြင်း၊ ဇယားပုံများ၊ pivot table နှင့် စာမျက်နှာများ။ Microsoft Excel မလိုအပ်ပါ။"
+        },
+        "be": {
+          "displayName": "Кнігі Excel",
+          "description": "Стварае, чытае і рэдагуе кнігі Excel (.xlsx): ячэйкі, формулы, фарматаванне, дыяграмы, зводныя табліцы і аркушы. Microsoft Excel не патрабуецца."
+        },
+        "ps": {
+          "displayName": "د Excel کارکتابونه",
+          "description": "د Excel فایلونه (.xlsx) جوړوي، لولي او سموي: حجرې، فورمولونه، بڼه، چارټونه، پېوټ جدولونه او پاڼې. Microsoft Excel ته اړتیا نشته."
+        },
+        "prs": {
+          "displayName": "کتابچه‌های Excel",
+          "description": "فایل‌های Excel (.xlsx) را ایجاد، خواندن و ویرایش می‌کند: حجره‌ها، فرمول‌ها، قالب‌بندی، چارت‌ها، جداول محوری و ورق‌ها. به Microsoft Excel نیاز نیست."
+        },
+        "am": {
+          "displayName": "የExcel የሥራ መጽሐፍት",
+          "description": "የExcel የሥራ መጽሐፍትን (.xlsx) ይፈጥራል፣ ያነባል እና ያርማል፦ ሕዋሳት፣ ቀመሮች፣ ቅርጸት፣ ገበታዎች፣ ፒቮት ሰንጠረዦች እና ሉሆች። Microsoft Excel አያስፈልግም።"
+        },
+        "so": {
+          "displayName": "Buugaagta Excel",
+          "description": "Waxay abuurtaa, akhrisaa oo tafatirtaa faylasha Excel (.xlsx): unugyada, qaacidooyinka, qaabeynta, jaantusyada, miisaska pivot iyo waraaqaha. Looma baahna Microsoft Excel."
+        },
+        "ti": {
+          "displayName": "መጻሕፍቲ ስራሕ Excel",
+          "description": "ፋይላት Excel (.xlsx) ይፈጥር፡ የንብብን ይኣርምን፡ ዋህዮታት፡ ፎርሙላታት፡ ቅርጺ፡ ቻርታት፡ ፒቮት ሰደቓታትን ገጻትን። Microsoft Excel ኣየድልን።"
+        },
+        "fr": {
+          "displayName": "Classeurs Excel",
+          "description": "Crée, lit et modifie des classeurs Excel (.xlsx) : cellules, formules, mise en forme, graphiques, tableaux croisés dynamiques et feuilles. Microsoft Excel n'est pas nécessaire."
+        }
+      },
       "displayName": "Excel Workbooks",
       "categories": [
         "productivity",
@@ -287,15 +813,81 @@
         "url": "https://github.com/haris-musa/excel-mcp-server"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/excel-workbooks/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/excel-workbooks-0.2.0.tar.gz",
-      "sha256": "3801270fb8316e78a98f116e700c386a45347ec0366f94bf1bb05e2093c71911",
-      "bytes": 33039
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/excel-workbooks-0.2.1.tar.gz",
+      "sha256": "c42527ad3e88453c492a8d8ebed623d08dcf4cc9e2df4c32e015123a7bb76aeb",
+      "bytes": 34935
     },
     {
       "name": "git-repository",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Git 仓库",
+          "description": "读取和管理 Git 仓库：查看状态、差异对比、提交日志、分支、暂存、提交以及查看对象内容。"
+        },
+        "zh-TW": {
+          "displayName": "Git 儲存庫",
+          "description": "讀取與管理 Git 儲存庫：檢視狀態、差異比對、提交日誌、分支、暫存、提交以及檢視物件內容。"
+        },
+        "ru": {
+          "displayName": "Репозиторий Git",
+          "description": "Читает и управляет репозиториями Git: статус, диффы, журнал коммитов, ветки, индексация, коммиты и просмотр объектов."
+        },
+        "ar": {
+          "displayName": "مستودع Git",
+          "description": "يقرأ مستودعات Git ويديرها: الحالة والفروقات وسجل الالتزامات والفروع والتهيئة والالتزام وعرض الكائنات."
+        },
+        "fa": {
+          "displayName": "مخزن Git",
+          "description": "مخازن Git را می‌خواند و مدیریت می‌کند: وضعیت، تفاوت‌ها، تاریخچه کامیت‌ها، شاخه‌ها، آماده‌سازی، کامیت و نمایش اشیا."
+        },
+        "ko": {
+          "displayName": "Git 저장소",
+          "description": "Git 저장소를 읽고 관리합니다: 상태, 변경 차이(diff), 커밋 로그, 브랜치, 스테이징, 커밋 및 개체 보기."
+        },
+        "es": {
+          "displayName": "Repositorio Git",
+          "description": "Lee y gestiona repositorios Git: estado, diferencias, historial de commits, ramas, preparación, confirmaciones e inspección de objetos."
+        },
+        "my": {
+          "displayName": "Git သိုလှောင်ရုံ",
+          "description": "Git repository များကို ဖတ်ရှုစီမံသည်- အခြေအနေ၊ diff များ၊ commit မှတ်တမ်း၊ branch များ၊ stage လုပ်ခြင်း၊ commit လုပ်ခြင်းနှင့် object များကြည့်ခြင်း။"
+        },
+        "be": {
+          "displayName": "Рэпазіторый Git",
+          "description": "Чытае і кіруе рэпазіторыямі Git: статус, розніцы, журнал камітаў, галіны, індэксацыя, каміты і прагляд аб'ектаў."
+        },
+        "ps": {
+          "displayName": "د Git زېرمه",
+          "description": "د Git زېرمې لولي او اداره کوي: حالت، توپیرونه، د کمېټ تاریخچه، څانګې، چمتو کول، کمېټ کول او د شیانو ښودل."
+        },
+        "prs": {
+          "displayName": "مخزن Git",
+          "description": "مخازن Git را می‌خواند و مدیریت می‌کند: وضعیت، تفاوت‌ها، گزارش کمیت‌ها، شاخه‌ها، آماده‌سازی، کمیت و نمایش اشیا."
+        },
+        "am": {
+          "displayName": "የGit ማከማቻ",
+          "description": "የGit ማከማቻዎችን ያነባል እና ያስተዳድራል፦ ሁኔታ፣ ልዩነቶች፣ የኮሚት ታሪክ፣ ቅርንጫፎች፣ ማዘጋጀት፣ ኮሚት ማድረግ እና ቁሶችን ማሳየት።"
+        },
+        "so": {
+          "displayName": "Kaydka Git",
+          "description": "Waxay akhrisaa oo maamushaa kaydadka Git: xaaladda, kala duwanaanshaha, diiwaanka commit-yada, laamaha, diyaarinta, commit-ka iyo muujinta walxaha."
+        },
+        "ti": {
+          "displayName": "መኽዘን Git",
+          "description": "መኽዘናት Git የንብብን የመሓድርን፡ ኩነታት፡ ፍልልያት፡ መዝገብ ኮሚት፡ ጨናፍር፡ ምድላው፡ ኮሚት ምግባርን ኣቕሑ ምርኣይን።"
+        },
+        "fr": {
+          "displayName": "Dépôt Git",
+          "description": "Lit et gère des dépôts Git : état, diffs, journal des commits, branches, indexation, commits et affichage des objets."
+        }
+      },
       "displayName": "Git Repository",
       "categories": [
         "developer"
@@ -323,15 +915,81 @@
         "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/git"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/git-repository/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.1.tar.gz",
-      "sha256": "e0fae8d87cda658056ab7e9d2c0bae3cd785e14f55b8ef6c816de0ce8fc76627",
-      "bytes": 18669
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.2.tar.gz",
+      "sha256": "90ee73943ca207b2e5f372662f898339e81566673a4c70b0dad49b252049ab74",
+      "bytes": 20520
     },
     {
       "name": "knowledge-memory",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "知识记忆",
+          "description": "跨对话维护一个本地持久化的知识图谱，记录实体、关系与观察笔记。"
+        },
+        "zh-TW": {
+          "displayName": "知識記憶",
+          "description": "跨對話維護一個本機持久化的知識圖譜，記錄實體、關聯與觀察筆記。"
+        },
+        "ru": {
+          "displayName": "Память знаний",
+          "description": "Поддерживает локальный постоянный граф знаний из сущностей, связей и наблюдений между беседами."
+        },
+        "ar": {
+          "displayName": "ذاكرة المعرفة",
+          "description": "يحتفظ برسم بياني معرفي محلي دائم للكيانات والعلاقات والملاحظات عبر المحادثات."
+        },
+        "fa": {
+          "displayName": "حافظه دانش",
+          "description": "یک گراف دانش محلی و پایدار از موجودیت‌ها، روابط و یادداشت‌ها را در سراسر گفتگوها نگهداری می‌کند."
+        },
+        "ko": {
+          "displayName": "지식 메모리",
+          "description": "대화 전반에 걸쳐 엔터티, 관계, 관찰 내용을 기록하는 로컬 영구 지식 그래프를 유지합니다."
+        },
+        "es": {
+          "displayName": "Memoria de conocimiento",
+          "description": "Mantiene un grafo de conocimiento local persistente de entidades, relaciones y observaciones entre conversaciones."
+        },
+        "my": {
+          "displayName": "အသိပညာ မှတ်ဉာဏ်",
+          "description": "စကားဝိုင်းများတစ်လျှောက် အကြောင်းအရာများ၊ ဆက်နွှယ်မှုများနှင့် မှတ်ချက်များကို စက်အတွင်း အမြဲတမ်းသိမ်းဆည်းထားသော knowledge graph တစ်ခုကို ထိန်းသိမ်းသည်။"
+        },
+        "be": {
+          "displayName": "Памяць ведаў",
+          "description": "Падтрымлівае лакальны пастаянны граф ведаў з сутнасцяў, сувязяў і назіранняў паміж размовамі."
+        },
+        "ps": {
+          "displayName": "د پوهې حافظه",
+          "description": "د خبرو اترو ترمنځ د بنسټونو، اړیکو او کتنو یو سیمه‌ییز تلپاتې د پوهې ګراف ساتي."
+        },
+        "prs": {
+          "displayName": "حافظه دانش",
+          "description": "یک گراف دانش محلی و پایدار از موجودیت‌ها، روابط و مشاهدات را در طول گفتگوها نگهداری می‌کند."
+        },
+        "am": {
+          "displayName": "የእውቀት ማህደረ ትውስታ",
+          "description": "በውይይቶች መካከል የአካላት፣ የግንኙነቶች እና የምልከታዎች ቋሚ የአካባቢ እውቀት ግራፍን ይጠብቃል።"
+        },
+        "so": {
+          "displayName": "Xusuusta Aqoonta",
+          "description": "Waxay ilaalisaa garaaf aqoon maxalli ah oo joogto ah oo ka kooban hay'ado, xiriirro iyo kormeerro laga wadaago wada-hadallada."
+        },
+        "ti": {
+          "displayName": "ዝኽሪ ፍልጠት",
+          "description": "ኣብ መንጎ ዝርርባት ኣካላት፡ ርክባትን ርእይቶታትን ዝምዝግብ ቀዋሚ ከባብያዊ ግራፍ ፍልጠት ይሕሉ።"
+        },
+        "fr": {
+          "displayName": "Mémoire de connaissances",
+          "description": "Maintient un graphe de connaissances local persistant d'entités, de relations et d'observations au fil des conversations."
+        }
+      },
       "displayName": "Knowledge Memory",
       "categories": [
         "productivity",
@@ -360,18 +1018,84 @@
         "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/memory"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/knowledge-memory/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.1.tar.gz",
-      "sha256": "b6064c85c312e7d9c6f8aee1b67cb60b7bbc00827ee2500feb07ede1e7dd281f",
-      "bytes": 3252437
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.2.tar.gz",
+      "sha256": "a5c743093cf1165fbaedace3de50393c3ee2ff66753a5add1f2af52be8a36e6b",
+      "bytes": 3254796
     },
     {
       "name": "linux-desktop",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Sees the Linux desktop of the environment and uses its mouse and keyboard, to work with the programs shown there.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Linux 桌面",
+          "description": "查看环境内的 Linux 桌面，并使用其中的鼠标和键盘来操作屏幕上显示的程序。"
+        },
+        "zh-TW": {
+          "displayName": "Linux 桌面",
+          "description": "檢視環境內的 Linux 桌面，並使用其中的滑鼠與鍵盤來操作畫面上顯示的程式。"
+        },
+        "ru": {
+          "displayName": "Рабочий стол Linux",
+          "description": "Просматривает рабочий стол Linux внутри среды и управляет его мышью и клавиатурой для работы с отображаемыми программами."
+        },
+        "ar": {
+          "displayName": "سطح مكتب Linux",
+          "description": "يعرض سطح مكتب Linux داخل البيئة ويستخدم فأرته ولوحة مفاتيحه للتعامل مع البرامج المعروضة هناك."
+        },
+        "fa": {
+          "displayName": "دسکتاپ Linux",
+          "description": "دسکتاپ Linux موجود در محیط را می‌بیند و با ماوس و صفحه‌کلید آن با برنامه‌های نمایش‌داده‌شده کار می‌کند."
+        },
+        "ko": {
+          "displayName": "Linux 데스크톱",
+          "description": "환경 내부의 Linux 데스크톱 화면을 보고 마우스와 키보드를 조작해 표시된 프로그램을 사용합니다."
+        },
+        "es": {
+          "displayName": "Escritorio Linux",
+          "description": "Ve el escritorio Linux del entorno y usa su ratón y teclado para trabajar con los programas que se muestran allí."
+        },
+        "my": {
+          "displayName": "Linux ဒက်စ်တော့",
+          "description": "ပတ်ဝန်းကျင်အတွင်းရှိ Linux ဒက်စ်တော့ကို ကြည့်ရှုပြီး ၎င်း၏ မောက်စ်နှင့် ကီးဘုတ်ဖြင့် ပြသထားသော ပရိုဂရမ်များကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Працоўны стол Linux",
+          "description": "Бачыць працоўны стол Linux унутры асяроддзя і выкарыстоўвае яго мыш і клавіятуру для працы з паказанымі праграмамі."
+        },
+        "ps": {
+          "displayName": "د Linux ډېسکټاپ",
+          "description": "د چاپېریال دننه د Linux ډېسکټاپ ګوري او د هغه موږک او کیبورډ کاروي تر څو هلته ښکاره شوي پروګرامونه وکاروي."
+        },
+        "prs": {
+          "displayName": "دسکتاپ Linux",
+          "description": "دسکتاپ Linux داخل محیط را می‌بیند و از ماوس و کیبورد آن برای کار با برنامه‌های نمایش‌داده‌شده استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የLinux ዴስክቶፕ",
+          "description": "በአካባቢው ውስጥ ያለውን የLinux ዴስክቶፕ ያያል እንዲሁም እዚያ የሚታዩ ፕሮግራሞችን ለመጠቀም መዳፊቱንና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Shaashadda Linux",
+          "description": "Waxay aragtaa shaashadda Linux ee deegaanka gudihiisa waxayna adeegsataa jiirkeeda iyo kiiboodhkeeda si ay ula shaqeyso barnaamijyada halkaas ka muuqda."
+        },
+        "ti": {
+          "displayName": "ደስክቶፕ Linux",
+          "description": "ኣብ ውሽጢ ከባቢ ዘሎ ደስክቶፕ Linux ይርኢ፡ ኣብኡ ዝርኣዩ ፕሮግራማት ንምጥቃም ድማ ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Bureau Linux",
+          "description": "Voit le bureau Linux de l'environnement et utilise sa souris et son clavier pour interagir avec les programmes qui y sont affichés."
+        }
+      },
       "displayName": "Linux Desktop",
       "categories": [
         "desktop"
@@ -394,17 +1118,83 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/linux-desktop/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-desktop-0.1.1.tar.gz",
-      "sha256": "fc237d2908af6b2b45ec47c4d8a8cb1c40af98053f0380ccf1379e29117d3f68",
-      "bytes": 17900
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-desktop-0.1.2.tar.gz",
+      "sha256": "04fc2776be4a62729dd77a44aa1ccac10866407ac667e31973205ed9a766575f",
+      "bytes": 19726
     },
     {
       "name": "local-preview",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "本地预览",
+          "description": "在本机浏览器中打开回环地址（localhost / 127.0.0.1）上的页面，并读回标签页的标题和网址。"
+        },
+        "zh-TW": {
+          "displayName": "本機預覽",
+          "description": "在本機瀏覽器中開啟迴路位址（localhost / 127.0.0.1）上的頁面，並讀回分頁的標題與網址。"
+        },
+        "ru": {
+          "displayName": "Локальный предпросмотр",
+          "description": "Открывает в браузере страницы, размещённые на локальном адресе этого компьютера, и считывает заголовок и адрес вкладки."
+        },
+        "ar": {
+          "displayName": "المعاينة المحلية",
+          "description": "يفتح الصفحات المستضافة على عنوان الاسترجاع المحلي لهذا الكمبيوتر في المتصفح ويعيد قراءة عنوان التبويب ورابطه."
+        },
+        "fa": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحات میزبانی‌شده روی نشانی محلی این رایانه را در مرورگر باز می‌کند و عنوان و نشانی تب را بازمی‌گرداند."
+        },
+        "ko": {
+          "displayName": "로컬 미리보기",
+          "description": "이 컴퓨터의 루프백 주소에서 제공되는 페이지를 브라우저로 열고 탭의 제목과 주소를 읽어옵니다."
+        },
+        "es": {
+          "displayName": "Vista previa local",
+          "description": "Abre en el navegador páginas servidas en la dirección local de este equipo y devuelve el título y la dirección de la pestaña."
+        },
+        "my": {
+          "displayName": "စက်တွင်း အကြိုကြည့်ရှုမှု",
+          "description": "ဤကွန်ပျူတာ၏ loopback လိပ်စာပေါ်ရှိ စာမျက်နှာများကို ဘရောက်ဇာတွင်ဖွင့်ပြီး tab ၏ ခေါင်းစဉ်နှင့် လိပ်စာကို ပြန်ဖတ်ပေးသည်။"
+        },
+        "be": {
+          "displayName": "Лакальны перадпрагляд",
+          "description": "Адкрывае ў браўзеры старонкі з лакальнага адраса гэтага камп'ютара і вяртае загаловак і адрас укладкі."
+        },
+        "ps": {
+          "displayName": "سیمه‌ییزه مخکتنه",
+          "description": "د دې کمپیوټر پر سیمه‌ییز پته چمتو شوې پاڼې په براوزر کې پرانیزي او د ټب سرلیک او پته بېرته لولي."
+        },
+        "prs": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحاتی را که روی آدرس محلی این کمپیوتر ارائه می‌شوند در مرورگر باز می‌کند و عنوان و آدرس تب را برمی‌گرداند."
+        },
+        "am": {
+          "displayName": "የአካባቢ ቅድመ እይታ",
+          "description": "በዚህ ኮምፒውተር የውስጥ አድራሻ ላይ የሚሰጡ ገጾችን በአሳሽ ይከፍታል እና የትሩን ርዕስና አድራሻ መልሶ ያነባል።"
+        },
+        "so": {
+          "displayName": "Horudhaca Maxalliga",
+          "description": "Wuxuu baraawsarka ku furaa boggaga ka shaqeeya cinwaanka gudaha ee kombiyuutarkan wuxuuna soo celiyaa cinwaanka iyo ciwaanka tab-ka."
+        },
+        "ti": {
+          "displayName": "ከባብያዊ ቅድመ-ርእይቶ",
+          "description": "ኣብ ውሽጣዊ ኣድራሻ እዛ ኮምፒተር ዝቐርቡ ገጻት ኣብ መርበብ ገጽ ይኸፍት እሞ ኣርእስትን ኣድራሻን እቲ ታብ መሊሱ የንብብ።"
+        },
+        "fr": {
+          "displayName": "Aperçu local",
+          "description": "Ouvre dans un navigateur des pages servies sur l'adresse locale de cet ordinateur et lit en retour le titre et l'adresse de l'onglet."
+        }
+      },
       "displayName": "Local Preview",
       "platforms": [
         "darwin",
@@ -430,15 +1220,81 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0.tar.gz",
-      "sha256": "1c7eef6757a286f1ff0d49d19daedb7c7aa4c7ddc4e9bbb87ed48e28344b73a6",
-      "bytes": 6842
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.1.tar.gz",
+      "sha256": "97a8fa033f6484aa7f647dd14f0410b6d8386c807e0b6ee405a46079bdb1dff4",
+      "bytes": 8697
     },
     {
       "name": "powerpoint-slides",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "PowerPoint 演示文稿",
+          "description": "创建、读取和编辑 PowerPoint 演示文稿（.pptx）：幻灯片、文字、表格、图表、图片与模板。无需安装 Microsoft PowerPoint。"
+        },
+        "zh-TW": {
+          "displayName": "PowerPoint 簡報",
+          "description": "建立、讀取與編輯 PowerPoint 簡報（.pptx）：投影片、文字、表格、圖表、圖片與範本。無需安裝 Microsoft PowerPoint。"
+        },
+        "ru": {
+          "displayName": "Презентации PowerPoint",
+          "description": "Создаёт, читает и редактирует презентации PowerPoint (.pptx): слайды, текст, таблицы, диаграммы, изображения и шаблоны. Microsoft PowerPoint не требуется."
+        },
+        "ar": {
+          "displayName": "عروض PowerPoint التقديمية",
+          "description": "ينشئ عروض PowerPoint (.pptx) ويقرأها ويعدلها: الشرائح والنصوص والجداول والمخططات والصور والقوالب. لا يتطلب Microsoft PowerPoint."
+        },
+        "fa": {
+          "displayName": "اسلایدهای PowerPoint",
+          "description": "ارائه‌های PowerPoint (.pptx) را ایجاد، خواندن و ویرایش می‌کند: اسلایدها، متن، جدول‌ها، نمودارها، تصاویر و قالب‌ها. بدون نیاز به Microsoft PowerPoint."
+        },
+        "ko": {
+          "displayName": "PowerPoint 프레젠테이션",
+          "description": "PowerPoint 프레젠테이션(.pptx)을 생성·읽기·편집합니다: 슬라이드, 텍스트, 표, 차트, 이미지, 서식 파일. Microsoft PowerPoint가 필요하지 않습니다."
+        },
+        "es": {
+          "displayName": "Presentaciones de PowerPoint",
+          "description": "Crea, lee y edita presentaciones de PowerPoint (.pptx): diapositivas, texto, tablas, gráficos, imágenes y plantillas. No requiere Microsoft PowerPoint."
+        },
+        "my": {
+          "displayName": "PowerPoint တင်ဆက်မှုများ",
+          "description": "PowerPoint တင်ဆက်မှုများ (.pptx) ကို ဖန်တီးခြင်း၊ ဖတ်ခြင်းနှင့် ပြင်ဆင်ခြင်း- ဆလိုက်များ၊ စာသား၊ ဇယား၊ ပုံကြမ်း၊ ဓာတ်ပုံနှင့် ပုံစံခွက်များ။ Microsoft PowerPoint မလိုအပ်ပါ။"
+        },
+        "be": {
+          "displayName": "Прэзентацыі PowerPoint",
+          "description": "Стварае, чытае і рэдагуе прэзентацыі PowerPoint (.pptx): слайды, тэкст, табліцы, дыяграмы, выявы і шаблоны. Microsoft PowerPoint не патрабуецца."
+        },
+        "ps": {
+          "displayName": "د PowerPoint سلایډونه",
+          "description": "د PowerPoint پریزنټېشنونه (.pptx) جوړوي، لولي او سموي: سلایډونه، متن، جدولونه، چارټونه، انځورونه او کينډۍ. Microsoft PowerPoint ته اړتیا نشته."
+        },
+        "prs": {
+          "displayName": "سلایدهای PowerPoint",
+          "description": "ارائه‌های PowerPoint (.pptx) را ایجاد، خواندن و ویرایش می‌کند: سلایدها، متن، جدول‌ها، چارت‌ها، تصاویر و قالب‌ها. به Microsoft PowerPoint نیاز نیست."
+        },
+        "am": {
+          "displayName": "የPowerPoint ስላይዶች",
+          "description": "የPowerPoint አቀራረቦችን (.pptx) ይፈጥራል፣ ያነባል እና ያርማል፦ ስላይዶች፣ ጽሑፍ፣ ሰንጠረዦች፣ ገበታዎች፣ ምስሎች እና አብነቶች። Microsoft PowerPoint አያስፈልግም።"
+        },
+        "so": {
+          "displayName": "Soo-bandhigyada PowerPoint",
+          "description": "Waxay abuurtaa, akhrisaa oo tafatirtaa soo-bandhigyada PowerPoint (.pptx): bogagga, qoraalka, miisaska, jaantusyada, sawirrada iyo qaababka. Looma baahna Microsoft PowerPoint."
+        },
+        "ti": {
+          "displayName": "ስላይዳት PowerPoint",
+          "description": "ኣቕርቦታት PowerPoint (.pptx) ይፈጥር፡ የንብብን ይኣርምን፡ ስላይዳት፡ ጽሑፍ፡ ሰደቓታት፡ ቻርታት፡ ስእልታትን ቅጥዕታትን። Microsoft PowerPoint ኣየድልን።"
+        },
+        "fr": {
+          "displayName": "Présentations PowerPoint",
+          "description": "Crée, lit et modifie des présentations PowerPoint (.pptx) : diapositives, texte, tableaux, graphiques, images et modèles. Microsoft PowerPoint n'est pas nécessaire."
+        }
+      },
       "displayName": "PowerPoint Slides",
       "categories": [
         "productivity",
@@ -467,15 +1323,81 @@
         "url": "https://github.com/GongRzhe/Office-PowerPoint-MCP-Server"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/powerpoint-slides/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/powerpoint-slides-0.2.0.tar.gz",
-      "sha256": "2c7edb8fb41eb46ecc59cf39584b69989159c1b3b701142d7e6a4c51407475d4",
-      "bytes": 25949
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/powerpoint-slides-0.2.1.tar.gz",
+      "sha256": "85ccbad43546f572b914e2d97a7ce4f5ed5672677b3d71810c1693c0a5dd927a",
+      "bytes": 27747
     },
     {
       "name": "sqlite",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "SQLite",
+          "description": "查询和管理本地 SQLite 数据库：执行 SELECT 和写入 SQL 语句、建表、检查表结构以及记录分析笔记。"
+        },
+        "zh-TW": {
+          "displayName": "SQLite",
+          "description": "查詢與管理本機 SQLite 資料庫：執行 SELECT 與寫入 SQL 陳述式、建立資料表、檢查結構描述以及記錄分析筆記。"
+        },
+        "ru": {
+          "displayName": "SQLite",
+          "description": "Выполняет запросы и управляет локальными базами данных SQLite: SELECT и изменение данных, создание таблиц, просмотр схем и сохранение аналитических заметок."
+        },
+        "ar": {
+          "displayName": "SQLite",
+          "description": "يستعلم عن قواعد بيانات SQLite المحلية ويديرها: تنفيذ عبارات SELECT والكتابة، إنشاء الجداول، فحص المخططات وتسجيل ملاحظات التحليل."
+        },
+        "fa": {
+          "displayName": "SQLite",
+          "description": "پایگاه‌داده‌های محلی SQLite را پرس‌وجو و مدیریت می‌کند: اجرای دستورات SELECT و نوشتن SQL، ایجاد جدول، بررسی ساختار و ثبت یادداشت‌های تحلیلی."
+        },
+        "ko": {
+          "displayName": "SQLite",
+          "description": "로컬 SQLite 데이터베이스를 조회하고 관리합니다: SELECT 및 쓰기 SQL 실행, 테이블 생성, 스키마 검사 및 분석 메모 기록."
+        },
+        "es": {
+          "displayName": "SQLite",
+          "description": "Consulta y gestiona bases de datos SQLite locales: sentencias SQL de lectura y escritura, creación de tablas, inspección de esquemas y registro de notas de análisis."
+        },
+        "my": {
+          "displayName": "SQLite",
+          "description": "စက်တွင်း SQLite ဒေတာဘေ့စ်များကို ရှာဖွေစီမံသည်- SELECT နှင့် ရေးသွင်း SQL စာကြောင်းများ run ခြင်း၊ ဇယားဖန်တီးခြင်း၊ schema စစ်ဆေးခြင်းနှင့် ခွဲခြမ်းစိတ်ဖြာမှတ်စုများ မှတ်တမ်းတင်ခြင်း။"
+        },
+        "be": {
+          "displayName": "SQLite",
+          "description": "Выконвае запыты і кіруе лакальнымі базамі даных SQLite: аператары SELECT і запісу SQL, стварэнне табліц, прагляд схем і запіс нататак аналізу."
+        },
+        "ps": {
+          "displayName": "SQLite",
+          "description": "سیمه‌ییز SQLite ډېټابېسونه پلټي او اداره کوي: د SELECT او لیکلو SQL جملې، جدول جوړول، د سکیمې کتل او د شننې یادښتونه ثبتول."
+        },
+        "prs": {
+          "displayName": "SQLite",
+          "description": "پایگاه‌های داده محلی SQLite را پرس‌وجو و مدیریت می‌کند: اجرای دستورات SELECT و نوشتن SQL، ایجاد جدول، بررسی ساختار و ثبت یادداشت‌های تحلیل."
+        },
+        "am": {
+          "displayName": "SQLite",
+          "description": "የአካባቢ SQLite ዳታቤዞችን ይጠይቃል እና ያስተዳድራል፦ SELECT እና የመጻፊያ SQL ትዕዛዞች፣ ሠንጠረዦችን መፍጠር፣ መዋቅር መፈተሽ እና የትንታኔ ማስታወሻዎችን መመዝገብ።"
+        },
+        "so": {
+          "displayName": "SQLite",
+          "description": "Waxay weydiisaa oo maamushaa kaydadka xogta SQLite ee maxalliga ah: amarada SELECT iyo qorista SQL, abuurista miisaska, eegista qaab-dhismeedka iyo diiwaangelinta qoraallada falanqaynta."
+        },
+        "ti": {
+          "displayName": "SQLite",
+          "description": "ከባብያዊ ዳታቤዛት SQLite ይሓትትን የመሓድርን፡ ትእዛዛት SELECTን ጽሕፈት SQLን፡ ሰደቓ ምፍጣር፡ ቅርጺ ምምርማርን መዘኻኸሪታት ትንተና ምምዝጋብን።"
+        },
+        "fr": {
+          "displayName": "SQLite",
+          "description": "Interroge et gère des bases de données SQLite locales : requêtes SQL de lecture et d'écriture, création de tables, inspection de schémas et prise de notes d'analyse."
+        }
+      },
       "displayName": "SQLite",
       "categories": [
         "developer",
@@ -504,15 +1426,81 @@
         "url": "https://github.com/modelcontextprotocol/servers-archived"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/sqlite/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/sqlite-0.1.0.tar.gz",
-      "sha256": "29d66eca13104e3002a39c4ae0066b15adea924e2a75b75dfe39cf9a555cebd7",
-      "bytes": 17395
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/sqlite-0.1.1.tar.gz",
+      "sha256": "fd7745218945435b30344263990477bdf591a4bef07388e55d70332a3a072cfb",
+      "bytes": 19495
     },
     {
       "name": "system-status",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "系统状态",
+          "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+        },
+        "zh-TW": {
+          "displayName": "系統狀態",
+          "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+        },
+        "ru": {
+          "displayName": "Состояние системы",
+          "description": "Показывает нагрузку процессора, использование памяти и диска среды — для вас на отдельной странице и для Claude в виде инструмента."
+        },
+        "ar": {
+          "displayName": "حالة النظام",
+          "description": "يعرض حمل المعالج واستخدام الذاكرة والقرص في البيئة، لك في صفحة مستقلة ولـ Claude كأداة."
+        },
+        "fa": {
+          "displayName": "وضعیت سیستم",
+          "description": "بار پردازنده، مصرف حافظه و فضای دیسک محیط را هم در یک صفحه به شما و هم به صورت ابزار به Claude نشان می‌دهد."
+        },
+        "ko": {
+          "displayName": "시스템 상태",
+          "description": "환경의 프로세서 부하, 메모리 및 디스크 사용량을 전용 페이지와 Claude 도구로 보여줍니다."
+        },
+        "es": {
+          "displayName": "Estado del sistema",
+          "description": "Muestra la carga del procesador y el uso de memoria y disco del entorno, tanto en una página para ti como en una herramienta para Claude."
+        },
+        "my": {
+          "displayName": "စနစ်အခြေအနေ",
+          "description": "ပတ်ဝန်းကျင်၏ ပရိုဆက်ဆာဝန်အား၊ မန်မိုရီနှင့် ဒစ်ခ်အသုံးပြုမှုကို သင့်အတွက် စာမျက်နှာတစ်ခုတွင်လည်းကောင်း Claude အတွက် ကိရိယာတစ်ခုအဖြစ်လည်းကောင်း ပြသသည်။"
+        },
+        "be": {
+          "displayName": "Стан сістэмы",
+          "description": "Паказвае нагрузку працэсара, выкарыстанне памяці і дыска асяроддзя — для вас на старонцы і для Claude як інструмент."
+        },
+        "ps": {
+          "displayName": "د سیسټم حالت",
+          "description": "د چاپېریال د پروسېسر بار، حافظې او ډیسک کارونه ستاسو لپاره پر پاڼه او د Claude لپاره د وسیلې په توګه ښيي."
+        },
+        "prs": {
+          "displayName": "وضعیت سیستم",
+          "description": "بار پردازنده، مصرف حافظه و دیسک محیط را هم در یک صفحه برای شما و هم به شکل ابزار برای Claude نشان می‌دهد."
+        },
+        "am": {
+          "displayName": "የስርዓት ሁኔታ",
+          "description": "የአካባቢውን የፕሮሰሰር ጫና፣ የማህደረ ትውስታ እና የዲስክ አጠቃቀም ለእርስዎ በገጽ ላይ እና ለClaude እንደ መሳሪያ ያሳያል።"
+        },
+        "so": {
+          "displayName": "Xaaladda Nidaamka",
+          "description": "Waxay muujisaa culayska processor-ka, isticmaalka xusuusta iyo diska ee deegaanka, adiga oo bog gaar ah ku arka iyo Claude oo qalab ahaan u adeegsada."
+        },
+        "ti": {
+          "displayName": "ኩነታት ስርዓት",
+          "description": "ናይቲ ከባቢ ጽዕነት ፕሮሰሰር፡ ኣጠቓቕማ ዝኽርን ዲስክን ንዓኻ ኣብ ገጽ ንClaude ድማ ከም መሳርሒ የርኢ።"
+        },
+        "fr": {
+          "displayName": "État du système",
+          "description": "Affiche la charge du processeur ainsi que l'utilisation mémoire et disque de l'environnement, sur une page pour vous et comme outil pour Claude."
+        }
+      },
       "displayName": "System Status",
       "categories": [
         "system",
@@ -544,17 +1532,83 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.0.tar.gz",
-      "sha256": "2055808d327ca4a06c4dae55c70574f6cb5e4975db24954869471f8c1840e0b7",
-      "bytes": 3604
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.1.tar.gz",
+      "sha256": "7f089038309d0a84ba7e29a462a5bd4ef695d541974e2f2cd75b311348d6c669",
+      "bytes": 5582
     },
     {
       "name": "web-fetch",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "网页抓取",
+          "description": "抓取网页并将 HTML 内容转换为整洁的 Markdown 以便阅读，支持分页读取与 robots.txt 协议。"
+        },
+        "zh-TW": {
+          "displayName": "網頁擷取",
+          "description": "擷取網頁並將 HTML 內容轉換為整潔的 Markdown 以利閱讀，支援分頁讀取與 robots.txt 規範。"
+        },
+        "ru": {
+          "displayName": "Загрузка веб-страниц",
+          "description": "Загружает веб-страницы и преобразует HTML в чистый Markdown для чтения с поддержкой постраничного вывода и robots.txt."
+        },
+        "ar": {
+          "displayName": "جلب صفحات الويب",
+          "description": "يجلب صفحات الويب ويحوّل محتوى HTML إلى Markdown منظّم للقراءة، مع دعم التقسيم إلى صفحات وملف robots.txt."
+        },
+        "fa": {
+          "displayName": "دریافت صفحات وب",
+          "description": "صفحات وب را دریافت کرده و محتوای HTML را برای مطالعه به Markdown تمیز تبدیل می‌کند، با پشتیبانی از صفحه‌بندی و robots.txt."
+        },
+        "ko": {
+          "displayName": "웹 가져오기",
+          "description": "웹 페이지를 가져와 HTML 콘텐츠를 읽기 쉬운 깔끔한 Markdown으로 변환하며, 페이지 분할과 robots.txt를 지원합니다."
+        },
+        "es": {
+          "displayName": "Obtención web",
+          "description": "Descarga páginas web y convierte su contenido HTML en Markdown limpio para su lectura, con paginación y soporte de robots.txt."
+        },
+        "my": {
+          "displayName": "ဝဘ်စာမျက်နှာ ရယူမှု",
+          "description": "ဝဘ်စာမျက်နှာများကို ရယူပြီး HTML အကြောင်းအရာကို ဖတ်ရလွယ်ကူသော Markdown အဖြစ် ပြောင်းလဲပေးသည်၊ စာမျက်နှာခွဲခြင်းနှင့် robots.txt ပံ့ပိုးမှု ပါဝင်သည်။"
+        },
+        "be": {
+          "displayName": "Загрузка вэб-старонак",
+          "description": "Загружае вэб-старонкі і ператварае HTML у чысты Markdown для чытання з падтрымкай пастаронкавага прагляду і robots.txt."
+        },
+        "ps": {
+          "displayName": "د وېب راوړل",
+          "description": "وېبپاڼې راولي او د HTML منځپانګه د لوستلو لپاره پاک Markdown ته اړوي، د پاڼه‌بندۍ او robots.txt له ملاتړ سره."
+        },
+        "prs": {
+          "displayName": "دریافت صفحات وب",
+          "description": "صفحات وب را دریافت می‌کند و محتوای HTML را برای خواندن به Markdown تمیز تبدیل می‌نماید، با پشتیبانی از صفحه‌بندی و robots.txt."
+        },
+        "am": {
+          "displayName": "የድር ማምጫ",
+          "description": "ድረ-ገጾችን ያመጣል እና የHTML ይዘትን ለንባብ ወደ ንጹህ Markdown ይቀይራል፣ ከገጽ ክፍፍል እና የrobots.txt ድጋፍ ጋር።"
+        },
+        "so": {
+          "displayName": "Soo-qaadista Webka",
+          "description": "Waxay soo qaaddaa boggaga webka waxayna u beddeshaa HTML-ka Markdown nadiif ah oo la akhrin karo, iyadoo leh kala-qaybinta boggaga iyo taageerada robots.txt."
+        },
+        "ti": {
+          "displayName": "ምምጻእ መርበብ",
+          "description": "መርበብ ገጻት የምጽእን ትሕዝቶ HTML ንንባብ ናብ ጽሩይ Markdown ይቕይርን፡ ምስ ደገፍ ምምቃል ገጻትን robots.txtን።"
+        },
+        "fr": {
+          "displayName": "Récupération web",
+          "description": "Récupère des pages web et convertit le contenu HTML en Markdown propre pour la lecture, avec pagination et prise en charge de robots.txt."
+        }
+      },
       "displayName": "Web Fetch",
       "categories": [
         "network",
@@ -583,15 +1637,81 @@
         "url": "https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/fetch"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/web-fetch/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.1.tar.gz",
-      "sha256": "02513fa1058b5c08cd29deb57c619ec7cc6423a02937f9527fe6005ad7a73b46",
-      "bytes": 19522
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.2.tar.gz",
+      "sha256": "5df5d862f011d2d729c900ca5a777fcd040afaea985f4f4d0e74b0f4fb0f2340",
+      "bytes": 21344
     },
     {
       "name": "word-documents",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Creates, reads and edits Word documents (.docx): text, headings, tables, images, styles and comments. Microsoft Word is not needed.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Word 文档",
+          "description": "创建、读取和编辑 Word 文档（.docx）：正文、标题、表格、图片、样式与批注。无需安装 Microsoft Word。"
+        },
+        "zh-TW": {
+          "displayName": "Word 文件",
+          "description": "建立、讀取與編輯 Word 文件（.docx）：本文、標題、表格、圖片、樣式與註解。無需安裝 Microsoft Word。"
+        },
+        "ru": {
+          "displayName": "Документы Word",
+          "description": "Создаёт, читает и редактирует документы Word (.docx): текст, заголовки, таблицы, изображения, стили и комментарии. Microsoft Word не требуется."
+        },
+        "ar": {
+          "displayName": "مستندات Word",
+          "description": "ينشئ مستندات Word (.docx) ويقرأها ويعدلها: النصوص والعناوين والجداول والصور والأنماط والتعليقات. لا يتطلب Microsoft Word."
+        },
+        "fa": {
+          "displayName": "اسناد Word",
+          "description": "اسناد Word (.docx) را ایجاد، خواندن و ویرایش می‌کند: متن، سرصفحه‌ها، جدول‌ها، تصاویر، سبک‌ها و دیدگاه‌ها. بدون نیاز به Microsoft Word."
+        },
+        "ko": {
+          "displayName": "Word 문서",
+          "description": "Word 문서(.docx)를 생성·읽기·편집합니다: 본문, 제목, 표, 이미지, 스타일, 메모. Microsoft Word가 필요하지 않습니다."
+        },
+        "es": {
+          "displayName": "Documentos de Word",
+          "description": "Crea, lee y edita documentos de Word (.docx): texto, encabezados, tablas, imágenes, estilos y comentarios. No requiere Microsoft Word."
+        },
+        "my": {
+          "displayName": "Word စာရွက်စာတမ်းများ",
+          "description": "Word စာရွက်စာတမ်းများ (.docx) ကို ဖန်တီးခြင်း၊ ဖတ်ခြင်းနှင့် ပြင်ဆင်ခြင်း- စာသား၊ ခေါင်းစဉ်၊ ဇယား၊ ဓာတ်ပုံ၊ စတိုင်နှင့် မှတ်ချက်များ။ Microsoft Word မလိုအပ်ပါ။"
+        },
+        "be": {
+          "displayName": "Дакументы Word",
+          "description": "Стварае, чытае і рэдагуе дакументы Word (.docx): тэкст, загалоўкі, табліцы, выявы, стылі і каментарыі. Microsoft Word не патрабуецца."
+        },
+        "ps": {
+          "displayName": "د Word اسناد",
+          "description": "د Word اسناد (.docx) جوړوي، لولي او سموي: متن، سرلیکونه، جدولونه، انځورونه، سټایلونه او تبصرې. Microsoft Word ته اړتیا نشته."
+        },
+        "prs": {
+          "displayName": "اسناد Word",
+          "description": "اسناد Word (.docx) را ایجاد، خواندن و ویرایش می‌کند: متن، عنوان‌ها، جدول‌ها، تصاویر، سبک‌ها و یادداشت‌ها. به Microsoft Word نیاز نیست."
+        },
+        "am": {
+          "displayName": "የWord ሰነዶች",
+          "description": "የWord ሰነዶችን (.docx) ይፈጥራል፣ ያነባል እና ያርማል፦ ጽሑፍ፣ ርዕሶች፣ ሰንጠረዦች፣ ምስሎች፣ ቅጦች እና አስተያየቶች። Microsoft Word አያስፈልግም።"
+        },
+        "so": {
+          "displayName": "Dukumentiyada Word",
+          "description": "Waxay abuurtaa, akhrisaa oo tafatirtaa dukumentiyada Word (.docx): qoraalka, cinwaannada, miisaska, sawirrada, qaababka iyo faallooyinka. Looma baahna Microsoft Word."
+        },
+        "ti": {
+          "displayName": "ሰነዳት Word",
+          "description": "ሰነዳት Word (.docx) ይፈጥር፡ የንብብን ይኣርምን፡ ጽሑፍ፡ ኣርእስትታት፡ ሰደቓታት፡ ስእልታት፡ ቅዲታትን ርእይቶታትን። Microsoft Word ኣየድልን።"
+        },
+        "fr": {
+          "displayName": "Documents Word",
+          "description": "Crée, lit et modifie des documents Word (.docx) : texte, titres, tableaux, images, styles et commentaires. Microsoft Word n'est pas nécessaire."
+        }
+      },
       "displayName": "Word Documents",
       "categories": [
         "productivity",
@@ -620,18 +1740,84 @@
         "url": "https://github.com/GongRzhe/Office-Word-MCP-Server"
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/word-documents/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/word-documents-0.2.0.tar.gz",
-      "sha256": "8303d7744e5811706a8a7f726e45ef15bb2a3b0bfd5aba65b637cecc32aeffc0",
-      "bytes": 99334
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/word-documents-0.2.1.tar.gz",
+      "sha256": "b3a762933f382dea0f626798a582d1f33b8fbbc1cf7fd6faa0191b1b8281ceaa",
+      "bytes": 101136
     },
     {
       "name": "desktop-control",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "桌面控制",
+          "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+        },
+        "zh-TW": {
+          "displayName": "桌面控制",
+          "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
       "platforms": [
         "linux"
       ],
@@ -641,18 +1827,84 @@
       "target": "linux-arm64",
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-linux-arm64.tar.gz",
-      "sha256": "4ee33b4b5bab380e301e484f1c9cda0eead4dc8234c2b8b285a6b523f847ae37",
-      "bytes": 20036
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.2-linux-arm64.tar.gz",
+      "sha256": "e26a05522e168c49d24a09c30eda9ee80d73f88204ad1484dc4b577504c8b925",
+      "bytes": 21459
     },
     {
       "name": "desktop-control",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "桌面控制",
+          "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+        },
+        "zh-TW": {
+          "displayName": "桌面控制",
+          "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
       "platforms": [
         "linux"
       ],
@@ -662,15 +1914,81 @@
       "target": "linux-x64",
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-linux-x64.tar.gz",
-      "sha256": "4ee33b4b5bab380e301e484f1c9cda0eead4dc8234c2b8b285a6b523f847ae37",
-      "bytes": 20036
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.2-linux-x64.tar.gz",
+      "sha256": "e26a05522e168c49d24a09c30eda9ee80d73f88204ad1484dc4b577504c8b925",
+      "bytes": 21459
     },
     {
       "name": "clock",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "description": "Tells the current time on this computer.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "时钟",
+          "description": "获取这台电脑上的当前时间。"
+        },
+        "zh-TW": {
+          "displayName": "時鐘",
+          "description": "取得這台電腦上的目前時間。"
+        },
+        "ru": {
+          "displayName": "Часы",
+          "description": "Сообщает текущее время на этом компьютере."
+        },
+        "ar": {
+          "displayName": "الساعة",
+          "description": "يعرض الوقت الحالي على هذا الكمبيوتر."
+        },
+        "fa": {
+          "displayName": "ساعت",
+          "description": "زمان کنونی این رایانه را گزارش می‌دهد."
+        },
+        "ko": {
+          "displayName": "시계",
+          "description": "이 컴퓨터의 현재 시각을 알려줍니다."
+        },
+        "es": {
+          "displayName": "Reloj",
+          "description": "Informa la hora actual en este equipo."
+        },
+        "my": {
+          "displayName": "နာရီ",
+          "description": "ဤကွန်ပျူတာရှိ လက်ရှိအချိန်ကို ပြောပြသည်။"
+        },
+        "be": {
+          "displayName": "Гадзіннік",
+          "description": "Паведамляе бягучы час на гэтым камп'ютары."
+        },
+        "ps": {
+          "displayName": "ساعت",
+          "description": "په دې کمپیوټر کې اوسنی وخت ښيي."
+        },
+        "prs": {
+          "displayName": "ساعت",
+          "description": "زمان فعلی این کمپیوتر را نشان می‌دهد."
+        },
+        "am": {
+          "displayName": "ሰዓት",
+          "description": "በዚህ ኮምፒውተር ላይ ያለውን የአሁኑን ሰዓት ይነግራል።"
+        },
+        "so": {
+          "displayName": "Saacad",
+          "description": "Waxay sheegtaa waqtiga hadda ka jira kombiyuutarkan."
+        },
+        "ti": {
+          "displayName": "ሰዓት",
+          "description": "ኣብዛ ኮምፒተር ዘሎ ህሉው ሰዓት ይነግር።"
+        },
+        "fr": {
+          "displayName": "Horloge",
+          "description": "Indique l'heure actuelle sur cet ordinateur."
+        }
+      },
       "platforms": [
         "windows"
       ],
@@ -680,18 +1998,84 @@
       "target": "win32-arm64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3-win32-arm64.tar.gz",
-      "sha256": "67a4c6a23878b7e1b0efbe5b4251d3441b7511a69948e6fa7dacc859792e88e7",
-      "bytes": 1374
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.4-win32-arm64.tar.gz",
+      "sha256": "ba56fba9bff940d533de0c627566a63902da02744487c75f8b51557a3999a38f",
+      "bytes": 2362
     },
     {
       "name": "desktop-control",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "桌面控制",
+          "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+        },
+        "zh-TW": {
+          "displayName": "桌面控制",
+          "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
       "platforms": [
         "windows"
       ],
@@ -701,17 +2085,83 @@
       "target": "win32-arm64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-win32-arm64.tar.gz",
-      "sha256": "cccbea30dc65f7b79bca68ebd6039680d5c4fd1df0cab1e81d87c08905f4decd",
-      "bytes": 15321
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.2-win32-arm64.tar.gz",
+      "sha256": "02d29bac596070c6192b85296ed564fca7d25b772c061128da3f1f9ca3a2a038",
+      "bytes": 16714
     },
     {
       "name": "local-preview",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "本地预览",
+          "description": "在本机浏览器中打开回环地址（localhost / 127.0.0.1）上的页面，并读回标签页的标题和网址。"
+        },
+        "zh-TW": {
+          "displayName": "本機預覽",
+          "description": "在本機瀏覽器中開啟迴路位址（localhost / 127.0.0.1）上的頁面，並讀回分頁的標題與網址。"
+        },
+        "ru": {
+          "displayName": "Локальный предпросмотр",
+          "description": "Открывает в браузере страницы, размещённые на локальном адресе этого компьютера, и считывает заголовок и адрес вкладки."
+        },
+        "ar": {
+          "displayName": "المعاينة المحلية",
+          "description": "يفتح الصفحات المستضافة على عنوان الاسترجاع المحلي لهذا الكمبيوتر في المتصفح ويعيد قراءة عنوان التبويب ورابطه."
+        },
+        "fa": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحات میزبانی‌شده روی نشانی محلی این رایانه را در مرورگر باز می‌کند و عنوان و نشانی تب را بازمی‌گرداند."
+        },
+        "ko": {
+          "displayName": "로컬 미리보기",
+          "description": "이 컴퓨터의 루프백 주소에서 제공되는 페이지를 브라우저로 열고 탭의 제목과 주소를 읽어옵니다."
+        },
+        "es": {
+          "displayName": "Vista previa local",
+          "description": "Abre en el navegador páginas servidas en la dirección local de este equipo y devuelve el título y la dirección de la pestaña."
+        },
+        "my": {
+          "displayName": "စက်တွင်း အကြိုကြည့်ရှုမှု",
+          "description": "ဤကွန်ပျူတာ၏ loopback လိပ်စာပေါ်ရှိ စာမျက်နှာများကို ဘရောက်ဇာတွင်ဖွင့်ပြီး tab ၏ ခေါင်းစဉ်နှင့် လိပ်စာကို ပြန်ဖတ်ပေးသည်။"
+        },
+        "be": {
+          "displayName": "Лакальны перадпрагляд",
+          "description": "Адкрывае ў браўзеры старонкі з лакальнага адраса гэтага камп'ютара і вяртае загаловак і адрас укладкі."
+        },
+        "ps": {
+          "displayName": "سیمه‌ییزه مخکتنه",
+          "description": "د دې کمپیوټر پر سیمه‌ییز پته چمتو شوې پاڼې په براوزر کې پرانیزي او د ټب سرلیک او پته بېرته لولي."
+        },
+        "prs": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحاتی را که روی آدرس محلی این کمپیوتر ارائه می‌شوند در مرورگر باز می‌کند و عنوان و آدرس تب را برمی‌گرداند."
+        },
+        "am": {
+          "displayName": "የአካባቢ ቅድመ እይታ",
+          "description": "በዚህ ኮምፒውተር የውስጥ አድራሻ ላይ የሚሰጡ ገጾችን በአሳሽ ይከፍታል እና የትሩን ርዕስና አድራሻ መልሶ ያነባል።"
+        },
+        "so": {
+          "displayName": "Horudhaca Maxalliga",
+          "description": "Wuxuu baraawsarka ku furaa boggaga ka shaqeeya cinwaanka gudaha ee kombiyuutarkan wuxuuna soo celiyaa cinwaanka iyo ciwaanka tab-ka."
+        },
+        "ti": {
+          "displayName": "ከባብያዊ ቅድመ-ርእይቶ",
+          "description": "ኣብ ውሽጣዊ ኣድራሻ እዛ ኮምፒተር ዝቐርቡ ገጻት ኣብ መርበብ ገጽ ይኸፍት እሞ ኣርእስትን ኣድራሻን እቲ ታብ መሊሱ የንብብ።"
+        },
+        "fr": {
+          "displayName": "Aperçu local",
+          "description": "Ouvre dans un navigateur des pages servies sur l'adresse locale de cet ordinateur et lit en retour le titre et l'adresse de l'onglet."
+        }
+      },
       "displayName": "Local Preview",
       "platforms": [
         "windows"
@@ -743,15 +2193,81 @@
       "target": "win32-arm64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0-win32-arm64.tar.gz",
-      "sha256": "b66d00a129cb7534b1a62c5306fe1f1fe084d768452e020a964cba4b41027bb7",
-      "bytes": 6921
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.1-win32-arm64.tar.gz",
+      "sha256": "4e8e8a1e967ddd3ccd269a70a85e103d5ba0e0e6b907fa456c1112b1d2d5436d",
+      "bytes": 8775
     },
     {
       "name": "clock",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "description": "Tells the current time on this computer.",
       "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "时钟",
+          "description": "获取这台电脑上的当前时间。"
+        },
+        "zh-TW": {
+          "displayName": "時鐘",
+          "description": "取得這台電腦上的目前時間。"
+        },
+        "ru": {
+          "displayName": "Часы",
+          "description": "Сообщает текущее время на этом компьютере."
+        },
+        "ar": {
+          "displayName": "الساعة",
+          "description": "يعرض الوقت الحالي على هذا الكمبيوتر."
+        },
+        "fa": {
+          "displayName": "ساعت",
+          "description": "زمان کنونی این رایانه را گزارش می‌دهد."
+        },
+        "ko": {
+          "displayName": "시계",
+          "description": "이 컴퓨터의 현재 시각을 알려줍니다."
+        },
+        "es": {
+          "displayName": "Reloj",
+          "description": "Informa la hora actual en este equipo."
+        },
+        "my": {
+          "displayName": "နာရီ",
+          "description": "ဤကွန်ပျူတာရှိ လက်ရှိအချိန်ကို ပြောပြသည်။"
+        },
+        "be": {
+          "displayName": "Гадзіннік",
+          "description": "Паведамляе бягучы час на гэтым камп'ютары."
+        },
+        "ps": {
+          "displayName": "ساعت",
+          "description": "په دې کمپیوټر کې اوسنی وخت ښيي."
+        },
+        "prs": {
+          "displayName": "ساعت",
+          "description": "زمان فعلی این کمپیوتر را نشان می‌دهد."
+        },
+        "am": {
+          "displayName": "ሰዓት",
+          "description": "በዚህ ኮምፒውተር ላይ ያለውን የአሁኑን ሰዓት ይነግራል።"
+        },
+        "so": {
+          "displayName": "Saacad",
+          "description": "Waxay sheegtaa waqtiga hadda ka jira kombiyuutarkan."
+        },
+        "ti": {
+          "displayName": "ሰዓት",
+          "description": "ኣብዛ ኮምፒተር ዘሎ ህሉው ሰዓት ይነግር።"
+        },
+        "fr": {
+          "displayName": "Horloge",
+          "description": "Indique l'heure actuelle sur cet ordinateur."
+        }
+      },
       "platforms": [
         "windows"
       ],
@@ -761,18 +2277,84 @@
       "target": "win32-x64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3-win32-x64.tar.gz",
-      "sha256": "67a4c6a23878b7e1b0efbe5b4251d3441b7511a69948e6fa7dacc859792e88e7",
-      "bytes": 1374
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.4-win32-x64.tar.gz",
+      "sha256": "ba56fba9bff940d533de0c627566a63902da02744487c75f8b51557a3999a38f",
+      "bytes": 2362
     },
     {
       "name": "desktop-control",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "桌面控制",
+          "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+        },
+        "zh-TW": {
+          "displayName": "桌面控制",
+          "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
       "platforms": [
         "windows"
       ],
@@ -782,17 +2364,83 @@
       "target": "win32-x64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.1-win32-x64.tar.gz",
-      "sha256": "cccbea30dc65f7b79bca68ebd6039680d5c4fd1df0cab1e81d87c08905f4decd",
-      "bytes": 15321
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.2-win32-x64.tar.gz",
+      "sha256": "02d29bac596070c6192b85296ed564fca7d25b772c061128da3f1f9ca3a2a038",
+      "bytes": 16714
     },
     {
       "name": "local-preview",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
       "permissions": [
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "本地预览",
+          "description": "在本机浏览器中打开回环地址（localhost / 127.0.0.1）上的页面，并读回标签页的标题和网址。"
+        },
+        "zh-TW": {
+          "displayName": "本機預覽",
+          "description": "在本機瀏覽器中開啟迴路位址（localhost / 127.0.0.1）上的頁面，並讀回分頁的標題與網址。"
+        },
+        "ru": {
+          "displayName": "Локальный предпросмотр",
+          "description": "Открывает в браузере страницы, размещённые на локальном адресе этого компьютера, и считывает заголовок и адрес вкладки."
+        },
+        "ar": {
+          "displayName": "المعاينة المحلية",
+          "description": "يفتح الصفحات المستضافة على عنوان الاسترجاع المحلي لهذا الكمبيوتر في المتصفح ويعيد قراءة عنوان التبويب ورابطه."
+        },
+        "fa": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحات میزبانی‌شده روی نشانی محلی این رایانه را در مرورگر باز می‌کند و عنوان و نشانی تب را بازمی‌گرداند."
+        },
+        "ko": {
+          "displayName": "로컬 미리보기",
+          "description": "이 컴퓨터의 루프백 주소에서 제공되는 페이지를 브라우저로 열고 탭의 제목과 주소를 읽어옵니다."
+        },
+        "es": {
+          "displayName": "Vista previa local",
+          "description": "Abre en el navegador páginas servidas en la dirección local de este equipo y devuelve el título y la dirección de la pestaña."
+        },
+        "my": {
+          "displayName": "စက်တွင်း အကြိုကြည့်ရှုမှု",
+          "description": "ဤကွန်ပျူတာ၏ loopback လိပ်စာပေါ်ရှိ စာမျက်နှာများကို ဘရောက်ဇာတွင်ဖွင့်ပြီး tab ၏ ခေါင်းစဉ်နှင့် လိပ်စာကို ပြန်ဖတ်ပေးသည်။"
+        },
+        "be": {
+          "displayName": "Лакальны перадпрагляд",
+          "description": "Адкрывае ў браўзеры старонкі з лакальнага адраса гэтага камп'ютара і вяртае загаловак і адрас укладкі."
+        },
+        "ps": {
+          "displayName": "سیمه‌ییزه مخکتنه",
+          "description": "د دې کمپیوټر پر سیمه‌ییز پته چمتو شوې پاڼې په براوزر کې پرانیزي او د ټب سرلیک او پته بېرته لولي."
+        },
+        "prs": {
+          "displayName": "پیش‌نمایش محلی",
+          "description": "صفحاتی را که روی آدرس محلی این کمپیوتر ارائه می‌شوند در مرورگر باز می‌کند و عنوان و آدرس تب را برمی‌گرداند."
+        },
+        "am": {
+          "displayName": "የአካባቢ ቅድመ እይታ",
+          "description": "በዚህ ኮምፒውተር የውስጥ አድራሻ ላይ የሚሰጡ ገጾችን በአሳሽ ይከፍታል እና የትሩን ርዕስና አድራሻ መልሶ ያነባል።"
+        },
+        "so": {
+          "displayName": "Horudhaca Maxalliga",
+          "description": "Wuxuu baraawsarka ku furaa boggaga ka shaqeeya cinwaanka gudaha ee kombiyuutarkan wuxuuna soo celiyaa cinwaanka iyo ciwaanka tab-ka."
+        },
+        "ti": {
+          "displayName": "ከባብያዊ ቅድመ-ርእይቶ",
+          "description": "ኣብ ውሽጣዊ ኣድራሻ እዛ ኮምፒተር ዝቐርቡ ገጻት ኣብ መርበብ ገጽ ይኸፍት እሞ ኣርእስትን ኣድራሻን እቲ ታብ መሊሱ የንብብ።"
+        },
+        "fr": {
+          "displayName": "Aperçu local",
+          "description": "Ouvre dans un navigateur des pages servies sur l'adresse locale de cet ordinateur et lit en retour le titre et l'adresse de l'onglet."
+        }
+      },
       "displayName": "Local Preview",
       "platforms": [
         "windows"
@@ -824,9 +2472,9 @@
       "target": "win32-x64",
       "runtime": "powershell",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0-win32-x64.tar.gz",
-      "sha256": "b66d00a129cb7534b1a62c5306fe1f1fe084d768452e020a964cba4b41027bb7",
-      "bytes": 6921
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.1-win32-x64.tar.gz",
+      "sha256": "4e8e8a1e967ddd3ccd269a70a85e103d5ba0e0e6b907fa456c1112b1d2d5436d",
+      "bytes": 8775
     }
   ]
 }

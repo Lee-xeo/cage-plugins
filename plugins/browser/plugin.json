@@ -1,7 +1,7 @@
 {
   "name": "browser",
   "displayName": "Browser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Opens web pages in a headless Chromium, reads them as an accessibility snapshot, and clicks, types, fills forms and takes screenshots.",
   "icon": "icon.svg",
   "engines": {

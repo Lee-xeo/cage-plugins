@@ -15,7 +15,7 @@ function Get-Answer($message) {
     switch ($message.method) {
         'initialize' {
             return @{ protocolVersion = $message.params.protocolVersion; capabilities = @{ tools = @{} }
-                      serverInfo = @{ name = 'clock'; version = '0.1.3' } }
+                      serverInfo = @{ name = 'clock'; version = '0.1.4' } }
         }
         'tools/list' { return @{ tools = $Tools } }
         'tools/call' {

@@ -17,7 +17,7 @@ def answer(message):
         return {
             "protocolVersion": message["params"]["protocolVersion"],
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "clock", "version": "0.1.3"},
+            "serverInfo": {"name": "clock", "version": "0.1.4"},
         }
     if method == "tools/list":
         return {"tools": TOOLS}

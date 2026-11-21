@@ -155,7 +155,7 @@ export async function listModels(launcher) {
     send({
       id: requestId,
       method: 'initialize',
-      params: { clientInfo: { name: 'codex-dispatch', version: '0.1.1' } },
+      params: { clientInfo: { name: 'codex-dispatch', version: '0.1.2' } },
     });
   });
 }

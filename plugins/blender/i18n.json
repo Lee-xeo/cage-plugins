@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "Blender",
+    "description": "操作本机已打开的 Blender：读取场景、创建和修改物体与材质、在 Blender 中运行 Python 以及截取视口画面。需在 Blender 中安装随附插件。"
+  },
+  "zh-TW": {
+    "displayName": "Blender",
+    "description": "操作本機已開啟的 Blender：讀取場景、建立與修改物件和材質、在 Blender 中執行 Python 以及擷取視埠畫面。需在 Blender 中安裝隨附外掛。"
+  },
+  "ru": {
+    "displayName": "Blender",
+    "description": "Работает с открытым Blender: читает сцену, создаёт и изменяет объекты и материалы, запускает Python в Blender и делает снимки вьюпорта. Требуется Blender со встроенным дополнением."
+  },
+  "ar": {
+    "displayName": "Blender",
+    "description": "يعمل مع تطبيق Blender المفتوح: يقرأ المشهد، وينشئ ويعدّل الكائنات والمواد، ويشغّل Python داخل Blender ويلتقط صور منفذ العرض. يتطلب Blender مع الإضافة المرفقة."
+  },
+  "fa": {
+    "displayName": "Blender",
+    "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و متریال‌ها را ایجاد و ویرایش می‌کند، پایتون را در Blender اجرا کرده و از نمای سه‌بعدی عکس می‌گیرد. نیازمند Blender و افزونه همراه است."
+  },
+  "ko": {
+    "displayName": "Blender",
+    "description": "열려 있는 Blender와 연동하여 장면을 읽고, 오브젝트와 재질을 생성·수정하며, Blender 내에서 Python을 실행하고 뷰포트를 캡처합니다. 포함된 애드온이 설치된 Blender가 필요합니다."
+  },
+  "es": {
+    "displayName": "Blender",
+    "description": "Trabaja con un Blender abierto: lee la escena, crea y modifica objetos y materiales, ejecuta Python en Blender y captura la vista. Requiere Blender con el complemento incluido."
+  },
+  "my": {
+    "displayName": "Blender",
+    "description": "ဖွင့်ထားသော Blender နှင့် တွဲဖက်အလုပ်လုပ်သည်- မြင်ကွင်းကိုဖတ်ခြင်း၊ အရာဝတ္ထုနှင့် ပစ္စည်းများ ဖန်တီးပြင်ဆင်ခြင်း၊ Blender အတွင်း Python run ခြင်းနှင့် viewport ပုံရိုက်ခြင်းတို့ လုပ်နိုင်သည်။ ပါဝင်သည့် add-on တပ်ဆင်ထားသော Blender လိုအပ်သည်။"
+  },
+  "be": {
+    "displayName": "Blender",
+    "description": "Працуе з адкрытым Blender: чытае сцэну, стварае і змяняе аб'екты і матэрыялы, выконвае Python у Blender і робіць здымкі акна прагляду. Патрабуецца Blender з дадаткам з камплекта."
+  },
+  "ps": {
+    "displayName": "Blender",
+    "description": "له خلاص شوي Blender سره کار کوي: صحنه لولي، شیان او مواد جوړوي او بدلوي، په Blender کې Python چلوي او د لید انځور اخلي. له ملګري افزونې سره Blender ته اړتیا لري."
+  },
+  "prs": {
+    "displayName": "Blender",
+    "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و مواد را ایجاد و تغییر می‌دهد، Python را در Blender اجرا می‌کند و از نمای دید عکس می‌گیرد. به Blender با افزونه همراه نیاز دارد."
+  },
+  "am": {
+    "displayName": "Blender",
+    "description": "ከተከፈተው Blender ጋር ይሰራል፦ ትዕይንቱን ያነባል፣ ቁሶችንና ቁሳቁሶችን ይፈጥራል ያስተካክላል፣ በBlender ውስጥ Python ያስኬዳል እንዲሁም የእይታ መስኮቱን ፎቶ ያነሳል። የተካተተው ተጨማሪ የተጫነበት Blender ያስፈልጋል።"
+  },
+  "so": {
+    "displayName": "Blender",
+    "description": "Waxay la shaqeysaa Blender furan: waxay akhrisaa goobta, waxay abuurtaa oo beddeshaa walxaha iyo agabyada, waxay ku socodsiisaa Python gudaha Blender waxayna qabataa sawirka muuqaalka. Waxay u baahan tahay Blender leh add-on-ka la socda."
+  },
+  "ti": {
+    "displayName": "Blender",
+    "description": "ምስ ዝተኸፍተ Blender ይሰርሕ፡ ትዕይንቲ የንብብ፡ ኣቕሑን ንዋትን ይፈጥርን ይቕይርን፡ ኣብ ውሽጢ Blender Python የካይድ፡ ካብ መርኣዪ ድማ ስእሊ የልዕል። ዝተሓወሰ ተወሳኺ ዘለዎ Blender የድሊ።"
+  },
+  "fr": {
+    "displayName": "Blender",
+    "description": "Interagit avec une instance ouverte de Blender : lit la scène, crée et modifie objets et matériaux, exécute du Python dans Blender et capture la vue. Nécessite Blender avec le module complémentaire fourni."
+  }
+}

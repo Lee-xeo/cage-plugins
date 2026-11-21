@@ -38,6 +38,16 @@ MAX_BYTES = 20 * 1024 * 1024
 MAX_UNPACKED_BYTES = 100 * 1024 * 1024
 MAX_FILES = 2000
 MAX_ICON_BYTES = 256 * 1024
+MAX_I18N_BYTES = 256 * 1024
+OFFICIAL_AUTHORS = {"Lee-xeo"}
+GITHUB_LOGIN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+# The interface languages Cage offers, matching internal/uilocale/languages.json.
+REQUIRED_LOCALES = (
+    "zh-CN", "zh-TW", "ru", "ar", "fa", "ko", "es", "my",
+    "be", "ps", "prs", "am", "so", "ti", "fr",
+)
+LOCALE_TAG = re.compile(r"^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
+I18N_FIELDS = {"displayName", "description"}
 
 
 def fail(message):
@@ -234,6 +244,72 @@ def source(folder):
     return data
 
 
+def load_authors(plugin_names):
+    """Plugin attribution from authors.json: either an official maintainer or
+    the contributor's GitHub username. Kept out of plugin.json so older apps
+    read manifests strictly and contributors cannot self-declare official."""
+    path = ROOT / "authors.json"
+    if not path.is_file() or path.is_symlink():
+        fail("authors.json is missing at the repository root")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        fail("authors.json must be an object mapping plugin name to GitHub username")
+    missing = sorted(set(plugin_names) - set(data))
+    if missing:
+        fail(f"authors.json is missing entries for: {', '.join(missing)}")
+    extra = sorted(set(data) - set(plugin_names))
+    if extra:
+        fail(f"authors.json lists unknown plugins: {', '.join(extra)}")
+    out = {}
+    for name, login in data.items():
+        if not isinstance(login, str) or not GITHUB_LOGIN.match(login):
+            fail(f"authors.json {name}: author must be a valid GitHub username")
+        entry = {"name": login}
+        if login in OFFICIAL_AUTHORS:
+            entry["official"] = True
+        out[name] = entry
+    return out
+
+
+def load_i18n(folder, target_name):
+    """Localized displayName and description from i18n.json inside the plugin.
+    Kept out of plugin.json so older apps read manifests strictly; packed into
+    each archive and published in index.json so Cage displays the plugin in its
+    active interface language."""
+    path = folder / "i18n.json"
+    if not path.is_file() or path.is_symlink():
+        fail(f"{folder.name}: i18n.json is missing; provide translations for all {len(REQUIRED_LOCALES)} Cage languages")
+    if path.stat().st_size > MAX_I18N_BYTES:
+        fail(f"{folder.name}: i18n.json is over {MAX_I18N_BYTES // 1024} KB")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        fail(f"{folder.name}: i18n.json must be an object keyed by language code")
+    missing = [code for code in REQUIRED_LOCALES if code not in data]
+    if missing:
+        fail(f"{folder.name}: i18n.json is missing required Cage locales: {', '.join(missing)}")
+    plain = lambda text, limit: isinstance(text, str) and bool(text.strip()) and len(text) <= limit and not re.search(r"[\x00-\x1f\x7f]", text)
+    normalized = {}
+    for code, entry in data.items():
+        if not isinstance(code, str) or not LOCALE_TAG.match(code):
+            fail(f"{folder.name}: i18n.json has invalid language code {code!r}")
+        only(f"{folder.name}: i18n.json[{code}]", entry, I18N_FIELDS)
+        if not plain(entry.get("description"), 600):
+            fail(f"{folder.name}: i18n.json[{code}].description must be non-empty plain text (<= 600 chars)")
+        item = {}
+        if "displayName" in entry:
+            if not plain(entry["displayName"], 80):
+                fail(f"{folder.name}: i18n.json[{code}].displayName must be non-empty plain text (<= 80 chars)")
+            item["displayName"] = entry["displayName"].strip()
+        item["description"] = entry["description"].strip()
+        check_wording(f"{folder.name}: i18n.json[{code}]", json.dumps(item, ensure_ascii=False))
+        normalized[code] = item
+    if target_name:
+        base = ROOT / "plugins" / folder.name / "i18n.json"
+        if base.is_file() and base.read_bytes() != path.read_bytes():
+            fail(f"targets/{target_name}/{folder.name}: i18n.json must match plugins/{folder.name}/i18n.json")
+    return normalized
+
+
 def open_url_ok(pattern):
     scheme, found, rest = str(pattern).partition("://")
     authority, slash, route = rest.partition("/")
@@ -400,9 +476,12 @@ def folders():
 
 def main():
     check = "--check" in sys.argv[1:]
+    plugin_folders = folders()
+    authors = load_authors({folder.name for folder, _ in plugin_folders})
     entries, wanted, seen_tools = [], {}, {}
-    for folder, target_name in folders():
+    for folder, target_name in plugin_folders:
         data = manifest(folder)
+        i18n = load_i18n(folder, target_name)
         launch_config = check_launch(folder, data)
         if not target_name and (folder / "tools.json").is_file() and data["name"] != "linux-desktop":
             raw = json.loads((folder / "tools.json").read_text(encoding="utf-8"))
@@ -419,6 +498,8 @@ def main():
             fail(f"{folder.name}: its files changed but its version did not; raise the version in plugin.json")
         wanted[target] = packed
         entry = {key: data[key] for key in ("name", "version", "description", "permissions")}
+        entry["author"] = authors[data["name"]]
+        entry["i18n"] = i18n
         for key in ("displayName", "platforms", "categories", "kind", "engines", "contributes"):
             if data.get(key):
                 entry[key] = data[key]

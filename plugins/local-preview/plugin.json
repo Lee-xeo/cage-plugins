@@ -1,7 +1,7 @@
 {
   "name": "local-preview",
   "displayName": "Local Preview",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
   "icon": "icon.svg",
   "engines": { "cage": ">=0.1.8" },

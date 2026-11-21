@@ -16,7 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 NAME = "local-preview"
 HOSTS = {"127.0.0.1", "localhost", "::1"}
 MAX_URL = 2048
