@@ -1,11 +1,13 @@
 # An MCP server on standard input and output for the Computer Use tools.
 # The tools are described in tools.json beside this file and carried out by
-# appcontrol.py, which is loaded at the first call. Only Python's standard
+# appcontrol.py, which is loaded when the server starts. Only Python's standard
 # library and the system's own frameworks are used.
 import importlib
 import json
 import os
 import sys
+import threading
+import time
 
 VERSION = "0.1.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -13,11 +15,16 @@ with open(os.path.join(HERE, "tools.json"), encoding="utf-8") as tools_file:
     TOOLS = json.load(tools_file)["tools"]
 NAMES = {tool["name"] for tool in TOOLS}
 _module, _stamp = None, None
+_loading = threading.Lock()  # loading the module, and counting the calls under way
+_writing = threading.Lock()  # one reply at a time on standard output
+_busy = 0
+_failure = None  # why the module could not be loaded
 
 
-def implementation():
-    """The module that carries out the tools. While a file named .reload-on-change
-    is beside it, edits to it take effect at the next call, without a restart."""
+def load():
+    """Load the module that carries out the tools, or load it again after an edit
+    while a file named .reload-on-change is beside it and no call is under way.
+    Only on the main thread, where the system's frameworks must be started."""
     global _module, _stamp
     stamp = os.stat(os.path.join(HERE, "appcontrol.py")).st_mtime_ns
     if _module is None:
@@ -25,10 +32,20 @@ def implementation():
             sys.path.insert(0, HERE)
         import appcontrol
         _module, _stamp = appcontrol, stamp
-    elif stamp != _stamp and os.path.exists(os.path.join(HERE, ".reload-on-change")):
+        return
+    if stamp == _stamp or not os.path.exists(os.path.join(HERE, ".reload-on-change")):
+        return
+    with _loading:
+        if _busy:
+            return
         if hasattr(_module, "shutdown"):
             _module.shutdown()
         _module, _stamp = importlib.reload(_module), stamp
+
+
+def implementation():
+    if _module is None:
+        raise _failure or RuntimeError("the tools are still starting")
     return _module
 
 
@@ -58,7 +75,28 @@ def answer(message):
     return None
 
 
-def main():
+def reply(request):
+    global _busy
+    try:
+        result = answer(request)
+        message = {"jsonrpc": "2.0", "id": request["id"]}
+        if result is None:
+            message["error"] = {"code": -32601, "message": "method not found"}
+        else:
+            message["result"] = result
+        with _writing:
+            sys.stdout.write(json.dumps(message) + "\n")
+            sys.stdout.flush()
+    finally:
+        if request.get("method") == "tools/call":
+            with _loading:
+                _busy -= 1
+
+
+def read():
+    """Each tool call runs on a thread of its own, so calls for different apps go on at the same time; the
+    module makes calls for one app take turns."""
+    global _busy
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -69,14 +107,37 @@ def main():
             continue
         if not isinstance(request, dict) or "id" not in request:
             continue  # a notification needs no answer
-        result = answer(request)
-        reply = {"jsonrpc": "2.0", "id": request["id"]}
-        if result is None:
-            reply["error"] = {"code": -32601, "message": "method not found"}
+        if request.get("method") == "tools/call":
+            with _loading:
+                _busy += 1
+            threading.Thread(target=reply, args=(request,), daemon=True).start()
         else:
-            reply["result"] = result
-        sys.stdout.write(json.dumps(reply) + "\n")
-        sys.stdout.flush()
+            reply(request)
+
+
+def main():
+    global _failure
+    try:
+        load()
+    except Exception as problem:  # answer the calls with what went wrong
+        _failure = problem
+    reader = threading.Thread(target=read, daemon=True)
+    reader.start()
+    # The main thread takes in the system's news of apps starting, quitting and
+    # coming to the front, which arrives only on the main thread.
+    while reader.is_alive():
+        if _failure is None:
+            try:
+                load()
+            except Exception:
+                pass
+        module = _module
+        if module is not None and hasattr(module, "idle"):
+            try:
+                module.idle()
+            except Exception:
+                pass
+        time.sleep(0.05)
 
 
 if __name__ == "__main__":

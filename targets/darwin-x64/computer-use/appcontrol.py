@@ -7,6 +7,7 @@ import base64
 import ctypes as c
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -138,6 +139,8 @@ CGEventSetFlags = _fn(_AS, "CGEventSetFlags", None, vp, c.c_uint64)
 CGEventSetIntegerValueField = _fn(_AS, "CGEventSetIntegerValueField", None, vp, c.c_uint32, c.c_int64)
 CGEventPost = _fn(_AS, "CGEventPost", None, c.c_uint32, vp)
 CGEventPostToPid = _fn(_AS, "CGEventPostToPid", None, c.c_int32, vp)
+CGEventSourceSecondsSinceLastEventType = _fn(_AS, "CGEventSourceSecondsSinceLastEventType", c.c_double, c.c_int32,
+                                             c.c_uint32)
 CGWarpMouseCursorPosition = _fn(_AS, "CGWarpMouseCursorPosition", c.c_int32, CGPoint)
 CGAssociateMouseAndMouseCursorPosition = _fn(_AS, "CGAssociateMouseAndMouseCursorPosition", c.c_int32, c.c_int32)
 CGWindowListCopyWindowInfo = _fn(_AS, "CGWindowListCopyWindowInfo", vp, c.c_uint32, c.c_uint32)
@@ -456,10 +459,22 @@ def front_pid():
 
 # ------------------------------------------------------------------- apps
 def pump():
-    """Let in the system's news of apps that started, quit or came to the front."""
+    """Let in the system's news of apps that started, quit or came to the front. That news comes in on the main
+    thread; while calls run on threads of their own, the server's main thread keeps it coming in."""
+    if threading.current_thread() is not threading.main_thread():
+        return
     for _ in range(50):
         if CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.0, True) != 4:  # 4: a source was handled
             break
+
+
+def idle():
+    """Called again and again on the main thread by the server while it waits."""
+    pool = objc_autoreleasePoolPush()
+    try:
+        pump()
+    finally:
+        objc_autoreleasePoolPop(pool)
 
 
 def nsstring(obj):
@@ -505,7 +520,7 @@ PROTECTED_BUNDLES = {"io.github.lee-xeo.claude-cage", "com.apple.SecurityAgent",
                      "com.apple.LocalAuthentication.UIAgent", "com.apple.UserNotificationCenter",
                      "com.apple.coreservices.uiagent", "com.apple.accessibility.universalAccessAuthWarn",
                      "com.apple.loginwindow", "com.apple.ScreenSaver.Engine"}
-PROTECTED_PROGRAMS = {"osascript", "SecurityAgent", "coreautha", "universalAccessAuthWarn", "UserNotificationCenter",
+PROTECTED_PROGRAMS = {"ClaudeOverlay", "osascript", "SecurityAgent", "coreautha", "universalAccessAuthWarn", "UserNotificationCenter",
                       "loginwindow", "CoreServicesUIAgent", "CageUpdateInstaller"}
 DEFAULT_POLICY = {
     "click_only": ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.*", "com.mitchellh.ghostty",
@@ -604,6 +619,125 @@ def lookup_app(query, apps=None):
     return None
 
 
+# ------------------------------------------------- the user's say over apps
+# The user chooses which apps Claude may use. The first time one is wanted, a
+# question shows on screen with three answers: always, for an hour, or no. Only
+# a real click of the user's answers it; clicks posted by programs, these tools
+# among them, are ignored. "Always" and "no" are kept in app-grants.json beside
+# these tools, which the user may edit at any time; an hour is kept in memory.
+GRANTS = os.path.join(HERE, "app-grants.json")
+GRANTS_NOTE = ("always：Claude 可以直接操作的应用；never：你拒绝过的应用。条目是 bundle identifier（没有的写应用路径）。"
+               "删掉一条，下次用到时会重新问你。改完立即生效。")
+HOUR = 3600
+ASK_WAIT = 120
+_hour_grants = {}
+_grants_lock = threading.Lock()
+_asks = {}
+
+
+def app_key(app):
+    return app["bundle_id"] or app["path"] or app["name"]
+
+
+def grants():
+    try:
+        with open(GRANTS, encoding="utf-8") as file:
+            data = json.load(file)
+    except (OSError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    return {key: [item for item in data.get(key, []) if isinstance(item, str)]
+            if isinstance(data.get(key), list) else [] for key in ("always", "never")}
+
+
+def remember(key, answer):
+    with _grants_lock:
+        data = grants()
+        for name in ("always", "never"):
+            data[name] = [item for item in data[name] if item != key]
+        data[answer].append(key)
+        body = {"_说明": GRANTS_NOTE, "always": sorted(data["always"]), "never": sorted(data["never"])}
+        temporary = GRANTS + ".tmp"
+        with open(temporary, "w", encoding="utf-8") as file:
+            json.dump(body, file, ensure_ascii=False, indent=2)
+            file.write("\n")
+        os.replace(temporary, GRANTS)
+
+
+def consent_of(app, data=None):
+    """allowed, refused or ask: what the user has said about Claude using this app."""
+    key = app_key(app)
+    data = data or grants()
+    if key in data["never"]:
+        return "refused"
+    if key in data["always"] or _hour_grants.get(key, 0) > time.time():
+        return "allowed"
+    return "ask"
+
+
+def ask_user(app):
+    """Put the question on screen and wait for the user's answer: always, hour, no, or None when there was none."""
+    key = app_key(app)
+    with _grants_lock:
+        pending = _asks.get(key)
+        if pending is None:
+            pending = _asks[key] = {"id": "%x" % random.getrandbits(48), "done": threading.Event(), "answer": None}
+            fresh_ask = True
+        else:
+            fresh_ask = False
+    if fresh_ask and not overlay_send({"op": "ask", "id": pending["id"], "app": app["name"], "bundle": key}):
+        with _grants_lock:
+            _asks.pop(key, None)
+        return "unasked"
+    pending["done"].wait(ASK_WAIT)
+    with _grants_lock:
+        if _asks.get(key) is pending:
+            _asks.pop(key, None)
+    if pending["answer"] is None and fresh_ask:
+        overlay_send({"op": "unask", "id": pending["id"]})
+    return pending["answer"]
+
+
+def answered(ask_id, answer):
+    with _grants_lock:
+        pending = next((p for p in _asks.values() if p["id"] == ask_id), None)
+    if pending is None or answer not in ("always", "hour", "no", "later"):
+        return
+    pending["answer"] = answer
+    pending["done"].set()
+
+
+def consent(app):
+    state = consent_of(app)
+    if state == "allowed":
+        return
+    if state == "refused":
+        raise Refused("the user has chosen not to let Claude use %s. Do not try it another way; if it is needed, ask "
+                      "the user, who can change this in app-grants.json beside these tools." % app["name"])
+    answer = ask_user(app)
+    key = app_key(app)
+    if answer == "always":
+        remember(key, "always")
+        return
+    if answer == "hour":
+        _hour_grants[key] = time.time() + HOUR
+        return
+    if answer == "no":
+        remember(key, "never")
+        raise Refused("the user answered on screen that Claude may not use %s. Do not try it another way; ask the "
+                      "user how to go on." % app["name"])
+    if answer == "later":
+        raise Refused("the user put away the question whether Claude may use %s without answering it. Ask the user in "
+                      "the conversation before calling for it again." % app["name"])
+    if answer == "unasked":
+        raise Refused("the user has not yet allowed Claude to use %s, and the question could not be shown on screen. "
+                      "Ask the user to add %s to always in app-grants.json beside these tools." % (
+                          app["name"], quoted(key)))
+    raise Refused("the user has not yet answered the question on screen whether Claude may use %s. Tell the user it "
+                  "is waiting there, and call again once they have answered." % app["name"])
+
+
 def admit(app):
     app["access"] = access_of(app)
     if app["access"] == "protected":
@@ -612,6 +746,7 @@ def admit(app):
     if app["access"] == "blocked":
         raise Refused("%s is blocked for these tools because it keeps passwords or other secrets (policy.json beside "
                       "the tools lists it). Ask the user to do this part themselves." % app["name"])
+    consent(app)
     return app
 
 
@@ -777,6 +912,9 @@ def pick_window(app, windows, number=None, title=None):
         if not isinstance(title, str) or not title.strip():
             raise Refused("window_title is part of a window's title")
         found = [i for i, window in enumerate(windows) if title.strip().lower() in window["title"].lower()]
+        exact = [i for i in found if windows[i]["title"].strip().lower() == title.strip().lower()]
+        if len(found) > 1 and len(exact) == 1:
+            found = exact
         if len(found) != 1:
             raise Refused("%s windows have a title with %s; the windows are %s" % (
                 "several" if found else "no", quoted(title), "; ".join(quoted(w["title"]) for w in windows)))
@@ -834,6 +972,82 @@ def text(words):
 
 # ------------------------------------------------------------------- views
 VIEWS = {}  # process id: what the latest app_state of that app showed
+LISTED = {}  # (process id, window): the lines of the latest full listing of that window, by element number
+ACTED_AT = {}  # process id: when a tool last acted in that app
+QUIET_AFTER = 0.8  # seconds an app is given after an action before app_state reads it
+QUIET_MOST = 5.0  # the longest app_state waits, from the action, for an app that shows it is still busy
+NUMBERED = re.compile(r"^(\s*)\[(\d+)\]")
+
+
+def changes(key, lines):
+    """The lines of a full listing that differ from the previous listing of the same window: added or changed
+    elements, each with the element that holds it, and those gone. None when there is no earlier listing, or when
+    so much changed that the whole listing says it better."""
+    numbered, order, holders, stack = {}, [], {}, []
+    for line in lines:
+        found = NUMBERED.match(line)
+        if not found:
+            continue
+        depth, number = len(found.group(1)), int(found.group(2))
+        while stack and stack[-1][0] >= depth:
+            stack.pop()
+        holders[number] = stack[-1][1] if stack else None
+        stack.append((depth, number))
+        numbered[number] = line.strip()
+        order.append(number)
+    before = LISTED.get(key)
+    LISTED[key] = numbered
+    if before is None:
+        return None
+    added = [n for n in order if n not in before]
+    changed = [n for n in order if n in before and before[n] != numbered[n]]
+    gone = [n for n in before if n not in numbered]
+    if len(added) + len(changed) + len(gone) > max(12, len(order) // 2):
+        return None
+    out = []
+    for n in order:
+        if n in added or n in changed:
+            holder = holders.get(n)
+            out.append("%s %s%s" % ("+" if n in added else "~", numbered[n],
+                                    "  (in [%d])" % holder if holder is not None else ""))
+    for n in gone:
+        out.append("- %s" % short(before[n], 120))
+    return out
+
+
+BUSY_ROLES = {"AXBusyIndicator"}
+
+
+def busy(element, most=600, seconds=0.4):
+    """Whether a window shows that it is still working: a spinning indicator, a progress bar with no value, or a
+    web page that has not finished loading."""
+    deadline, queue, seen = time.time() + seconds, [element], 0
+    while queue and seen < most and time.time() < deadline:
+        node = queue.pop(0)
+        seen += 1
+        values, _ = ax_many(node, ["AXRole", "AXValue", "AXLoaded"])
+        role = values.get("AXRole")
+        if role in BUSY_ROLES or (role == "AXProgressIndicator" and values.get("AXValue") is None):
+            return True
+        if role == "AXWebArea" and values.get("AXLoaded") is False:
+            return True
+        queue.extend(ax_slice(node, "AXChildren", 60) or [])
+    return False
+
+
+def wait_quiet(pid, window):
+    """Before reading an app just acted in, give it the moment it needs to show the result, and longer, up to a
+    few seconds from the action, while it shows it is busy. The seconds waited, or 0."""
+    acted = ACTED_AT.get(pid)
+    if acted is None:
+        return 0.0
+    start = time.time()
+    if start - acted < QUIET_AFTER:
+        time.sleep(QUIET_AFTER - (start - acted))
+    while time.time() - acted < QUIET_MOST and window is not None and busy(window):
+        time.sleep(0.25)
+    ACTED_AT.pop(pid, None)
+    return time.time() - start
 NUMBERS = {}  # process id: the numbers given to that app's elements
 KEPT = 5000  # elements of one app kept by number; the oldest numbers go first
 
@@ -1177,9 +1391,11 @@ class Walker(object):
 def picture_of(app, window):
     """A picture of a window, and why there is none when there is not."""
     if window["minimized"]:
-        return None, "the window is minimized; app_set_value with attribute minimized and false brings it back"
+        return None, ("the user has minimized the window; its controls can still be read and used, and if a "
+                      "picture is needed, ask the user to bring it back")
     if app["hidden"]:
-        return None, "the app is hidden; open_app with foreground true shows it"
+        return None, ("the user has hidden the app; its controls can still be read and used, and if a picture "
+                      "is needed, ask the user to show it")
     if not window["number"]:
         return None, "the system gave no number to picture this window by"
     if not CGPreflightScreenCaptureAccess():
@@ -1194,7 +1410,10 @@ def picture_of(app, window):
 
 def tool_app_state(arguments):
     need_access()
-    app = find_app(arguments.get("app"))
+    query = arguments.get("app")
+    if isinstance(query, str) and lookup_app(query) is None:
+        tool_open_app({"app": query})  # not running: start it in the background, as the user would by opening it
+    app = find_app(query)
     application = app_element(app["pid"])
     show(app, "查看窗口")
     limit = whole(arguments, "limit", DEFAULT_LIMIT, 20, 800)
@@ -1212,6 +1431,9 @@ def tool_app_state(arguments):
         walker.walk(base)
         lines.append("Inside [%d] %s of %s; new numbers follow on from the earlier ones%s:" % (
             start, short(view.notes[start]), app["name"], ", matching " + quoted(query) if query else ""))
+        lines.extend(walker.lines)
+        if query and not walker.lines:
+            lines.append("(nothing in it matches)")
         if arguments.get("screenshot") is True and view.window.get("number"):
             shot, why = picture_of(app, view.window)
             if shot:
@@ -1222,6 +1444,7 @@ def tool_app_state(arguments):
         windows = windows_of(application)
         chosen = pick_window(app, windows, arguments.get("window"), arguments.get("window_title"))
         window = windows[chosen]
+        waited = wait_quiet(app["pid"], window["element"])
         view = View(app, window)
         why = ""
         if window["frame"] and window["frame"][2] > 0 and window["frame"][3] > 0:
@@ -1238,7 +1461,9 @@ def tool_app_state(arguments):
         VIEWS[app["pid"]] = view
         lines.append("%s (%s, pid %d), %s%s%s." % (
             app["name"], app["bundle_id"] or "no bundle identifier", app["pid"],
-            "in front" if app["frontmost"] else "in the background", ", hidden" if app["hidden"] else "",
+            "in front, where the user is working: foreground true may be used here"
+            if window_in_front(app, view.window.get("number")) else
+            "in the background: work on it in the background only", ", hidden by the user" if app["hidden"] else "",
             ", click_only" if app["access"] == "click_only" else ""))
         lines.append("Windows: " + " · ".join("%d %s%s%s%s" % (
             i, quoted(w["title"]) if w["title"] else "(untitled)",
@@ -1261,8 +1486,22 @@ def tool_app_state(arguments):
                 lines.extend(walker.lines[before:])
         before = len(walker.lines)
         walker.walk(window["element"])
-        lines.append("Elements%s (numbers are for the app_ tools):" % (" matching " + quoted(query) if query else ""))
-        lines.extend(walker.lines[before:])
+        listing = walker.lines[before:]
+        diff = None
+        if query is None:
+            key = (app["pid"], window.get("number") or window["title"])
+            diff = changes(key, listing)
+            if arguments.get("full") is True:
+                diff = None
+        if waited >= 1.5:
+            lines.append("Waited %.1f seconds for the app to finish showing the last action." % waited)
+        if diff is not None:
+            lines.append("Elements: only what changed since the last app_state of this window, + added, ~ changed, "
+                         "- gone; every other element is as it was, with the same number (full true lists all):")
+            lines.extend(diff or ["(nothing changed)"])
+        else:
+            lines.append("Elements%s (numbers are for the app_ tools):" % (" matching " + quoted(query) if query else ""))
+            lines.extend(listing)
         if query and before == len(walker.lines):
             lines.append("(nothing in this window matches)")
     focused = ax_get(application, "AXFocusedUIElement")
@@ -1274,7 +1513,16 @@ def tool_app_state(arguments):
             line = Walker(view, 1).entry(values, role, clean(values.get("AXTitle")) or clean(
                 values.get("AXDescription")), "") or ROLE_NAMES.get(role, role[2:].lower() or "element")
             number = view.add(focused, line)
-        lines.append("Keyboard focus: [%d] %s" % (number, short(view.notes[number], 160)))
+        span = ax_get(focused, "AXSelectedTextRange")
+        where = ""
+        if isinstance(span, dict):
+            if span.get("length"):
+                picked = ax_get(focused, "AXSelectedText")
+                where = "; selected: characters %d to %d%s" % (span["location"], span["location"] + span["length"],
+                                                              " " + quoted(short(picked, 60)) if picked else "")
+            else:
+                where = "; text cursor after character %d" % span["location"]
+        lines.append("Keyboard focus: [%d] %s%s" % (number, short(view.notes[number], 160), where))
     if walker.hidden and query is None:
         lines.append("Parts scrolled out of sight are left out; query finds what is in them too, and the app_ tools "
                      "act on such elements without scrolling.")
@@ -1377,13 +1625,13 @@ def parse_keys(keys):
     raise Refused("unknown key %s" % last)
 
 
-def tap(code, flags, pid=None):
+def tap(code, flags, pid=None, hold=0.0):
     for pressed in (True, False):
         event = CGEventCreateKeyboardEvent(None, code, pressed)
         if event:
             CGEventSetFlags(event, flags)
         deliver(event, pid)
-        time.sleep(0.015)
+        time.sleep(hold if pressed and hold else 0.015)
 
 
 def unicode_keys(words, pid=None):
@@ -1431,6 +1679,39 @@ def wait_front(pid, seconds):
         time.sleep(0.05)
 
 
+FRONT_RULE = ("the user decides what is in front by where they keep their windows: foreground true is for the "
+              "window the user already has in front, and any other is worked on in the background only, never "
+              "brought forward. Do it in the background, or tell the user what needs the front and ask them to "
+              "bring that window forward themselves")
+
+
+def window_in_front(app, number=None):
+    """Whether the user has this app in front and, given a window's number, that window frontmost of it."""
+    if app["hidden"] or front_pid() != app["pid"]:
+        return False
+    if number is None:
+        return True
+    for entry in screen_windows():
+        if entry["layer"] == 0 and entry["pid"] == app["pid"]:
+            return entry["id"] == number
+    return False
+
+
+def need_front(app, window=None):
+    """Foreground work is the user's choice, made by where they keep the window: allowed on the window they have
+    in front, refused on one behind others, minimized or hidden, which is not brought forward."""
+    number = window.get("number") if window else None
+    if window_in_front(app, number):
+        return
+    if app["hidden"]:
+        where = "hidden"
+    elif front_pid() != app["pid"]:
+        where = "behind the app the user has in front"
+    else:
+        where = "open in a window behind another of its own"
+    raise Refused("%s is %s, so nothing was done: %s." % (app["name"], where, FRONT_RULE))
+
+
 def bring_front(app, window=None):
     application = app_element(app["pid"])
     if app["hidden"]:
@@ -1473,16 +1754,212 @@ def window_under(app, point, view=None, strict=False):
     return None if strict or view is None else view.window.get("number")
 
 
-def click_in_background(app, view, point, button, count, flags):
+# ------------------------------------------------------- background input
+# Clicks, drags and command keys for a window the user does not have in front,
+# without bringing it forward or touching the user's pointer and keyboard.
+# AppKit takes a mouse event posted to an app only when the event names the
+# window (field 51) and the place in it, and takes clicks in text and command
+# keys only while it believes it is active. So for the moment of the input the
+# app is told, by the same messages the window server and AppKit send it, that
+# its window is key and that it is active; the system's front app stays the
+# user's, and afterwards the app is told it is inactive again. These messages
+# go through the window server's private interface (SkyLight); where it is
+# missing, input falls back to what the public interface can do.
+class PSN(c.Structure):
+    _fields_ = [("high", c.c_uint32), ("low", c.c_uint32)]
+
+
+_sky = {}
+
+
+def sky_post():
+    """SkyLight's SLPSPostEventRecordTo, or None."""
+    if "post" not in _sky:
+        try:
+            function = c.CDLL("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight").SLPSPostEventRecordTo
+            function.restype, function.argtypes = c.c_int32, [c.POINTER(PSN), c.c_void_p]
+            _sky["post"] = function
+        except (OSError, AttributeError):
+            _sky["post"] = None
+    return _sky["post"]
+
+
+def window_location_setter():
+    """The private CGEventSetWindowLocation, or None."""
+    if "where" not in _sky:
+        _sky["where"] = None
+        for path in ("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices",
+                     "/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"):
+            try:
+                function = c.CDLL(path).CGEventSetWindowLocation
+                function.restype, function.argtypes = None, [vp, CGPoint]
+                _sky["where"] = function
+                break
+            except (OSError, AttributeError):
+                continue
+    return _sky["where"]
+
+
+def psn_of(pid):
+    function = _AS.GetProcessForPID
+    function.restype, function.argtypes = c.c_int32, [c.c_int32, c.POINTER(PSN)]
+    psn = PSN()
+    return psn if function(pid, c.byref(psn)) == 0 else None
+
+
+def event_record(kind, window, extra):
+    raw = (c.c_uint8 * 0xf8)()
+    raw[0x04], raw[0x08] = 0xf8, kind
+    for at, value in extra.items():
+        raw[at] = value
+    for i, byte in enumerate(int(window).to_bytes(4, "little")):
+        raw[0x3c + i] = byte
+    return raw
+
+
+def uptime():
+    return send(send(objc_getClass(b"NSProcessInfo"), "processInfo"), "systemUptime", result=c.c_double)
+
+
+def tell_active(pid, window, active):
+    """The AppKit event an app gets when it becomes active or inactive, posted to that app alone."""
+    event = send(objc_getClass(b"NSEvent"),
+                 "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:",
+                 13, CGPoint(0, 0), 0, uptime(), window, None, 1 if active else 2, 0, 0,
+                 types=(c.c_ulong, CGPoint, c.c_ulong, c.c_double, c.c_long, vp, c.c_short, c.c_long, c.c_long))
+    made = send(event, "CGEvent") if event else None
+    if made:
+        CGEventPostToPid(pid, made)
+    return bool(made)
+
+
+class BackgroundInput(object):
+    """For the moment of some input, have an app take it in one of its windows as if that window were key and the
+    app active, while the user's front app stays in front."""
+
+    def __init__(self, app, view):
+        self.app, self.view, self.told = app, view, False
+        self.window = view.window.get("number") if view else None
+
+    def __enter__(self):
+        pid = self.app["pid"]
+        if not self.window or window_in_front(self.app, self.window):
+            return self  # the user has it in front already: nothing to pretend
+        if front_pid() == pid:
+            raise Refused("the user is working in another window of %s, so input was not sent to this one, which "
+                          "would take the keyboard from the user's window. Ask the user, or wait until they leave "
+                          "the app." % self.app["name"])
+        element = self.view.window["element"]
+        if ax_get(element, "AXMain") is False:
+            ax_set(element, "AXMain", True)  # first among the app's own windows; the app stays behind the user's
+            time.sleep(0.08)
+        post, psn = sky_post(), psn_of(pid)
+        if post is not None and psn is not None:
+            held = ax_get(app_element(pid), "AXFocusedWindow")
+            former = window_number(held) if isinstance(held, Element) else None
+            if former and former != self.window:  # the app's own key window lets go, as when another is clicked
+                post(c.byref(psn), event_record(0x0d, former, {0x8a: 0x02}))
+            post(c.byref(psn), event_record(0x0d, self.window, {0x8a: 0x01}))
+            for kind in (1, 2):  # the window becomes key in its app, as when clicked
+                raw = event_record(kind, self.window, {0x3a: 0x10})
+                for i in range(0x20, 0x30):
+                    raw[i] = 0xFF
+                post(c.byref(psn), raw)
+        self.told = tell_active(pid, self.window, True)
+        time.sleep(0.03)
+        return self
+
+    def __exit__(self, *_):
+        if self.told:
+            time.sleep(0.05)
+            tell_active(self.app["pid"], self.window, False)
+        return False
+
+
+def window_frame(view):
+    values, _ = ax_many(view.window["element"], ["AXPosition", "AXSize"])
+    return frame_of(values) or view.window["frame"]
+
+
+def placed_mouse(kind, view, point, button=0, flags=0, press=1, frame=None):
+    """A mouse event for one window: the window's number and the place in it go with it, as AppKit needs."""
+    x, y = (frame or window_frame(view))[:2]
+    event = CGEventCreateMouseEvent(None, kind, point, button)
+    if not event:
+        raise Refused("the system did not accept the input")
+    CGEventSetFlags(event, flags)
+    CGEventSetIntegerValueField(event, 1, press)  # which click of a double or triple click
+    for field in (51, 91, 92):
+        CGEventSetIntegerValueField(event, field, view.window["number"])
+    setter = window_location_setter()
+    if setter:
+        setter(event, CGPoint(point.x - x, point.y - y))
+    return event
+
+
+def click_in_background(app, view, point, button, count, flags, hold=0.0):
     down, up, _, number = BUTTONS[button]
-    window = window_under(app, point, view)
-    for press in range(1, count + 1):
-        for kind in (down, up):
-            deliver(mouse_event(kind, point, number, flags, press, window), app["pid"])
+    frame = window_frame(view)
+    with BackgroundInput(app, view):
+        for press in range(1, count + 1):
+            for kind in (down, up):
+                deliver(placed_mouse(kind, view, point, number, flags, press, frame), app["pid"])
+                time.sleep(hold if kind == down and hold else 0.03)
+
+
+SAFE_ROLES = {"AXWindow", "AXGroup", "AXToolbar", "AXSplitGroup", "AXUnknown", "AXStaticText", "AXLayoutArea",
+              "AXScrollArea", "AXSplitter"}
+
+
+def quiet_spot(view, frame):
+    """A place on the window's title bar where a click does nothing but make the window key: no control there."""
+    x, y, width, height = frame
+    blocked, queue, seen = [], [view.window["element"]], 0
+    while queue and seen < 400:
+        node = queue.pop(0)
+        seen += 1
+        values, _ = ax_many(node, ["AXRole", "AXPosition", "AXSize"])
+        place = frame_of(values)
+        if place and place[1] > y + 40:
+            continue  # below the title bar
+        if values.get("AXRole") not in SAFE_ROLES and place:
+            blocked.append(place)
+        queue.extend(ax_slice(node, "AXChildren", 80) or [])
+    for top in (5, 12):
+        for share in (0.62, 0.72, 0.82, 0.52, 0.9, 0.42):
+            spot = CGPoint(x + width * share, y + top)
+            if not any(b[0] - 4 <= spot.x <= b[0] + b[2] + 4 and b[1] - 4 <= spot.y <= b[1] + b[3] + 4
+                       for b in blocked):
+                return spot
+    return None
+
+
+def prime_window(app, view, frame):
+    """A click on a quiet spot of the title bar, after which AppKit routes command keys to the window. False when
+    the window shows no such spot."""
+    spot = quiet_spot(view, frame)
+    if spot is None:
+        return False
+    for kind in (1, 2):
+        deliver(placed_mouse(kind, view, spot, 0, 0, 1, frame), app["pid"])
+        time.sleep(0.03)
+    time.sleep(0.15)
+    return True
+
+
+def chord_in_background(app, view, code, flags, hold=0.0, count=1):
+    """Press a key with command, control or option in a window in the background. True when it was sent with the
+    window ready for it."""
+    frame = window_frame(view)
+    with BackgroundInput(app, view) as scope:
+        primed = True if not scope.told else prime_window(app, view, frame)
+        for _ in range(count):
+            tap(code, flags, app["pid"], hold)
             time.sleep(0.03)
+    return primed
 
 
-def click_with_pointer(point, button, count, flags):
+def click_with_pointer(point, button, count, flags, hold=0.0):
     down, up, _, number = BUTTONS[button]
     back = pointer_location()
     try:
@@ -1491,7 +1968,46 @@ def click_with_pointer(point, button, count, flags):
         for press in range(1, count + 1):
             for kind in (down, up):
                 deliver(mouse_event(kind, point, number, flags, press))
-                time.sleep(0.02)
+                time.sleep(hold if kind == down and hold else 0.02)
+    finally:
+        time.sleep(0.05)
+        CGWarpMouseCursorPosition(back)
+        CGAssociateMouseAndMouseCursorPosition(1)
+
+
+def drag_path(start, end, steps):
+    return [CGPoint(start.x + (end.x - start.x) * i / steps, start.y + (end.y - start.y) * i / steps)
+            for i in range(1, steps + 1)]
+
+
+def drag_in_background(app, view, start, end, flags, hold):
+    """A left-button drag sent to one window alone: press, a short hold so the app takes it as a drag, moves along
+    the way, and release."""
+    down, up, dragged, number = BUTTONS["left"]
+    frame = window_frame(view)
+    with BackgroundInput(app, view):
+        deliver(placed_mouse(down, view, start, number, flags, 1, frame), app["pid"])
+        time.sleep(max(hold, 0.12))
+        for point in drag_path(start, end, 16):
+            deliver(placed_mouse(dragged, view, point, number, flags, 1, frame), app["pid"])
+            time.sleep(0.015)
+        time.sleep(0.08)
+        deliver(placed_mouse(up, view, end, number, flags, 1, frame), app["pid"])
+
+
+def drag_with_pointer(start, end, flags, hold):
+    down, up, dragged, number = BUTTONS["left"]
+    back = pointer_location()
+    try:
+        deliver(mouse_event(MOVED, start, 0, flags))
+        time.sleep(0.05)
+        deliver(mouse_event(down, start, number, flags, 1))
+        time.sleep(max(hold, 0.12))
+        for point in drag_path(start, end, 16):
+            deliver(mouse_event(dragged, point, number, flags, 1))
+            time.sleep(0.015)
+        time.sleep(0.08)
+        deliver(mouse_event(up, end, number, flags, 1))
     finally:
         time.sleep(0.05)
         CGWarpMouseCursorPosition(back)
@@ -1580,6 +2096,34 @@ def default_button(dialog):
     return None
 
 
+def press_dialog_button(button):
+    """Press the button of an open or save dialog. A dialog shown for an app in the background shows what was
+    selected in it and still keeps its button off until the app is active; macOS gives no way round that, and the
+    app is not brought forward behind the user's back: the user is asked to. True when pressed."""
+    if ax_get(button, "AXEnabled") is not False:
+        return perform(button, "AXPress") == 0
+    pid = pid_of(button)
+    if pid is None:
+        return False
+    view = VIEWS.get(pid)
+    if front_pid() != pid and view is not None and sky_post():
+        with BackgroundInput({"pid": pid, "name": view.name, "hidden": False}, view):
+            deadline = time.time() + 1.5
+            while ax_get(button, "AXEnabled") is False and time.time() < deadline:
+                time.sleep(0.03)
+            if ax_get(button, "AXEnabled") is not False:
+                return perform(button, "AXPress") == 0
+    if front_pid() != pid:
+        raise Refused("what was chosen is selected in the dialog, but macOS keeps the dialog's %s button off while "
+                      "its app is in the background, and %s. Ask the user to click that app's window once to bring "
+                      "it forward, then press the button again." % (quoted(clean(ax_get(button, "AXTitle")) or "OK"),
+                                                                     FRONT_RULE.split(": ")[0]))
+    deadline = time.time() + 2.0
+    while ax_get(button, "AXEnabled") is False and time.time() < deadline:
+        time.sleep(0.03)
+    return ax_get(button, "AXEnabled") is not False and perform(button, "AXPress") == 0
+
+
 def open_item(element):
     """Open an item the way a double click does: select it, then have it, or what holds it, open. In an open or
     save dialog this is done without the actions that would bring the app to the front: a place in the sidebar or a
@@ -1595,11 +2139,10 @@ def open_item(element):
             time.sleep(0.2)
             return True
         if not folder and "AXPress" in actions_of(button):
-            deadline = time.time() + 1.5  # the button turns on once the dialog has taken in the selection
+            deadline = time.time() + 0.6  # the button turns on once the dialog has taken in the selection
             while ax_get(button, "AXEnabled") is False and time.time() < deadline:
                 time.sleep(0.05)
-            if ax_get(button, "AXEnabled") is not False:
-                return perform(button, "AXPress") == 0
+            return press_dialog_button(button)
     node = element
     for _ in range(3):
         offered = actions_of(node)
@@ -1631,6 +2174,8 @@ def press(element, values, button, count=1, flags=0):
         return "Opened" if open_item(element) else None
     if count != 1:
         return None
+    if role == "AXButton" and values.get("AXIdentifier") == "OKButton" and values.get("AXEnabled") is False:
+        return "Pressed" if press_dialog_button(element) else None  # an open or save dialog's own button
     if "AXPress" in actions and perform(element, "AXPress") == 0:
         return "Pressed"
     editable = role in TEXT_INPUTS and (settable(element, "AXValue") or settable(element, "AXSelectedText"))
@@ -1675,15 +2220,24 @@ def pressable_at(app, point):
 OVERLAY = os.path.join(HERE, "overlay", "ClaudeOverlay")
 PAUSE = 90.0  # seconds the tools stay stopped after Esc
 _overlay = {"process": None, "failed": False, "stopped_at": 0.0}
+_overlay_lock = threading.Lock()
 
 
 def _listen(process):
     for line in process.stdout:
-        if line.strip() == b"stop":
+        words = line.decode("utf-8", "replace").split()
+        if words == ["stop"]:
             _overlay["stopped_at"] = time.time()
+        elif len(words) == 3 and words[0] == "answer":
+            answered(words[1], words[2])
 
 
 def overlay_send(order):
+    with _overlay_lock:
+        return _overlay_write(order)
+
+
+def _overlay_write(order):
     if _overlay["failed"] or not os.access(OVERLAY, os.X_OK):
         return False
     process = _overlay["process"]
@@ -1720,8 +2274,9 @@ def center_of(values):
 def show(app, what, point=None, kind="look"):
     """Put the banner up, and move Claude's cursor to where it is about to act."""
     if isinstance(app, dict):
-        _acted["pid"] = app["pid"]
-    order = {"op": "act", "app": app["name"] if isinstance(app, dict) else app, "what": what, "kind": kind}
+        _acted.pid = app["pid"]
+    order = {"op": "act", "app": app["name"] if isinstance(app, dict) else app, "what": what, "kind": kind,
+             "cursor": getattr(_acted, "cursor", None) or DEFAULT_CURSOR}
     if point is not None and isinstance(app, dict):
         # The cursor shows only on the window acted in, just above it, so whatever covers that window covers the
         # cursor too; a place outside the app's windows, such as an element scrolled out of sight, gets none.
@@ -1748,40 +2303,158 @@ def shutdown():
         _overlay["process"] = None
 
 
-_acted = {"pid": None}  # the app the current call works in
+_acted = threading.local()  # per call: the app it works in (pid) and the name of its cursor
 UNGUARDED = {"list_apps", "read_clipboard", "write_clipboard", "app_batch"}
+DEFAULT_CURSOR = "Claude"
+WATCH = 3.0  # seconds after a call during which an app that jumps in front on its own is put back
 
 
-def keep_front(before):
-    """When the app a background call worked in came to the front on its own, as some do when a dialog opens or an
-    item is opened, put back in front the app the user had there. True when that was needed."""
-    acted = _acted["pid"]
-    if before is None or acted is None or before == acted:
-        return False
-    for wait in (0.0, 0.1):
-        time.sleep(wait)
-        if front_pid() == acted:
+def user_idle():
+    """Seconds since the user last pressed a key or a mouse button, which is how a person brings an app forward;
+    moving the pointer does not count. Events these tools send to one app alone do not count either."""
+    # The hardware's state: left, right and other mouse button down, key down.
+    return min(CGEventSourceSecondsSinceLastEventType(1, kind) for kind in (1, 3, 25, 10))
+
+
+def front_state():
+    """The app in front, its frontmost window, and the windows above that one: what a call in the background must
+    leave as it found it."""
+    pid = front_pid()
+    if pid is None:
+        return None
+    above, top = set(), None
+    for window in screen_windows():
+        if window["layer"] != 0:
+            continue
+        if window["pid"] == pid:
+            top = window["id"]
             break
-    else:
+        above.add(window["id"])
+    ax_window = None
+    if top is not None:
+        for attribute in ("AXFocusedWindow", "AXMainWindow"):
+            found = ax_get(app_element(pid), attribute)
+            if isinstance(found, Element):
+                ax_window = found
+                break
+    return {"pid": pid, "top": top, "above": above if top is not None else set(), "window": ax_window,
+            "since": time.time()}
+
+
+def newly_over(state, acted):
+    """Whether a window of the app acted in has come over the user's front window since the call began."""
+    if state["top"] is None:
         return False
-    ax_set(app_element(before), "AXFrontmost", True)
+    for window in screen_windows():
+        if window["layer"] != 0:
+            continue
+        if window["id"] == state["top"]:
+            return False
+        if window["pid"] == acted and window["id"] not in state["above"]:
+            return True
+    return False
+
+
+def jumped(state, acted):
+    return front_pid() == acted or newly_over(state, acted)
+
+
+def put_back(state, acted):
+    """Put the user's app and window back on top of the app acted in. Not when the user has touched the keyboard or
+    pointer since the call began: then what is in front may be the user's own doing."""
+    if user_idle() < time.time() - state["since"]:
+        return False
+    if front_pid() != state["pid"]:
+        ax_set(app_element(state["pid"]), "AXFrontmost", True)
+        time.sleep(0.05)
+    if state["window"] is not None and newly_over(state, acted):
+        perform(state["window"], "AXRaise")
     return True
 
 
-def run_tool(name, arguments):
-    """One tool, keeping the user's app in front unless the call asks for the foreground."""
+def keep_front(state, acted):
+    """When the app a background call worked in came to the front, or put a window over the user's, as some do when
+    a dialog opens, an item is opened or a page is loaded, put the user's app and window back on top. True when that
+    was needed."""
+    if state is None or acted is None or state["pid"] == acted:
+        return False
+    for wait in (0.0, 0.1):
+        time.sleep(wait)
+        if jumped(state, acted):
+            return put_back(state, acted)
+    return False
+
+
+def watch_front(state, acted, seconds=WATCH):
+    """Some apps come forward a second or more after they were asked to do something. Keep watching for a while
+    after the call, on a thread of its own, and put the user's work back on top if they do."""
+    if state is None or acted is None or state["pid"] == acted:
+        return
+
+    def watch():
+        pool = objc_autoreleasePoolPush()
+        try:
+            deadline = time.time() + seconds
+            while time.time() < deadline:
+                time.sleep(0.12)
+                if jumped(state, acted) and not put_back(state, acted):
+                    return  # the user is at work; leave it to them
+        except Exception:
+            pass
+        finally:
+            objc_autoreleasePoolPop(pool)
+    threading.Thread(target=watch, daemon=True).start()
+
+
+_locks, _locks_guard = {}, threading.Lock()
+
+
+def lock_for(arguments):
+    """Calls for one app take turns; calls for different apps run at the same time."""
+    wanted = arguments.get("app")
+    key = None
+    if isinstance(wanted, (str, int)) and not isinstance(wanted, bool):
+        found = lookup_app(str(wanted).strip()) if str(wanted).strip() else None
+        key = found["pid"] if found else str(wanted).strip().lower()
+    with _locks_guard:
+        return _locks.setdefault(key, threading.Lock())
+
+
+def cursor_name(arguments, inherited=None):
+    name = arguments.get("cursor", inherited)
+    if name is None:
+        return inherited
+    if not isinstance(name, str) or not name.strip() or len(name.strip()) > 24 or any(
+            ord(ch) < 0x20 for ch in name):
+        raise Refused("cursor is a short name, up to 24 characters, such as A or 搜索")
+    return name.strip()
+
+
+def run_tool(name, arguments, inherited=None):
+    """One tool, keeping the user's app and window in front: whatever the call does, what the user has in front
+    stays there."""
     function = HANDLERS[name]
-    if name in UNGUARDED or arguments.get("foreground") is True:
+    _acted.cursor = cursor_name(arguments, inherited)
+    if name == "app_batch":
         return function(arguments)
-    before, _acted["pid"] = front_pid(), None
-    try:
-        result = function(arguments)
-    except Refused:
-        keep_front(before)
-        raise
-    if keep_front(before):
-        note = ("The app came to the front on its own; the app the user had in front was put back. Its window may "
-                "still be above others.")
+    if name in UNGUARDED:
+        return function(arguments)
+    with lock_for(arguments):
+        state, _acted.pid = front_state(), None
+        try:
+            result = function(arguments)
+        except Refused:
+            acted = getattr(_acted, "pid", None)
+            keep_front(state, acted)
+            watch_front(state, acted)
+            raise
+        acted = getattr(_acted, "pid", None)
+        if acted is not None and name not in ("app_state", "list_apps"):
+            ACTED_AT[acted] = time.time()
+        put = keep_front(state, acted)
+        watch_front(state, acted)
+    if put:
+        note = "The app came in front of the user's work on its own; the user's app and window were put back on top."
         if isinstance(result, str):
             result += " " + note
         elif isinstance(result, list):
@@ -1810,8 +2483,9 @@ def tool_app_click(arguments):
         raise Refused("count is 1, 2 or 3")
     flags = modifier_flags(arguments.get("modifiers"))
     foreground = arguments.get("foreground") is True
-    if button != "left" or flags:
-        need_full(app, "a right, middle or modifier click")
+    hold = seconds_argument(arguments, "duration")
+    if button != "left" or flags or hold:
+        need_full(app, "a right, middle, modifier or long click")
     guard(app)
     view = need_view(app)
     number = arguments.get("element")
@@ -1820,7 +2494,7 @@ def tool_app_click(arguments):
         values = fresh(element, number)
         target = "[%d] %s" % (number, short(view.notes[number]))
         show(app, ("右键点击 " if button == "right" else "点击 ") + brief(view.notes[number]), center_of(values), "click")
-        if not foreground and (not flags or flags == CMD):
+        if not foreground and not hold and (not flags or flags == CMD):
             done = press(element, values, button, count, flags)
             if done:
                 settle()
@@ -1835,8 +2509,10 @@ def tool_app_click(arguments):
         point = picture_point(view, arguments)
         target = "(%g, %g)" % (float(arguments["x"]), float(arguments["y"]))
         show(app, "点击", point, "click")
-        if not foreground and (not flags or flags == CMD) and button == "left":
+        if not foreground and not hold and (not flags or flags == CMD) and button == "left":
             hit = pressable_at(app, point)
+            if hit is not None and ax_get(hit, "AXRole") in TEXT_INPUTS and sky_post():
+                hit = None  # a click in text puts the cursor where it lands, which focusing it does not
             if hit is not None:
                 values, _ = ax_many(hit, BASE)
                 done = press(hit, values, "left", count, flags)
@@ -1846,18 +2522,20 @@ def tool_app_click(arguments):
                         "AXTitle")) or clean(values.get("AXDescription")) or clean(values.get("AXValue")), "")
                     return "%s %s at %s in %s, in the background." % (done, name or "the element", target, app["name"])
     if foreground:
-        bring_front(app, view.window["element"])
+        need_front(app, view.window)
         cover = covering(app, point)
         if cover:
             raise Refused("a window of %s is on top at that spot, so nothing was clicked" % cover)
-        click_with_pointer(point, button, count, flags)
+        click_with_pointer(point, button, count, flags, hold)
         settle()
-        return "Clicked %s in %s with the pointer, which then went back to where it was." % (target, app["name"])
-    click_in_background(app, view, point, button, count, flags)
+        return "Clicked %s%s in %s with the pointer, which then went back to where it was." % (
+            target, held_for(hold), app["name"])
+    click_in_background(app, view, point, button, count, flags, hold)
     settle()
-    return ("Sent a %s click at %s to %s alone, without moving the pointer. Some apps ignore clicks while in the "
-            "background: check with app_state, and if nothing changed, click again with foreground true."
-            % (button if count == 1 else "%s %s-fold" % (button, count), target, app["name"]))
+    return ("Clicked %s%s in %s, sent to its window alone without moving the pointer, in the background%s. Check "
+            "with app_state that it took effect." % (
+                target if count == 1 else "%s (%d-fold)" % (target, count), held_for(hold), app["name"],
+                "" if sky_post() else "; some apps ignore such clicks on this system"))
 
 
 # -------------------------------------------------------------------- text
@@ -1872,10 +2550,14 @@ def text_argument(arguments, key, empty=False):
 
 def insert_text(element, words):
     """Type through the accessibility interface: how many characters went in and whether return was pressed, or None."""
-    values, _ = ax_many(element, ["AXRole", "AXValue", "AXFocused", "AXSelectedText"])
+    values, _ = ax_many(element, ["AXRole", "AXValue", "AXFocused", "AXSelectedText", "AXSelectedTextRange"])
     role = values.get("AXRole") or ""
-    if not settable(element, "AXSelectedText"):
-        return None
+    # A field of a web page is given its new value whole: focusing it, or typing into it, can bring the browser
+    # to the front.
+    if not settable(element, "AXSelectedText") or holder(element, {"AXWebArea"}, most=40) is not None:
+        done = set_text(element, values, role, words)
+        if done or not settable(element, "AXSelectedText"):
+            return done
     submit = False
     if role in ONE_LINE:
         if words.endswith("\n"):
@@ -1887,14 +2569,41 @@ def insert_text(element, words):
     if words:
         before = values.get("AXValue")
         if ax_set(element, "AXSelectedText", words) != 0:
-            return None
+            return set_text(element, values, role, words)
         after = ax_get(element, "AXValue")
         if isinstance(before, str) and isinstance(after, str) and before == after and values.get(
                 "AXSelectedText") != words:
-            return None  # the app took no notice
+            return set_text(element, values, role, words)  # the app took no notice
     if submit:
         if not ("AXConfirm" in actions_of(element) and perform(element, "AXConfirm") == 0):
             tap(KEYS["return"], 0, pid_of(element))
+    return len(words), submit
+
+
+def set_text(element, values, role, words):
+    """Type by setting the whole value, for fields that take a value but not a replacement of their selection, as
+    the text fields of web pages do. Nothing is focused, so the app is not drawn to the front. The text goes where
+    the selection is, or at the end."""
+    if role not in TEXT_INPUTS or not settable(element, "AXValue"):
+        return None
+    submit = False
+    if role in ONE_LINE:
+        if words.endswith("\n"):
+            words, submit = words[:-1], True
+        if "\n" in words:
+            raise Refused("a one-line field takes no line breaks; type each line by itself, or press return with app_key")
+    held = values.get("AXValue") if isinstance(values.get("AXValue"), str) else ""
+    span = values.get("AXSelectedTextRange")
+    start, length = ((span["location"], span["length"]) if isinstance(span, dict) and values.get("AXFocused") is True
+                     else (len(held), 0))  # a field without the focus has no cursor of its own: add at the end
+    start = max(0, min(int(start), len(held)))
+    length = max(0, min(int(length), len(held) - start))
+    wanted = held[:start] + words + held[start + length:]
+    if words and (ax_set(element, "AXValue", wanted) != 0 or ax_get(element, "AXValue") != wanted):
+        return None
+    if submit:
+        if not ("AXConfirm" in actions_of(element) and perform(element, "AXConfirm") == 0):
+            return len(words), False
     return len(words), submit
 
 
@@ -1919,7 +2628,7 @@ def tool_app_type(arguments):
     show(app, "输入文字", center_of(ax_many(element, ["AXPosition", "AXSize"])[0]) if element is not None else None,
          "type")
     if foreground:
-        bring_front(app, view.window["element"] if view else None)
+        need_front(app, view.window if view else None)
         if element is not None and settable(element, "AXFocused"):
             ax_set(element, "AXFocused", True)
         if front_pid() != app["pid"]:
@@ -1937,7 +2646,7 @@ def tool_app_type(arguments):
     settle()
     return ("Sent %d characters to %s alone as key presses, in the background. An input method that is on may catch "
             "them, and some apps ignore keys while in the background: check with app_state, and if nothing arrived, "
-            "use foreground true." % (len(words), app["name"]))
+            "foreground true works if the user has this window in front; otherwise tell the user." % (len(words), app["name"]))
 
 
 def set_range(element, start, length):
@@ -2027,10 +2736,13 @@ def tool_app_key(arguments):
     guard(app)
     flags, code, character = parse_keys(arguments.get("keys"))
     count = whole(arguments, "count", 1, 1, 20)
+    hold = seconds_argument(arguments, "duration")
+    if hold and code is None:
+        raise Refused("duration needs a named key or a letter, digit or sign key, not another character")
     show(app, "按键 " + arguments["keys"])
     foreground = arguments.get("foreground") is True
     pid = app["pid"]
-    if not foreground and code is not None:
+    if not foreground and not hold and code is not None:
         done = edit_key(app, flags, code)
         if done:
             for _ in range(count - 1):
@@ -2038,15 +2750,21 @@ def tool_app_key(arguments):
             settle()
             return "Pressed %s%s in %s through the accessibility interface (%s), in the background." % (
                 arguments["keys"], " %d times" % count if count > 1 else "", app["name"], done)
+    view = VIEWS.get(app["pid"])
+    if not foreground and code is not None and flags & (CMD | CTRL | ALT) and view is not None:
+        primed = chord_in_background(app, view, code, flags, hold, count)
+        settle()
+        return ("Pressed %s%s%s in %s, sent to its window alone, in the background%s. Check with app_state." % (
+            arguments["keys"], " %d times" % count if count > 1 else "", held_for(hold), app["name"],
+            "" if primed else "; the window showed no quiet spot to ready it, so the app may have let it pass"))
     if foreground:
-        view = VIEWS.get(app["pid"])
-        bring_front(app, view.window["element"] if view else None)
+        need_front(app, view.window if view else None)
         if front_pid() != app["pid"]:
             raise Refused("%s is not in front, so no key was pressed" % app["name"])
         pid = None
     for _ in range(count):
         if code is not None:
-            tap(code, flags, pid)
+            tap(code, flags, pid, hold)
         else:
             unicode_keys(character, pid)
         time.sleep(0.03)
@@ -2055,7 +2773,7 @@ def tool_app_key(arguments):
         return "Pressed %s%s in %s, in front." % (arguments["keys"], " %d times" % count if count > 1 else "",
                                                  app["name"])
     return ("Pressed %s%s in %s alone, in the background. Some apps ignore keys while in the background: check with "
-            "app_state; app_menu or foreground true are the ways round that." % (
+            "app_state; app_menu is the way round that, or foreground true if the user has this window in front." % (
                 arguments["keys"], " %d times" % count if count > 1 else "", app["name"]))
 
 
@@ -2065,14 +2783,16 @@ def tool_app_set_value(arguments):
     need_full(app, "setting values")
     guard(app)
     attributes = {"value": "AXValue", "selected": "AXSelected", "focused": "AXFocused", "expanded": "AXExpanded",
-                  "minimized": "AXMinimized"}
+                  "minimized": "AXMinimized", "position": "AXPosition", "size": "AXSize"}
     attribute = arguments.get("attribute") or "value"
     if attribute not in attributes:
-        raise Refused("attribute is one of value, selected, focused, expanded or minimized")
+        raise Refused("attribute is one of value, selected, focused, expanded, minimized, position or size")
     view = need_view(app)
     number = arguments.get("element")
     element = element_at(view, number)
     values = fresh(element, number)
+    if attribute in ("position", "size"):
+        return place_window(app, view, number, element, values, attribute, arguments.get("value"))
     show(app, "设置 " + brief(view.notes[number]), center_of(values), "type")
     value = arguments.get("value")
     if attribute != "value":
@@ -2106,6 +2826,38 @@ def tool_app_set_value(arguments):
         quoted(excerpt(after, 200)) if isinstance(after, str) else json.dumps(after))
     return "Set %s of [%d] %s to %s%s, in the background." % (attribute, number, short(view.notes[number]),
                                                               excerpt(shown, 200), note)
+
+
+def place_window(app, view, number, element, values, attribute, value):
+    """Move a window, or change its size, in the background: value is "x,y" for where its top left goes, in points
+    from the top left of the main display, or "width,height" in points."""
+    found = re.match(r"^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$", value if isinstance(value, str) else "")
+    if not found:
+        raise Refused('%s takes two numbers in points, such as "%s"' % (
+            attribute, "100,80" if attribute == "position" else "800,600"))
+    a, b = float(found.group(1)), float(found.group(2))
+    if attribute == "size" and (a < 50 or b < 50):
+        raise Refused("a size is at least 50 points each way")
+    name = "AXPosition" if attribute == "position" else "AXSize"
+    if not settable(element, name):
+        raise Refused("the app does not let element %d be %s" % (number, "moved" if attribute == "position" else
+                                                                   "resized"))
+    held = CGPoint(a, b) if attribute == "position" else CGSize(a, b)
+    ref = AXValueCreate(1 if attribute == "position" else 2, c.byref(held))
+    if not ref:
+        raise Refused("that value could not be handed to the app")
+    show(app, ("移动 " if attribute == "position" else "调整大小 ") + brief(view.notes[number]), center_of(values), "click")
+    try:
+        error = AXUIElementSetAttributeValue(element.ref, cfname(name), ref)
+    finally:
+        CFRelease(ref)
+    if error != 0:
+        raise Refused("the app did not take that %s: %s" % (attribute, ax_error(error)))
+    settle()
+    frame = frame_of(ax_many(element, ["AXPosition", "AXSize"])[0])
+    now = (" It is now at %d,%d, %dx%d." % tuple(round(v) for v in frame)) if frame else ""
+    return "Set %s of [%d] %s to %g,%g, in the background.%s Call app_state again: places in its picture have moved." \
+        % (attribute, number, short(view.notes[number]), a, b, now)
 
 
 def tool_app_select_text(arguments):
@@ -2252,7 +3004,7 @@ def tool_app_scroll(arguments):
     amount = int(round(pages * shown * 0.9))
     steps = max(1, min(40, amount // 120 + 1))
     if foreground:
-        bring_front(app, view.window["element"])
+        need_front(app, view.window)
         cover = covering(app, point)
         if cover:
             raise Refused("a window of %s is on top of that area, so nothing scrolled" % cover)
@@ -2284,7 +3036,7 @@ def tool_app_scroll(arguments):
         time.sleep(0.01)
     settle()
     return ("Sent wheel scrolling %s to %s alone, in the background. Some apps ignore it there: check with app_state, "
-            "and if nothing moved, scroll with foreground true." % (direction, app["name"]))
+            "and if nothing moved, foreground true works if the user has this window in front; otherwise tell the user." % (direction, app["name"]))
 
 
 # -------------------------------------------------------------------- menus
@@ -2361,6 +3113,32 @@ def tool_app_menu(arguments):
     if last is not None and not last["submenu"]:
         need_full(app, "choosing menu items")
         guard(app)
+        view = VIEWS.get(app["pid"])
+        if front_pid() != app["pid"]:
+            # An app in the background shows its menus as they were when it was last active, and may take no
+            # notice of an item chosen there. An item with a shortcut is chosen by pressing that, which the app
+            # takes in the background.
+            keys = last["shortcut"]
+            if keys and view is not None:
+                try:
+                    flags, code, _ = parse_keys(keys)
+                except Refused:
+                    code = None
+                if code is not None:
+                    show(app, "菜单 " + " > ".join(trail))
+                    chord_in_background(app, view, code, flags)
+                    settle()
+                    return "Chose %s in %s by its shortcut %s, in the background. Check with app_state." % (
+                        " > ".join(trail), app["name"], keys)
+            if view is not None:
+                show(app, "菜单 " + " > ".join(trail))
+                with BackgroundInput(app, view):
+                    time.sleep(0.1)
+                    error = perform(node, "AXPress")
+                if error == 0:
+                    settle()
+                    return ("Chose %s in %s in the background. An app in the background does not always act on a menu "
+                            "item chosen so: check with app_state." % (" > ".join(trail), app["name"]))
         if not last["enabled"]:
             raise Refused("%s is turned off right now (shown greyed out); the app may need something selected first"
                           % " > ".join(trail))
@@ -2430,7 +3208,7 @@ def tool_list_apps(arguments):
     query = arguments.get("query")
     query = query.strip().lower() if isinstance(query, str) else ""
     every = arguments.get("all") is True
-    counts, rules, listed = windows_by_app(), policy(), []
+    counts, rules, given, listed = windows_by_app(), policy(), grants(), []
     for app in sorted(running_apps(), key=lambda a: (not a["frontmost"], a["policy"], a["name"].lower())):
         if not every and app["policy"] != 0:
             continue
@@ -2438,13 +3216,73 @@ def tool_list_apps(arguments):
                 and query not in app["file"].lower():
             continue
         access = access_of(app, rules)
+        if access in ("full", "click_only"):
+            said = consent_of(app, given)
+            access = {"refused": "refused_by_user", "ask": access + ", ask_first"}.get(said, access)
         listed.append({"name": app["name"], "bundle_id": app["bundle_id"], "pid": app["pid"],
                        "windows": counts.get(app["pid"], 0), "frontmost": app["frontmost"], "hidden": app["hidden"],
                        "access": "blocked" if access == "protected" else access})
-    return json.dumps({"apps": listed}, ensure_ascii=False)
+    result = {"apps": listed}
+    if arguments.get("installed") is True:
+        running = {app["bundle_id"] for app in running_apps() if app["bundle_id"]}
+        others = []
+        for app in installed_apps():
+            if app["bundle_id"] in running:
+                continue
+            if query and query not in app["name"].lower() and query not in app["bundle_id"].lower():
+                continue
+            access = access_of(app, rules)
+            if access in ("full", "click_only"):
+                said = consent_of(app, given)
+                access = {"refused": "refused_by_user", "ask": access + ", ask_first"}.get(said, access)
+            others.append({"name": app["name"], "bundle_id": app["bundle_id"], "last_used": app["last_used"],
+                           "use_count": app["use_count"], "access": "blocked" if access == "protected" else access})
+        result["not_running"] = others[:80]
+        if len(others) > 80:
+            result["note"] = "%d more installed apps not listed; query narrows the list" % (len(others) - 80)
+    return json.dumps(result, ensure_ascii=False)
+
+
+APP_FOLDERS = ["/Applications", "/System/Applications", os.path.expanduser("~/Applications")]
+
+
+def installed_apps():
+    """The apps in the usual folders, most recently used first, as Spotlight knows them."""
+    found = subprocess.run(["/usr/bin/mdfind"] + [x for folder in APP_FOLDERS if os.path.isdir(folder)
+                                                  for x in ("-onlyin", folder)]
+                           + ['kMDItemContentType == "com.apple.application-bundle"'],
+                           capture_output=True, timeout=20)
+    paths = [line for line in found.stdout.decode("utf-8", "replace").splitlines()
+             if line.endswith(".app") and ".app/" not in line]
+    apps = []
+    for start in range(0, len(paths), 200):
+        part = paths[start:start + 200]
+        read = subprocess.run(["/usr/bin/mdls", "-raw", "-nullMarker", "", "-name", "kMDItemCFBundleIdentifier",
+                               "-name", "kMDItemDisplayName", "-name", "kMDItemLastUsedDate", "-name",
+                               "kMDItemUseCount"] + part, capture_output=True, timeout=30)
+        values = read.stdout.decode("utf-8", "replace").split("\0")
+        for index, path in enumerate(part):
+            bundle, name, used, count = (values[index * 4: index * 4 + 4] + ["", "", "", ""])[:4]
+            name = name[:-4] if name.endswith(".app") else name
+            apps.append({"name": name or os.path.basename(path)[:-4], "bundle_id": bundle, "path": path,
+                         "executable": "", "last_used": used[:10] or None,
+                         "use_count": int(count) if count.isdigit() else 0})
+    apps.sort(key=lambda a: a["last_used"] or "", reverse=True)
+    return apps
 
 
 BUNDLE_ID = re.compile(r"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+){2,}$")
+
+
+def settle_opening(pid, seconds=2.5):
+    """Give an app that was asked to open something the time to show it. Some come to the front while they do,
+    a second or more later, even when asked not to; this waits for that too, so it can be undone."""
+    deadline = time.time() + seconds
+    time.sleep(0.4)
+    while time.time() < deadline:
+        if front_pid() == pid or next((w["pid"] for w in screen_windows() if w["layer"] == 0), None) == pid:
+            return
+        time.sleep(0.1)
 
 
 def tool_open_app(arguments):
@@ -2470,15 +3308,14 @@ def tool_open_app(arguments):
             raise Refused("%s could not open that address: %s" % (app["name"], clean(run.stderr.decode(
                 "utf-8", "replace"), 200) or "the system did not say why"))
         show(app, "打开网址")
-        time.sleep(0.5)
+        settle_opening(app["pid"])
         return "%s is opening %s%s." % (app["name"], url, " in front" if foreground else " in the background")
     if app is not None:
         admit(app)
-        if foreground:
+        if foreground:  # the description limits this to the user's own request
             bring_front(app)
-            return "%s was running and is now in front." % app["name"]
-        return "%s is already running%s." % (app["name"], ", hidden; open_app with foreground true shows it"
-                                             if app["hidden"] else "")
+            return "%s was running and is now in front, as the user asked." % app["name"]
+        return "%s is already running%s." % (app["name"], ", hidden by the user" if app["hidden"] else "")
     path = None
     extra = [url] if url else []
     if BUNDLE_ID.match(wanted):
@@ -2531,6 +3368,339 @@ def tool_write_clipboard(arguments):
     return "Put %d characters on the clipboard." % len(words)
 
 
+def seconds_argument(arguments, key, most=10.0):
+    value = arguments.get(key)
+    if value is None:
+        return 0.0
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= most:
+        raise Refused("%s is a number of seconds from 0 to %g" % (key, most))
+    return float(value)
+
+
+def held_for(hold):
+    return " held for %g seconds" % hold if hold else ""
+
+
+def place_of(app, view, arguments, prefix):
+    """A point in an app from an element number or x and y of the latest picture, given with a prefix such as
+    from_ or to_, with what it is called."""
+    number = arguments.get(prefix + "element")
+    if number is not None:
+        element = element_at(view, number)
+        values = fresh(element, number)
+        frame = frame_of(values)
+        if not frame or frame[2] <= 0 or frame[3] <= 0:
+            raise Refused("element %d has no place on screen" % number)
+        return CGPoint(frame[0] + frame[2] / 2.0, frame[1] + frame[3] / 2.0), "[%d] %s" % (
+            number, short(view.notes[number]))
+    if arguments.get(prefix + "x") is None or arguments.get(prefix + "y") is None:
+        raise Refused("give %selement, or %sx and %sy in pixels of the latest app_state picture" % (
+            prefix, prefix, prefix))
+    point = picture_point(view, {"x": arguments[prefix + "x"], "y": arguments[prefix + "y"]})
+    return point, "(%g, %g)" % (float(arguments[prefix + "x"]), float(arguments[prefix + "y"]))
+
+
+def tool_app_drag(arguments):
+    need_access()
+    app = find_app(arguments.get("app"))
+    need_full(app, "dragging")
+    guard(app)
+    view = need_view(app)
+    flags = modifier_flags(arguments.get("modifiers"))
+    hold = seconds_argument(arguments, "duration", 5.0)
+    start, first = place_of(app, view, arguments, "from_")
+    end, last = place_of(app, view, arguments, "to_")
+    show(app, "拖拽", start, "click")
+    if arguments.get("foreground") is True:
+        need_front(app, view.window)
+        cover = covering(app, start) or covering(app, end)
+        if cover:
+            raise Refused("a window of %s is on top on the way, so nothing was dragged" % cover)
+        drag_with_pointer(start, end, flags, hold)
+        show(app, "拖拽", end, "click")
+        settle()
+        return "Dragged from %s to %s in %s with the pointer, which then went back to where it was." % (
+            first, last, app["name"])
+    drag_in_background(app, view, start, end, flags, hold)
+    show(app, "拖拽", end, "click")
+    settle()
+    return ("Dragged from %s to %s in %s, sent to its window alone without moving the pointer, in the background. "
+            "Check with app_state that it took effect." % (first, last, app["name"]))
+
+
+# ---------------------------------------------------------------- pasting
+def ns_string(words):
+    return send(objc_getClass(b"NSString"), "stringWithUTF8String:", words.encode("utf-8"), types=(c.c_char_p,))
+
+
+def ns_data(raw):
+    return send(objc_getClass(b"NSData"), "dataWithBytes:length:", raw, len(raw), types=(c.c_char_p, c.c_ulong))
+
+
+def board_items():
+    """Everything on the general pasteboard, item by item, as (type, bytes) pairs, to be put back later."""
+    board = send(objc_getClass(b"NSPasteboard"), "generalPasteboard")
+    items = send(board, "pasteboardItems")
+    saved = []
+    for i in range(send(items, "count", result=c.c_ulong) if items else 0):
+        item = send(items, "objectAtIndex:", i, types=(c.c_ulong,))
+        kinds = send(item, "types")
+        pairs = []
+        for j in range(send(kinds, "count", result=c.c_ulong) if kinds else 0):
+            kind = send(kinds, "objectAtIndex:", j, types=(c.c_ulong,))
+            data = send(item, "dataForType:", kind, types=(vp,))
+            if data:
+                size = send(data, "length", result=c.c_ulong)
+                pairs.append((nsstring(kind), c.string_at(send(data, "bytes"), size) if size else b""))
+        if pairs:
+            saved.append(pairs)
+    return saved
+
+
+def put_on_board(items):
+    board = send(objc_getClass(b"NSPasteboard"), "generalPasteboard")
+    send(board, "clearContents", result=c.c_long)
+    if not items:
+        return
+    array = send(objc_getClass(b"NSMutableArray"), "array")
+    for pairs in items:
+        item = send(send(objc_getClass(b"NSPasteboardItem"), "alloc"), "init")
+        for kind, raw in pairs:
+            send(item, "setData:forType:", ns_data(raw), ns_string(kind), result=c.c_bool, types=(vp, vp))
+        send(array, "addObject:", item, result=None, types=(vp,))
+        send(item, "release", result=None)
+    send(board, "writeObjects:", array, result=c.c_bool, types=(vp,))
+
+
+def inline_markdown(words):
+    import html as html_module
+    words = html_module.escape(words, quote=False)
+    words = re.sub(r"`([^`]+)`", r"<code>\1</code>", words)
+    words = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2">\1</a>', words)
+    words = re.sub(r"\*\*([^*]+)\*\*|__([^_]+)__", lambda m: "<b>%s</b>" % (m.group(1) or m.group(2)), words)
+    words = re.sub(r"(?<![*\w])\*([^*\n]+)\*(?!\*)|(?<![_\w])_([^_\n]+)_(?!\w)",
+                   lambda m: "<i>%s</i>" % (m.group(1) or m.group(2)), words)
+    words = re.sub(r"~~([^~]+)~~", r"<s>\1</s>", words)
+    return words
+
+
+def markdown_html(source):
+    """Common Markdown as HTML: headings, paragraphs, bold, italic, strikethrough, code, links, lists, quotes and
+    code blocks."""
+    import html as html_module
+    out, paragraph, lists, block = [], [], [], None
+
+    def end_paragraph():
+        if paragraph:
+            out.append("<p>%s</p>" % "<br>".join(inline_markdown(line) for line in paragraph))
+            del paragraph[:]
+
+    def end_lists():
+        while lists:
+            out.append("</%s>" % lists.pop())
+
+    for line in source.split("\n"):
+        if block is not None:
+            if line.strip().startswith("```"):
+                out.append("<pre><code>%s</code></pre>" % html_module.escape("\n".join(block), quote=False))
+                block = None
+            else:
+                block.append(line)
+            continue
+        if line.strip().startswith("```"):
+            end_paragraph()
+            end_lists()
+            block = []
+            continue
+        heading = re.match(r"^(#{1,6})\s+(.*)$", line)
+        item = re.match(r"^\s*([-*+]|\d+[.)])\s+(.*)$", line)
+        if heading:
+            end_paragraph()
+            end_lists()
+            level = len(heading.group(1))
+            out.append("<h%d>%s</h%d>" % (level, inline_markdown(heading.group(2)), level))
+        elif item:
+            end_paragraph()
+            kind = "ol" if item.group(1)[0].isdigit() else "ul"
+            if not lists or lists[-1] != kind:
+                end_lists()
+                out.append("<%s>" % kind)
+                lists.append(kind)
+            out.append("<li>%s</li>" % inline_markdown(item.group(2)))
+        elif line.startswith(">"):
+            end_paragraph()
+            end_lists()
+            out.append("<blockquote>%s</blockquote>" % inline_markdown(line.lstrip("> ")))
+        elif re.match(r"^\s*(-{3,}|\*{3,})\s*$", line):
+            end_paragraph()
+            end_lists()
+            out.append("<hr>")
+        elif not line.strip():
+            end_paragraph()
+            end_lists()
+        else:
+            end_lists()
+            paragraph.append(line)
+    if block is not None:
+        out.append("<pre><code>%s</code></pre>" % html_module.escape("\n".join(block), quote=False))
+    end_paragraph()
+    end_lists()
+    return "\n".join(out)
+
+
+def plain_of_html(markup):
+    import html as html_module
+    markup = re.sub(r"(?i)<li>", "• ", markup)
+    markup = re.sub(r"(?i)<br\s*/?>|</p>|</h\d>|</li>|</div>|</tr>|</pre>|</blockquote>", "\n", markup)
+    return html_module.unescape(re.sub(r"<[^>]+>", "", markup)).strip("\n ")
+
+
+def rich_items(words, kind):
+    """What to put on the pasteboard for text in a format: plain text, and for HTML and Markdown also HTML and RTF,
+    so that apps that take formatted text get it formatted."""
+    if kind == "text":
+        return [[("public.utf8-plain-text", words.encode("utf-8"))]]
+    single = kind == "md" and "\n" not in words.strip("\n") and not re.match(r"^\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>|```)", words.strip("\n"))
+    if single:  # one line of text goes in as it is, without becoming a paragraph of its own
+        core = words.strip("\n")
+        markup = inline_markdown(core.strip(" "))
+        markup = "&nbsp;" * (len(core) - len(core.lstrip(" "))) + markup + "&nbsp;" * (len(core) - len(core.rstrip(" ")))
+    else:
+        markup = markdown_html(words) if kind == "md" else words
+    if kind == "md":  # blank lines before and after the text are kept as line breaks
+        markup = "<br>" * (len(words) - len(words.lstrip("\n"))) + markup + "<br>" * max(
+            0, len(words) - len(words.rstrip("\n")) - 1)
+    page = ('<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,"PingFang SC","Helvetica Neue",'
+            'sans-serif}code,pre{font-family:Menlo,monospace}</style></head><body>%s</body></html>' % markup)
+    plain = words if kind == "md" else plain_of_html(markup)
+    pairs = [("public.html", page.encode("utf-8"))]
+    rtf = subprocess.run(["/usr/bin/textutil", "-convert", "rtf", "-format", "html", "-inputencoding", "UTF-8",
+                          "-stdin", "-stdout"], input=page.encode("utf-8"), capture_output=True, timeout=20)
+    if rtf.returncode == 0 and rtf.stdout:
+        pairs.append(("public.rtf", rtf.stdout))
+    pairs.append(("public.utf8-plain-text", plain.encode("utf-8")))
+    return [pairs]
+
+
+def paste_item(app):
+    """The app's own Paste menu item, the one for command V, which works with the app in the background. Taken
+    even when it says it is off: an app in the background does not bring its menus up to date."""
+    bar = ax_get(app_element(app["pid"]), "AXMenuBar")
+    if not isinstance(bar, Element):
+        return None
+    for title in menu_items(bar) or []:
+        for item in menu_items(title["element"]) or []:
+            if item["shortcut"] == "cmd+v":
+                return title["element"], item["element"]
+    return None
+
+
+def text_size(element):
+    if element is None:
+        return None
+    count = ax_get(element, "AXNumberOfCharacters")
+    if isinstance(count, int):
+        return count
+    value = ax_get(element, "AXValue")
+    return len(value) if isinstance(value, str) else None
+
+
+def view_of_element(app, view, element):
+    """A view of the window an element is in, when that is not the window of the latest app_state."""
+    window = ax_get(element, "AXWindow")
+    if not isinstance(window, Element) or (view is not None and view.window["element"].same(window)):
+        return view
+    for entry in windows_of(app_element(app["pid"])):
+        if entry["element"].same(window):
+            return View(app, entry)
+    return view
+
+
+def tool_app_paste(arguments):
+    need_access()
+    app = find_app(arguments.get("app"))
+    need_full(app, "pasting")
+    guard(app)
+    words = text_argument(arguments, "text")
+    kind = arguments.get("format") or "text"
+    if kind not in ("text", "md", "html"):
+        raise Refused("format is text, md or html")
+    number = arguments.get("element")
+    view = VIEWS.get(app["pid"])
+    target = "the keyboard focus"
+    if number is not None:
+        view = need_view(app)
+        element = element_at(view, number)
+        values = fresh(element, number)
+        target = "[%d] %s" % (number, short(view.notes[number]))
+        show(app, "粘贴", center_of(values), "type")
+        view = view_of_element(app, view, element)
+        window = view.window["element"]
+        if front_pid() != app["pid"] and ax_get(window, "AXMain") is False:
+            ax_set(window, "AXMain", True)  # within the app only: it stays where it is among the user's apps
+            time.sleep(0.1)
+        if ax_get(element, "AXFocused") is not True and ax_set(element, "AXFocused", True) != 0:
+            raise Refused("element %d cannot take the keyboard focus; app_click it or app_select_text in it first"
+                          % number)
+    else:
+        element = focused_field(app)
+        show(app, "粘贴")
+    before = text_size(element)
+    in_front = window_in_front(app, view.window.get("number") if view else None)
+
+    def arrived():
+        if before is None:
+            return None  # nothing to measure by
+        for _ in range(10):
+            if text_size(element) != before:
+                return True
+            time.sleep(0.05)
+        return False
+
+    items = rich_items(words, kind)
+    saved = board_items()
+    how = None
+    try:
+        put_on_board(items)
+        time.sleep(0.05)
+        tries = []
+        if in_front:
+            tries.append(("with command V on the keyboard, the window being in front", lambda: tap(KEYS["v"], CMD)))
+        elif view is not None:
+            tries.append(("with command V sent to its window alone, in the background",
+                          lambda: chord_in_background(app, view, KEYS["v"], CMD)))
+        found = paste_item(app)
+        if found is not None:
+            item = found[1]
+            tries.append(("with its Paste menu item", lambda: perform(item, "AXPress")))
+        for name, attempt in tries:
+            attempt()
+            done = arrived()
+            if done is not False:
+                how = name if done else name + " (whether it arrived cannot be read back here: check with app_state)"
+                break
+        time.sleep(0.3)  # an app may still be reading the pasteboard
+    finally:
+        put_on_board(saved)
+    label = {"text": "plain text", "md": "formatted text from Markdown", "html": "formatted text from HTML"}[kind]
+    if how is not None:
+        settle()
+        return ("Pasted %d characters as %s into %s of %s %s; the clipboard holds what it held before." % (
+            len(words), label, target, app["name"], how))
+    plain = words if kind == "text" else plain_of_html(markdown_html(words) if kind == "md" else words)
+    if kind == "md":
+        plain = "\n" * (len(words) - len(words.lstrip("\n"))) + plain + "\n" * (len(words) - len(words.rstrip("\n")))
+    if element is not None and insert_text(element, plain):
+        settle()
+        return ("%s did not take a paste while in the background, so the text went in as plain text, without its "
+                "formatting, through the accessibility interface. For the formatting, the user can bring this window "
+                "forward and the paste be done again." % app["name"]) if kind != "text" else (
+            "Typed %d characters into %s of %s through the accessibility interface, as it took no paste in the "
+            "background." % (len(plain), target, app["name"]))
+    raise Refused("%s took no paste in the background, and %s cannot take text another way. Ask the user to bring "
+                  "the window forward, then paste again." % (app["name"], target))
+
+
 def whole(arguments, key, default, least, most):
     value = arguments.get(key)
     if value is None:
@@ -2567,7 +3737,7 @@ def tool_app_batch(arguments):
             report.append("%d. %s cannot run in a batch. Stopped here." % (number, name))
             return {"content": ([picture] if picture else []) + [text("\n".join(report))], "isError": True}
         try:
-            result = run_tool(name, given)
+            result = run_tool(name, given, getattr(_acted, "cursor", None))
         except Refused as refusal:
             report.append("%d. %s failed: %s Stopped here." % (number, name, refusal))
             return {"content": ([picture] if picture else []) + [text("\n".join(report))], "isError": True}
@@ -2579,10 +3749,12 @@ def tool_app_batch(arguments):
     return ([picture] if picture else []) + [text("\n\n".join(report))]
 
 
+
 HANDLERS = {"list_apps": tool_list_apps, "open_app": tool_open_app, "app_state": tool_app_state,
             "app_click": tool_app_click, "app_type": tool_app_type, "app_key": tool_app_key,
             "app_scroll": tool_app_scroll, "app_menu": tool_app_menu, "app_set_value": tool_app_set_value,
             "app_select_text": tool_app_select_text, "app_action": tool_app_action,
+            "app_drag": tool_app_drag, "app_paste": tool_app_paste,
             "read_clipboard": tool_read_clipboard, "write_clipboard": tool_write_clipboard,
             "app_batch": tool_app_batch}
 

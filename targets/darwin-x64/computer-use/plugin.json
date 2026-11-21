@@ -1,8 +1,8 @@
 {
   "name": "computer-use",
   "displayName": "Computer Use",
-  "version": "0.1.0",
-  "description": "Sees and works the apps of this computer in the background through the accessibility interface, without taking the mouse or keyboard: window pictures, controls, menus, typing, scrolling and the clipboard, with an on-screen cursor and Esc to stop. 通过辅助功能接口在后台查看和操作这台电脑上的应用，不占用鼠标和键盘：窗口截图、界面元素、菜单、输入、滚动和剪贴板，操作时屏幕上显示光标，按 Esc 即可停止。",
+  "version": "0.2.0",
+  "description": "Sees and works the apps of this computer in the background, without taking the mouse or keyboard or changing the app in front: window pictures, controls, menus, typing, formatted paste, clicks, drags and shortcuts delivered to a window behind the user's work, scrolling and the clipboard. Asks the user before using each app, keeps the front for the window the user chose, and shows named cursors; Esc stops it. 在后台查看和操作这台电脑上的应用，不占用鼠标键盘，也不改变前台应用：窗口截图、界面元素、菜单、输入、带格式粘贴，以及投递到后台窗口的点击、拖拽和快捷键，还有滚动和剪贴板。每个应用首次使用前先征得你同意，前台只用于你自己放在最前面的窗口，屏幕上显示带名字的光标，按 Esc 即可停止。",
   "platforms": [
     "darwin"
   ],
