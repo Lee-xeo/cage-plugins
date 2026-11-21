@@ -564,8 +564,8 @@
       "target": "darwin-arm64",
       "runtime": "python3",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.1.0-darwin-arm64.tar.gz",
-      "sha256": "b720d5b2e7e6af86194ebc1a8e948d084ff0db686976d227ee6ce741088068b3",
-      "bytes": 74507
+      "sha256": "d3f1b2b9e0f22eca31213fb4902431ff9c40bd2a250da7292adb9c1f3121f4dc",
+      "bytes": 77714
     },
     {
       "name": "computer-use",
@@ -585,8 +585,8 @@
       "target": "darwin-x64",
       "runtime": "python3",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.1.0-darwin-x64.tar.gz",
-      "sha256": "3cd1f97ec8bfd244adac49a643e896cff39a16414d65174a6faf19f59001c9ad",
-      "bytes": 73972
+      "sha256": "f32c5cb2d7a6f5ae0d86da19b3a97aec17ae02db522c74127959bc291c1efe67",
+      "bytes": 77082
     },
     {
       "name": "desktop-control",
