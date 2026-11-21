@@ -149,9 +149,10 @@
         ]
       },
       "runtime": "node",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/codex-dispatch/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-dispatch-0.1.1.tar.gz",
-      "sha256": "3361898cd6d4bd7c51e86b005d9950b6baa5a721612f61dfac6a25fbbd225ffd",
-      "bytes": 11934
+      "sha256": "99d5960174ca7de7daa4b0d9e8595f926145e9782ed03982572c087067a00502",
+      "bytes": 12820
     },
     {
       "name": "desktop-control",

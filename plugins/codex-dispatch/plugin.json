@@ -5,6 +5,7 @@
   "description": "Delegate a read-only project review to Codex, select a model, and check or cancel the task.",
   "engines": { "cage": ">=0.2.0" },
   "kind": "host",
+  "icon": "icon.svg",
   "platforms": ["darwin", "windows"],
   "permissions": ["files", "commands", "network"],
   "categories": ["developer"],

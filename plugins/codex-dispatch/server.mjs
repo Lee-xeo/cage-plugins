@@ -141,6 +141,7 @@ function respond(id, message) {
   if (!closing) process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, ...message }) + '\n');
 }
 async function receive(line) {
+  if (!line.trim()) return;
   let req;
   try {
     req = JSON.parse(line);

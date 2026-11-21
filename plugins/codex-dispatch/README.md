@@ -29,4 +29,4 @@ Cage 的逐次授权设置也适用于进度查询。每个插件实例最多并
 
 Codex 以只读模式运行，关闭 hooks、plugins 和 apps。只读限制文件修改，主机账户可读文件的范围仍取决于 Codex 与系统策略。模型列表来自本机 CLI，列出某个模型不能保证账户额度充足或该次请求一定成功。
 
-[插件接口](https://github.com/Lee-xeo/Claude-Cage/blob/v0.2.0-rc/docs/plugins.md)
+[插件接口](https://github.com/Lee-xeo/Claude-Cage/blob/main/docs/plugins.md)
