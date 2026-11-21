@@ -1,7 +1,7 @@
 {
   "name": "chrome-devtools",
   "displayName": "Chrome DevTools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Debugs web pages in a headless Chromium with DevTools: console messages, network requests, performance traces, Lighthouse audits, CSS styles, memory snapshots, device emulation and page input.",
   "icon": "icon.svg",
   "engines": {

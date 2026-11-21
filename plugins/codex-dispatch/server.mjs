@@ -154,7 +154,7 @@ async function receive(line) {
   if (method === 'initialize') {
     return respond(id, { result: {
       protocolVersion: PROTOCOLS.includes(params?.protocolVersion) ? params.protocolVersion : PROTOCOLS[0],
-      capabilities: { tools: {} }, serverInfo: { name: 'codex-dispatch', version: '0.1.1' },
+      capabilities: { tools: {} }, serverInfo: { name: 'codex-dispatch', version: '0.1.2' },
     } });
   }
   if (method === 'ping') return respond(id, { result: {} });

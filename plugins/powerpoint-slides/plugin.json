@@ -1,7 +1,7 @@
 {
   "name": "powerpoint-slides",
   "displayName": "PowerPoint Slides",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
   "icon": "icon.svg",
   "engines": {

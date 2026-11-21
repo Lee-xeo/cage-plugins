@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "系统状态",
+    "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+  },
+  "zh-TW": {
+    "displayName": "系統狀態",
+    "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+  },
+  "ru": {
+    "displayName": "Состояние системы",
+    "description": "Показывает нагрузку процессора, использование памяти и диска среды — для вас на отдельной странице и для Claude в виде инструмента."
+  },
+  "ar": {
+    "displayName": "حالة النظام",
+    "description": "يعرض حمل المعالج واستخدام الذاكرة والقرص في البيئة، لك في صفحة مستقلة ولـ Claude كأداة."
+  },
+  "fa": {
+    "displayName": "وضعیت سیستم",
+    "description": "بار پردازنده، مصرف حافظه و فضای دیسک محیط را هم در یک صفحه به شما و هم به صورت ابزار به Claude نشان می‌دهد."
+  },
+  "ko": {
+    "displayName": "시스템 상태",
+    "description": "환경의 프로세서 부하, 메모리 및 디스크 사용량을 전용 페이지와 Claude 도구로 보여줍니다."
+  },
+  "es": {
+    "displayName": "Estado del sistema",
+    "description": "Muestra la carga del procesador y el uso de memoria y disco del entorno, tanto en una página para ti como en una herramienta para Claude."
+  },
+  "my": {
+    "displayName": "စနစ်အခြေအနေ",
+    "description": "ပတ်ဝန်းကျင်၏ ပရိုဆက်ဆာဝန်အား၊ မန်မိုရီနှင့် ဒစ်ခ်အသုံးပြုမှုကို သင့်အတွက် စာမျက်နှာတစ်ခုတွင်လည်းကောင်း Claude အတွက် ကိရိယာတစ်ခုအဖြစ်လည်းကောင်း ပြသသည်။"
+  },
+  "be": {
+    "displayName": "Стан сістэмы",
+    "description": "Паказвае нагрузку працэсара, выкарыстанне памяці і дыска асяроддзя — для вас на старонцы і для Claude як інструмент."
+  },
+  "ps": {
+    "displayName": "د سیسټم حالت",
+    "description": "د چاپېریال د پروسېسر بار، حافظې او ډیسک کارونه ستاسو لپاره پر پاڼه او د Claude لپاره د وسیلې په توګه ښيي."
+  },
+  "prs": {
+    "displayName": "وضعیت سیستم",
+    "description": "بار پردازنده، مصرف حافظه و دیسک محیط را هم در یک صفحه برای شما و هم به شکل ابزار برای Claude نشان می‌دهد."
+  },
+  "am": {
+    "displayName": "የስርዓት ሁኔታ",
+    "description": "የአካባቢውን የፕሮሰሰር ጫና፣ የማህደረ ትውስታ እና የዲስክ አጠቃቀም ለእርስዎ በገጽ ላይ እና ለClaude እንደ መሳሪያ ያሳያል።"
+  },
+  "so": {
+    "displayName": "Xaaladda Nidaamka",
+    "description": "Waxay muujisaa culayska processor-ka, isticmaalka xusuusta iyo diska ee deegaanka, adiga oo bog gaar ah ku arka iyo Claude oo qalab ahaan u adeegsada."
+  },
+  "ti": {
+    "displayName": "ኩነታት ስርዓት",
+    "description": "ናይቲ ከባቢ ጽዕነት ፕሮሰሰር፡ ኣጠቓቕማ ዝኽርን ዲስክን ንዓኻ ኣብ ገጽ ንClaude ድማ ከም መሳርሒ የርኢ።"
+  },
+  "fr": {
+    "displayName": "État du système",
+    "description": "Affiche la charge du processeur ainsi que l'utilisation mémoire et disque de l'environnement, sur une page pour vous et comme outil pour Claude."
+  }
+}
