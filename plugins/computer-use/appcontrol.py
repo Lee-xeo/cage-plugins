@@ -3827,7 +3827,7 @@ def rich_items(words, kind):
     plain = words if kind == "md" else plain_of_html(markup)
     pairs = [("public.html", page.encode("utf-8"))]
     rtf = subprocess.run(["/usr/bin/textutil", "-convert", "rtf", "-format", "html", "-inputencoding", "UTF-8",
-                          "-stdin", "-stdout"], input=page.encode("utf-8"), capture_output=True, timeout=20)
+                          "-noload", "-stdin", "-stdout"], input=page.encode("utf-8"), capture_output=True, timeout=20)
     if rtf.returncode == 0 and rtf.stdout:
         pairs.append(("public.rtf", rtf.stdout))
     pairs.append(("public.utf8-plain-text", plain.encode("utf-8")))
