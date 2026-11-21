@@ -214,6 +214,56 @@
       "bytes": 33039
     },
     {
+      "name": "freecad",
+      "version": "0.1.0",
+      "description": "Works with an open FreeCAD: creates and edits documents and parts, runs Python in FreeCAD or in a separate headless FreeCAD, captures the 3D view and runs FEM analyses. Needs FreeCAD with the included add-on.",
+      "permissions": [
+        "commands",
+        "files",
+        "network"
+      ],
+      "displayName": "FreeCAD",
+      "categories": [
+        "productivity",
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "freecad",
+            "command": [
+              "uv",
+              "run",
+              "--no-project",
+              "--python",
+              ">=3.12",
+              "--exclude-newer",
+              "2026-11-17T00:00:00Z",
+              "--with",
+              "freecad-mcp==0.1.32",
+              "python",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "uv",
+      "source": {
+        "project": "neka-nat/freecad-mcp",
+        "version": "0.1.32",
+        "license": "MIT",
+        "url": "https://github.com/neka-nat/freecad-mcp"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/freecad/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/freecad-0.1.0.tar.gz",
+      "sha256": "d643fc6ebb55f6441b4fd9c385c143ab6bbf123ae16d0a9816a104764a5c1fe6",
+      "bytes": 45414
+    },
+    {
       "name": "git-repository",
       "version": "0.1.1",
       "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",

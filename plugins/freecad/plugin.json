@@ -1,0 +1,40 @@
+{
+  "name": "freecad",
+  "displayName": "FreeCAD",
+  "version": "0.1.0",
+  "description": "Works with an open FreeCAD: creates and edits documents and parts, runs Python in FreeCAD or in a separate headless FreeCAD, captures the 3D view and runs FEM analyses. Needs FreeCAD with the included add-on.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.1.8"
+  },
+  "kind": "host",
+  "permissions": [
+    "commands",
+    "files",
+    "network"
+  ],
+  "categories": [
+    "productivity",
+    "desktop"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "freecad",
+        "command": [
+          "uv",
+          "run",
+          "--no-project",
+          "--python",
+          ">=3.12",
+          "--exclude-newer",
+          "2026-11-17T00:00:00Z",
+          "--with",
+          "freecad-mcp==0.1.32",
+          "python",
+          "server.py"
+        ]
+      }
+    ]
+  }
+}
