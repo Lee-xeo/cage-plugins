@@ -522,6 +522,107 @@
       "bytes": 14604
     },
     {
+      "name": "computer-use",
+      "version": "0.2.6",
+      "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "author": {
+        "name": "wudi341"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "电脑操作",
+          "description": "在后台查看并操作这台电脑上的应用，每个应用都会先征求用户同意，不会改变用户当前在前台的应用。"
+        },
+        "zh-TW": {
+          "displayName": "電腦操作",
+          "description": "在背景檢視並操作這台電腦上的應用程式，每個應用程式都會先徵求使用者同意，不會改變使用者目前在前景的應用程式。"
+        },
+        "ru": {
+          "displayName": "Работа с приложениями",
+          "description": "Видит приложения этого компьютера и работает в них в фоновом режиме, каждый раз спрашивая разрешение пользователя, не меняя приложение, которое находится на переднем плане."
+        },
+        "ar": {
+          "displayName": "التحكم بالتطبيقات",
+          "description": "يعرض تطبيقات هذا الكمبيوتر ويعمل عليها في الخلفية، ويطلب إذن المستخدم قبل كل تطبيق، دون تغيير التطبيق الظاهر في المقدمة."
+        },
+        "fa": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این رایانه را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "ko": {
+          "displayName": "앱 사용",
+          "description": "이 컴퓨터의 앱을 백그라운드에서 보고 조작하며, 각 앱마다 먼저 사용자에게 허락을 구하고 사용자가 앞에 두고 있는 앱은 바꾸지 않습니다."
+        },
+        "es": {
+          "displayName": "Uso de aplicaciones",
+          "description": "Ve y utiliza las aplicaciones de este ordenador en segundo plano, pidiendo permiso al usuario antes de cada aplicación y sin cambiar la aplicación que está en primer plano."
+        },
+        "my": {
+          "displayName": "အက်ပ်များ အသုံးပြုခြင်း",
+          "description": "ဤကွန်ပျူတာရှိ အက်ပ်များကို နောက်ကွယ်တွင် ကြည့်ရှုအသုံးပြုပြီး အက်ပ်တစ်ခုစီမတိုင်မီ အသုံးပြုသူ၏ ခွင့်ပြုချက်ကို တောင်းခံကာ ရှေ့ဆုံးရှိ အက်ပ်ကို မပြောင်းလဲပါ။"
+        },
+        "be": {
+          "displayName": "Праца з праграмамі",
+          "description": "Бачыць праграмы гэтага камп’ютара і працуе з імі ў фонавым рэжыме, кожны раз пытаючыся дазволу ў карыстальніка і не змяняючы праграму, якая знаходзіцца на пярэднім плане."
+        },
+        "ps": {
+          "displayName": "د اپلیکیشنونو کارول",
+          "description": "د دې کمپیوټر اپلیکیشنونه په شاليد کې ګوري او په کې کار کوي، د هر اپلیکیشن دمخه له کاروونکي اجازه غواړي، او هغه اپلیکیشن نه بدلوي چې مخکې دی."
+        },
+        "prs": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این کمپیوتر را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "am": {
+          "displayName": "መተግበሪያዎችን መጠቀም",
+          "description": "የዚህን ኮምፒውተር መተግበሪያዎች በጀርባ ያያል ይጠቀማልም፤ ከእያንዳንዱ መተግበሪያ በፊት ተጠቃሚውን ፈቃድ ይጠይቃል፤ ፊት ያለውንም መተግበሪያ አይቀይርም።"
+        },
+        "so": {
+          "displayName": "Isticmaalka codsiyada",
+          "description": "Wuxuu eegaa oo ka shaqeeyaa codsiyada kombuyuutarkan asalka dambe, isagoo isticmaalaha ka codsanaya ogolaansho codsi kasta ka hor, mana beddelo codsiga hore u taagan."
+        },
+        "ti": {
+          "displayName": "መተግበሪታት ምጥቃም",
+          "description": "ናይዚ ኮምፒተር መተግበሪታት ኣብ ድሕሪት የራኽብን ይጥቀምን፤ ቅድሚ ነፍሲ ወከፍ መተግበሪ ንተጠቃሚ ፍቓድ ይሓትት፤ ኣብ ቅድሚት ዘሎ መተግበሪ ድማ ኣይቐይርን።"
+        },
+        "fr": {
+          "displayName": "Utilisation des applications",
+          "description": "Voit et utilise les applications de cet ordinateur en arrière-plan, en demandant l’accord de l’utilisateur avant chaque application, sans changer l’application au premier plan."
+        }
+      },
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.6.tar.gz",
+      "sha256": "b9d429143aff588ebbbb99894d8e5c67f39a4151ed36ce23c13d42cbd03cfb30",
+      "bytes": 184520
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
