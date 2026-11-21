@@ -195,7 +195,7 @@
     },
     {
       "name": "computer-use",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
       "permissions": [
         "screen",
@@ -225,9 +225,9 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.3.tar.gz",
-      "sha256": "b10373bda988913dc7219ccf5798d0e640c2b72ef1b9dea0f231a1605461f36e",
-      "bytes": 184057
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.4.tar.gz",
+      "sha256": "5fdc6345708d8cb9e51ffe44ecb1e03bcbe26cdd1e8f9c8cade145b9330491fe",
+      "bytes": 184068
     },
     {
       "name": "desktop-control",

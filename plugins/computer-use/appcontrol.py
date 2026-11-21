@@ -1576,8 +1576,10 @@ def tool_app_state(arguments):
                              "app has been read, give snapshot %s with them." % (
                                  chosen, width, height, view.snapshot, view.snapshot))
             else:
-                lines.append("No picture%s. Positions are element centers in pixels of a %dx%d picture of window %d, "
-                             "as app_click takes x and y." % (": " + why if why else "", width, height, chosen))
+                lines.append("No picture%s. Positions are element centers in pixels of a %dx%d picture of window %d "
+                             "(snapshot %s), as app_click takes x and y; when more than one window of the app has been "
+                             "read, give snapshot %s with them." % (": " + why if why else "", width, height, chosen,
+                                                                    view.snapshot, view.snapshot))
         walker = Walker(view, limit, query)
         for child in ax_slice(application, "AXChildren", 30) or []:
             if ax_get(child, "AXRole") == "AXMenu":  # a menu that is open now, in front of everything
