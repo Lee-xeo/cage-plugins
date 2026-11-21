@@ -4,7 +4,7 @@
 
 ## 来源
 
-基于 [neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) 0.1.32，MIT 许可，版权归 Shirokuma (k tanaka)，许可全文见 [LICENSE](LICENSE)。`FreeCADMCP/` 是上游同一版本的 FreeCAD 插件（上游的 `addon/FreeCADMCP`）原文件，未作修改。`server.py` 是本插件的启动文件：Windows 和 macOS 的 FreeCAD 安装程序不会把 `freecadcmd` 加进 `PATH`，它在 `PATH` 里找不到时，到默认安装位置（Windows 的 `Program Files\FreeCAD *\bin`，macOS 的 `/Applications/FreeCAD*.app`）找版本最新的一个，交给上游的 `--freecadcmd`，再启动上游服务。上游没有使用统计。
+基于 [neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) 0.1.32，MIT 许可，版权归 Shirokuma (k tanaka)，许可全文见 [LICENSE](LICENSE)。`FreeCADMCP/` 是上游同一版本的 FreeCAD 插件（上游的 `addon/FreeCADMCP`）原文件，未作修改。`server.py` 是本插件的启动文件：Windows 和 macOS 的 FreeCAD 安装程序不会把 `freecadcmd` 加进 `PATH`，每次运行无界面脚本时，它在 `PATH` 里找不到 `freecadcmd` 就到默认安装位置（Windows 的 `Program Files\FreeCAD *\bin`，macOS 的 `/Applications/FreeCAD*.app`）找版本最新的一个，所以插件加载后才安装 FreeCAD 也不用重新加载。Cage 里所有插件的工具共用一套名称，`create_document` 等通用名已被其他插件使用，所以它还给全部 18 个工具名加上 `freecad_` 前缀（如 `freecad_create_object`），并同步修改工具说明和回复里提到的工具名，再启动上游服务。上游没有使用统计。
 
 ## 使用前
 
@@ -17,7 +17,8 @@
 ## 依赖与网络
 
 - 启动时由 `uv` 从 PyPI 获取固定版本 `freecad-mcp==0.1.32`，依赖按 2026-11-17（该版本发布次日）之前发布的版本解析。上游需要 Python 3.12 或更新，电脑上没有时 `uv` 会自动下载一份。
+- 首次启动要下载 Python 和程序包，可能超过 Cage 等待插件启动的 20 秒，插件页会显示加载失败。等一两分钟下载完成后，点「重新加载插件」即可；之后启动只需几秒。
 - 服务只连接本机 127.0.0.1:9875 上的 FreeCAD 插件。FreeCAD 插件默认只接受本机连接，不要打开它的「Remote Connections」，除非你清楚这样做的风险。
 - 零件库工具读取的是通过 FreeCAD 插件管理器安装在本机 `Mod/parts_library` 下的零件库，不联网。
-- `execute_code` 在 FreeCAD 里运行任意 Python，`execute_code_headless` 启动 `freecadcmd` 运行脚本，二者都能读写文件和运行程序，所以本插件声明了 `commands` 和 `files` 权限；`network` 用于启动时获取上游程序和连接本机的 FreeCAD。
+- `freecad_execute_code` 在 FreeCAD 里运行任意 Python，`freecad_execute_code_headless` 启动 `freecadcmd` 运行脚本，二者都能读写文件和运行程序，所以本插件声明了 `commands` 和 `files` 权限；`network` 用于启动时获取上游程序和连接本机的 FreeCAD。
 - 无界面脚本使用的 `freecadcmd`：`PATH` 里的优先，其次是上面说的默认安装位置；Linux 上找不到时还会找 Flatpak 版。macOS、Windows、Linux 上工具相同。
