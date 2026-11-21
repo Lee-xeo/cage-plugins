@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "FreeCAD",
+    "description": "操作本机已打开的 FreeCAD：创建和修改文档与零件，在 FreeCAD 或单独的无界面 FreeCAD 中运行 Python，截取 3D 视图并运行有限元分析。需在 FreeCAD 中安装随附插件。"
+  },
+  "zh-TW": {
+    "displayName": "FreeCAD",
+    "description": "操作本機已開啟的 FreeCAD：建立與修改文件和零件，在 FreeCAD 或獨立的無介面 FreeCAD 中執行 Python，擷取 3D 視圖並執行有限元素分析。需在 FreeCAD 中安裝隨附外掛。"
+  },
+  "ru": {
+    "displayName": "FreeCAD",
+    "description": "Работает с открытым FreeCAD: создаёт и изменяет документы и детали, запускает Python в FreeCAD или в отдельном FreeCAD без интерфейса, делает снимки 3D-вида и выполняет расчёты методом конечных элементов. Требуется FreeCAD со встроенным дополнением."
+  },
+  "ar": {
+    "displayName": "FreeCAD",
+    "description": "يعمل مع تطبيق FreeCAD المفتوح: ينشئ ويعدّل المستندات والقطع، ويشغّل Python داخل FreeCAD أو في نسخة FreeCAD منفصلة بدون واجهة، ويلتقط العرض ثلاثي الأبعاد ويجري تحليلات العناصر المحدودة. يتطلب FreeCAD مع الإضافة المرفقة."
+  },
+  "fa": {
+    "displayName": "FreeCAD",
+    "description": "با FreeCAD بازشده کار می‌کند: سندها و قطعات را ایجاد و ویرایش می‌کند، پایتون را در FreeCAD یا در یک FreeCAD جداگانه بدون رابط اجرا می‌کند، از نمای سه‌بعدی عکس می‌گیرد و تحلیل اجزای محدود انجام می‌دهد. نیازمند FreeCAD و افزونه همراه است."
+  },
+  "ko": {
+    "displayName": "FreeCAD",
+    "description": "열려 있는 FreeCAD와 연동하여 문서와 부품을 생성·수정하고, FreeCAD 또는 별도의 헤드리스 FreeCAD에서 Python을 실행하며, 3D 뷰를 캡처하고 유한요소 해석을 실행합니다. 포함된 애드온이 설치된 FreeCAD가 필요합니다."
+  },
+  "es": {
+    "displayName": "FreeCAD",
+    "description": "Trabaja con un FreeCAD abierto: crea y modifica documentos y piezas, ejecuta Python en FreeCAD o en un FreeCAD aparte sin interfaz, captura la vista 3D y ejecuta análisis de elementos finitos. Requiere FreeCAD con el complemento incluido."
+  },
+  "my": {
+    "displayName": "FreeCAD",
+    "description": "ဖွင့်ထားသော FreeCAD နှင့် တွဲဖက်အလုပ်လုပ်သည်- စာရွက်စာတမ်းနှင့် အစိတ်အပိုင်းများ ဖန်တီးပြင်ဆင်ခြင်း၊ FreeCAD အတွင်း သို့မဟုတ် မျက်နှာပြင်မပါသော သီးခြား FreeCAD တွင် Python run ခြင်း၊ 3D မြင်ကွင်း ပုံရိုက်ခြင်းနှင့် finite element ခွဲခြမ်းစိတ်ဖြာမှု လုပ်ဆောင်ခြင်းတို့ လုပ်နိုင်သည်။ ပါဝင်သည့် add-on တပ်ဆင်ထားသော FreeCAD လိုအပ်သည်။"
+  },
+  "be": {
+    "displayName": "FreeCAD",
+    "description": "Працуе з адкрытым FreeCAD: стварае і змяняе дакументы і дэталі, выконвае Python у FreeCAD або ў асобным FreeCAD без інтэрфейсу, робіць здымкі 3D-выгляду і выконвае разлікі метадам канчатковых элементаў. Патрабуецца FreeCAD з дадаткам з камплекта."
+  },
+  "ps": {
+    "displayName": "FreeCAD",
+    "description": "له خلاص شوي FreeCAD سره کار کوي: اسناد او پرزې جوړوي او بدلوي، په FreeCAD کې یا په جلا بې‌مخ FreeCAD کې Python چلوي، د درې‌اړخیز لید انځور اخلي او د محدودو عناصرو شننه ترسره کوي. له ملګري افزونې سره FreeCAD ته اړتیا لري."
+  },
+  "prs": {
+    "displayName": "FreeCAD",
+    "description": "با FreeCAD بازشده کار می‌کند: اسناد و قطعات را ایجاد و تغییر می‌دهد، Python را در FreeCAD یا در یک FreeCAD جداگانه بدون رابط اجرا می‌کند، از نمای سه‌بعدی عکس می‌گیرد و تحلیل اجزای محدود را اجرا می‌کند. به FreeCAD با افزونه همراه نیاز دارد."
+  },
+  "am": {
+    "displayName": "FreeCAD",
+    "description": "ከተከፈተው FreeCAD ጋር ይሰራል፦ ሰነዶችንና ክፍሎችን ይፈጥራል ያስተካክላል፣ በFreeCAD ውስጥ ወይም መስኮት በሌለው የተለየ FreeCAD ውስጥ Python ያስኬዳል፣ የ3D እይታውን ፎቶ ያነሳል እንዲሁም የፋይናይት ኤለመንት ትንተና ያካሂዳል። የተካተተው ተጨማሪ የተጫነበት FreeCAD ያስፈልጋል።"
+  },
+  "so": {
+    "displayName": "FreeCAD",
+    "description": "Waxay la shaqeysaa FreeCAD furan: waxay abuurtaa oo beddeshaa dukumentiyada iyo qaybaha, waxay Python ku socodsiisaa FreeCAD ama FreeCAD gooni ah oo aan shaashad lahayn, waxay qabataa sawirka muuqaalka 3D waxayna samaysaa falanqaynta curiyeyaasha xadidan (FEM). Waxay u baahan tahay FreeCAD leh add-on-ka la socda."
+  },
+  "ti": {
+    "displayName": "FreeCAD",
+    "description": "ምስ ዝተኸፍተ FreeCAD ይሰርሕ፡ ሰነዳትን ክፍልታትን ይፈጥርን ይቕይርን፡ ኣብ ውሽጢ FreeCAD ወይ ኣብ ፍሉይ መስኮት ዘይብሉ FreeCAD Python የካይድ፡ ካብ 3D መርኣዪ ስእሊ የልዕል፡ ትንተና FEM ድማ የካይድ። ዝተሓወሰ ተወሳኺ ዘለዎ FreeCAD የድሊ።"
+  },
+  "fr": {
+    "displayName": "FreeCAD",
+    "description": "Interagit avec une instance ouverte de FreeCAD : crée et modifie documents et pièces, exécute du Python dans FreeCAD ou dans un FreeCAD séparé sans interface, capture la vue 3D et lance des analyses par éléments finis. Nécessite FreeCAD avec le module complémentaire fourni."
+  }
+}

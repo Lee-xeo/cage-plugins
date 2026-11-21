@@ -92,6 +92,7 @@
 | [`sqlite`](plugins/sqlite) | [modelcontextprotocol/servers-archived](https://github.com/modelcontextprotocol/servers-archived) 2025.4.25 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
 | [`knowledge-memory`](plugins/knowledge-memory) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/memory) v2.5.0（`@modelcontextprotocol/server-memory` 2.2.1） | Apache-2.0 AND MIT | 环境内 | 环境自带 Node.js 与 Python 3（随包锁定依赖，完全离线） |
 | [`blender`](plugins/blender) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) 1.3.1 | MIT | 这台电脑 | 本机 `uv`、Blender 3.0+ 及随附的插件 |
+| [`freecad`](plugins/freecad) | [neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) 0.1.32 | MIT | 这台电脑 | 本机 `uv`、FreeCAD 及随附的插件 |
 
 ## 索引格式
 
