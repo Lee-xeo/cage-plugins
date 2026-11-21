@@ -32,7 +32,9 @@
           "--with",
           "freecad-mcp==0.1.32",
           "python",
-          "server.py"
+          "server.py",
+          "--host",
+          "127.0.0.1"
         ]
       }
     ]

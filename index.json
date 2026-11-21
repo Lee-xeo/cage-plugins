@@ -246,7 +246,9 @@
               "--with",
               "freecad-mcp==0.1.32",
               "python",
-              "server.py"
+              "server.py",
+              "--host",
+              "127.0.0.1"
             ]
           }
         ]
@@ -260,8 +262,8 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/freecad/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/freecad-0.1.0.tar.gz",
-      "sha256": "d643fc6ebb55f6441b4fd9c385c143ab6bbf123ae16d0a9816a104764a5c1fe6",
-      "bytes": 45414
+      "sha256": "2fd25fc0c96dedd35e055780d776f84604d876b485f5378714257ecb04915249",
+      "bytes": 45424
     },
     {
       "name": "git-repository",
