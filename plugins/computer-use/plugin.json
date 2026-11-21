@@ -1,7 +1,7 @@
 {
   "name": "computer-use",
   "displayName": "Computer Use",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
   "kind": "host",
   "engines": {
