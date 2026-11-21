@@ -1,0 +1,25 @@
+{
+  "name": "markdown-viewer",
+  "displayName": "Markdown 渲染",
+  "version": "1.7.0",
+  "description": "Offline Markdown workspace with split hover-sync editing, full-text search engine, interactive Kanban task board with swimlanes, multi-workspace browsing, and Obsidian-style force-directed knowledge graph.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.0" },
+  "kind": "guest",
+  "permissions": [],
+  "categories": ["files", "productivity"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "markdown", "command": ["python3", "server.py", "${PROJECT_DIR}"] }
+    ],
+    "views": [
+      {
+        "id": "reader",
+        "title": "Markdown 渲染",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "markdown"
+      }
+    ]
+  }
+}
