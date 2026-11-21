@@ -194,6 +194,42 @@
       "bytes": 12820
     },
     {
+      "name": "computer-use",
+      "version": "0.2.0",
+      "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.0.tar.gz",
+      "sha256": "357dd67b7137a33c8ee33a5377b33eb5b38f922629763bc963ee14228d52cca4",
+      "bytes": 172365
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
