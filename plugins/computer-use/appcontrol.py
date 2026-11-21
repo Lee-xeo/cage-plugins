@@ -17,6 +17,23 @@ import time
 from urllib.parse import unquote, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _chinese():
+    """True when the user's first system language is Chinese: the words shown on screen follow it."""
+    try:
+        run = subprocess.run(["/usr/bin/defaults", "read", "-g", "AppleLanguages"], capture_output=True, timeout=5)
+        found = re.search(r'([A-Za-z]{2,3})[-_A-Za-z0-9]*', run.stdout.decode("utf-8", "replace").split("(", 1)[-1])
+        return bool(found) and found.group(1).lower() == "zh"
+    except Exception:
+        return False
+
+
+CHINESE = _chinese()
+
+
+def T(zh, en):
+    return zh if CHINESE else en
 LONGEST = 1568        # longest side of a picture handed back, in pixels
 MAX_TEXT = 2000       # characters typed or put on the clipboard at once
 VISIT_LIMIT = 5000    # elements read in one app_state
@@ -630,7 +647,9 @@ DATA_DIR = os.path.join(os.path.expanduser("~"), "Library", "Application Support
 GRANTS = os.path.join(DATA_DIR, "app-grants.json")  # outside the plugin's folder: an update does not lose it
 LEGACY_GRANTS = os.path.join(HERE, "app-grants.json")  # where an earlier version kept it
 GRANTS_NOTE = ("always：Claude 可以直接操作的应用；never：你拒绝过的应用。条目是 bundle identifier（没有的写应用路径）。"
-               "删掉一条，下次用到时会重新问你。改完立即生效。")
+               "删掉一条，下次用到时会重新问你。改完立即生效。 / always: apps Claude may use directly; never: apps you "
+               "refused. Entries are bundle identifiers (the app's path when it has none). Delete an entry and you "
+               "are asked again the next time it is wanted. Changes take effect at once.")
 HOUR = 3600
 ASK_WAIT = 120
 _hour_grants = {}
@@ -1495,7 +1514,7 @@ def tool_app_state(arguments):
         tool_open_app({"app": query})  # not running: start it in the background, as the user would by opening it
     app = find_app(query)
     application = app_element(app["pid"])
-    show(app, "查看窗口")
+    show(app, T("查看窗口", "Viewing window"))
     limit = whole(arguments, "limit", DEFAULT_LIMIT, 20, 800)
     query = arguments.get("query")
     if query is not None and (not isinstance(query, str) or not query.strip()):
@@ -2666,7 +2685,7 @@ def tool_app_click(arguments):
         values = fresh(element, number)
         view = view_of_element(app, view, element)  # events go to the window the element is in
         target = "[%d] %s" % (number, short(view.notes[number]))
-        show(app, ("右键点击 " if button == "right" else "点击 ") + brief(view.notes[number]), center_of(values), "click")
+        show(app, (T("右键点击 ", "Right-clicking ") if button == "right" else T("点击 ", "Clicking ")) + brief(view.notes[number]), center_of(values), "click")
         if not foreground and not hold and (not flags or flags == CMD):
             done = press(element, values, button, count, flags)
             if done:
@@ -2681,7 +2700,7 @@ def tool_app_click(arguments):
             raise Refused("give element, or x and y in pixels of the latest app_state picture")
         point = picture_point(view, arguments)
         target = "(%g, %g)" % (float(arguments["x"]), float(arguments["y"]))
-        show(app, "点击", point, "click")
+        show(app, T("点击", "Clicking"), point, "click")
         if not foreground and not hold and (not flags or flags == CMD) and button == "left":
             hit = pressable_at(app, point)
             if hit is not None and ax_get(hit, "AXRole") in TEXT_INPUTS and sky_post():
@@ -2798,7 +2817,7 @@ def tool_app_type(arguments):
     else:
         element = focused_field(app)
         target = "the keyboard focus"
-    show(app, "输入文字", center_of(ax_many(element, ["AXPosition", "AXSize"])[0]) if element is not None else None,
+    show(app, T("输入文字", "Typing"), center_of(ax_many(element, ["AXPosition", "AXSize"])[0]) if element is not None else None,
          "type")
     if foreground:
         need_front(app, view.window if view else None)
@@ -2912,7 +2931,7 @@ def tool_app_key(arguments):
     hold = seconds_argument(arguments, "duration")
     if hold and code is None:
         raise Refused("duration needs a named key or a letter, digit or sign key, not another character")
-    show(app, "按键 " + arguments["keys"])
+    show(app, T("按键 ", "Pressing ") + arguments["keys"])
     foreground = arguments.get("foreground") is True
     pid = app["pid"]
     if not foreground and not hold and code is not None:
@@ -2966,7 +2985,7 @@ def tool_app_set_value(arguments):
     values = fresh(element, number)
     if attribute in ("position", "size"):
         return place_window(app, view, number, element, values, attribute, arguments.get("value"))
-    show(app, "设置 " + brief(view.notes[number]), center_of(values), "type")
+    show(app, T("设置 ", "Setting ") + brief(view.notes[number]), center_of(values), "type")
     value = arguments.get("value")
     if attribute != "value":
         if not isinstance(value, bool):
@@ -3019,7 +3038,7 @@ def place_window(app, view, number, element, values, attribute, value):
     ref = AXValueCreate(1 if attribute == "position" else 2, c.byref(held))
     if not ref:
         raise Refused("that value could not be handed to the app")
-    show(app, ("移动 " if attribute == "position" else "调整大小 ") + brief(view.notes[number]), center_of(values), "click")
+    show(app, (T("移动 ", "Moving ") if attribute == "position" else T("调整大小 ", "Resizing ")) + brief(view.notes[number]), center_of(values), "click")
     try:
         error = AXUIElementSetAttributeValue(element.ref, cfname(name), ref)
     finally:
@@ -3041,7 +3060,7 @@ def tool_app_select_text(arguments):
     view = need_view(app)
     number = arguments.get("element")
     element = element_at(view, number)
-    show(app, "选择文字", center_of(fresh(element, number)), "type")
+    show(app, T("选择文字", "Selecting text"), center_of(fresh(element, number)), "type")
     wanted = arguments.get("text")
     if not isinstance(wanted, str):
         raise Refused("text is the text to select, written as it is in the element")
@@ -3147,7 +3166,7 @@ def tool_app_scroll(arguments):
     if not frame or frame[2] <= 0 or frame[3] <= 0:
         raise Refused("that scroll area has no place on screen")
     shown = frame[3] if vertical else frame[2]
-    show(app, "滚动", CGPoint(frame[0] + frame[2] / 2.0, frame[1] + frame[3] / 2.0), "scroll")
+    show(app, T("滚动", "Scrolling"), CGPoint(frame[0] + frame[2] / 2.0, frame[1] + frame[3] / 2.0), "scroll")
     if not foreground:
         bar = values.get("AXVerticalScrollBar" if vertical else "AXHorizontalScrollBar")
         contents = values.get("AXContents")
@@ -3298,13 +3317,13 @@ def tool_app_menu(arguments):
                 except Refused:
                     code = None
                 if code is not None:
-                    show(app, "菜单 " + " > ".join(trail))
+                    show(app, T("菜单 ", "Menu ") + " > ".join(trail))
                     chord_in_background(app, view, code, flags)
                     settle()
                     return "Chose %s in %s by its shortcut %s, in the background. Check with app_state." % (
                         " > ".join(trail), app["name"], keys)
             if view is not None:
-                show(app, "菜单 " + " > ".join(trail))
+                show(app, T("菜单 ", "Menu ") + " > ".join(trail))
                 with BackgroundInput(app, view):
                     time.sleep(0.1)
                     error = perform(node, "AXPress")
@@ -3315,7 +3334,7 @@ def tool_app_menu(arguments):
         if not last["enabled"]:
             raise Refused("%s is turned off right now (shown greyed out); the app may need something selected first"
                           % " > ".join(trail))
-        show(app, "菜单 " + " > ".join(trail))
+        show(app, T("菜单 ", "Menu ") + " > ".join(trail))
         error = perform(node, "AXPress")
         if error != 0:
             raise Refused("%s did not take %s: %s" % (app["name"], " > ".join(trail), ax_error(error)))
@@ -3505,7 +3524,7 @@ def tool_open_app(arguments):
         if run.returncode != 0:
             raise Refused("%s could not open that address: %s" % (app["name"], clean(run.stderr.decode(
                 "utf-8", "replace"), 200) or "the system did not say why"))
-        show(app, "打开网址")
+        show(app, T("打开网址", "Opening address"))
         settle_opening(app["pid"])
         return "%s is opening %s%s." % (app["name"], url, " in front" if foreground else " in the background")
     if app is not None:
@@ -3539,7 +3558,7 @@ def tool_open_app(arguments):
     deadline = time.time() + 5
     while time.time() < deadline and not windows_by_app().get(app["pid"]):
         time.sleep(0.25)
-    show(app, "已打开")
+    show(app, T("已打开", "Opened"))
     return "Opened %s (%s, pid %d)%s." % (app["name"], app["bundle_id"], app["pid"],
                                           " in front" if foreground else " in the background")
 
@@ -3608,19 +3627,19 @@ def tool_app_drag(arguments):
     end, last = place_of(app, view, arguments, "to_")
     if arguments.get("from_element") is not None:
         view = view_of_element(app, view, element_at(view, arguments["from_element"]))
-    show(app, "拖拽", start, "click")
+    show(app, T("拖拽", "Dragging"), start, "click")
     if arguments.get("foreground") is True:
         need_front(app, view.window)
         cover = covering(app, start) or covering(app, end)
         if cover:
             raise Refused("a window of %s is on top on the way, so nothing was dragged" % cover)
         drag_with_pointer(start, end, flags, hold)
-        show(app, "拖拽", end, "click")
+        show(app, T("拖拽", "Dragging"), end, "click")
         settle()
         return "Dragged from %s to %s in %s with the pointer, which then went back to where it was." % (
             first, last, app["name"])
     drag_in_background(app, view, start, end, flags, hold)
-    show(app, "拖拽", end, "click")
+    show(app, T("拖拽", "Dragging"), end, "click")
     settle()
     return ("Dragged from %s to %s in %s, sent to its window alone without moving the pointer, in the background. "
             "Check with app_state that it took effect." % (first, last, app["name"]))
@@ -3864,7 +3883,7 @@ def tool_app_paste(arguments):
         element = element_at(view, number)
         values = fresh(element, number)
         target = "[%d] %s" % (number, short(view.notes[number]))
-        show(app, "粘贴", center_of(values), "type")
+        show(app, T("粘贴", "Pasting"), center_of(values), "type")
         view = view_of_element(app, view, element)
         window = view.window["element"]
         if front_pid() != app["pid"] and ax_get(window, "AXMain") is False:
@@ -3875,7 +3894,7 @@ def tool_app_paste(arguments):
                           % number)
     else:
         element = focused_field(app)
-        show(app, "粘贴")
+        show(app, T("粘贴", "Pasting"))
     before = text_size(element)
     in_front = window_in_front(app, view.window.get("number") if view else None)
 

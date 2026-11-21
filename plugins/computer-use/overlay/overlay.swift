@@ -336,6 +336,10 @@ final class Choice: NSView {
     }
 }
 
+// Words on screen follow the system language: Chinese for any Chinese setting, English otherwise.
+let chinese = (Locale.preferredLanguages.first ?? "en").hasPrefix("zh")
+func tr(_ zh: String, _ en: String) -> String { chinese ? zh : en }
+
 /// The question whether Claude may use an app, near the top of the screen, above everything. It never takes the
 /// keyboard or comes in front as an app, and is left out of screen pictures, as the cursors are.
 final class Question: NSObject {
@@ -362,20 +366,22 @@ final class Question: NSObject {
         dot.layer?.backgroundColor = claudeOrange.cgColor
         dot.layer?.cornerRadius = 5
         view.addSubview(dot)
-        let title = NSTextField(labelWithString: "Claude 想要操作「\(app)」")
+        let title = NSTextField(labelWithString: tr("Claude 想要操作「\(app)」", "Claude wants to use “\(app)”"))
         title.font = .systemFont(ofSize: 14, weight: .semibold)
         title.textColor = .white
         title.lineBreakMode = .byTruncatingTail
         title.frame = NSRect(x: 36, y: Question.size.height - 37, width: Question.size.width - 52, height: 20)
         view.addSubview(title)
         let note = NSTextField(wrappingLabelWithString:
-            "允许后它能读取这个应用的窗口并在里面点击、输入。\(bundle)\n选择记在 app-grants.json 里，可随时修改。")
+            tr("允许后它能读取这个应用的窗口并在里面点击、输入。\(bundle)\n选择记在 app-grants.json 里，可随时修改。",
+               "It can read this app's windows and click and type in them.\nYour choice is saved in app-grants.json; edit it any time."))
         note.font = .systemFont(ofSize: 11)
         note.textColor = NSColor(white: 0.75, alpha: 1)
         note.frame = NSRect(x: 18, y: 50, width: Question.size.width - 36, height: 36)
         view.addSubview(note)
 
-        let answers: [(String, String)] = [("no", "不允许"), ("hour", "允许 1 小时"), ("always", "始终允许")]
+        let answers: [(String, String)] = [("no", tr("不允许", "Don't allow")), ("hour", tr("允许 1 小时", "Allow for 1 hour")),
+                                         ("always", tr("始终允许", "Always allow"))]
         var right = Question.size.width - 16
         for (key, words) in answers.reversed() {
             let choice = Choice(key: key, words: words, filled: key == "always")
@@ -459,10 +465,11 @@ final class Overlay {
         let cursor = cursor(named: name)
         let app = order["app"] as? String ?? ""
         let what = order["what"] as? String ?? ""
-        let who = name == defaultName ? "Claude" : "Claude（\(name)）"
+        let who = name == defaultName ? "Claude" : tr("Claude（\(name)）", "Claude (\(name))")
         let busy = cursors.values.filter { $0.shown || $0 === cursor }.count
-        say("\(who) 正在使用「\(app)」" + (what.isEmpty ? "" : " · \(what)")
-            + (busy > 1 ? "   ·   \(busy) 个光标在工作" : "") + "   ·   按 Esc 停止", dot: cursor.color)
+        say(tr("\(who) 正在使用「\(app)」", "\(who) is using “\(app)”") + (what.isEmpty ? "" : " · \(what)")
+            + (busy > 1 ? "   ·   " + tr("\(busy) 个光标在工作", "\(busy) cursors working") : "")
+            + "   ·   " + tr("按 Esc 停止", "Press Esc to stop"), dot: cursor.color)
         bannerGeneration += 1
         let seenBanner = bannerGeneration
         bannerTimer?.invalidate()
@@ -600,7 +607,7 @@ final class Overlay {
 
     func ask(_ order: [String: Any]) {
         guard let id = order["id"] as? String else { return }
-        let question = Question(id: id, app: order["app"] as? String ?? "这个应用",
+        let question = Question(id: id, app: order["app"] as? String ?? tr("这个应用", "this app"),
                                 bundle: order["bundle"] as? String ?? "") { [weak self] id, answer in
             self?.answer(id, answer)
         }
@@ -632,7 +639,7 @@ final class Overlay {
         working = false
         FileHandle.standardOutput.write("stop\n".data(using: .utf8)!)
         hideAll()
-        say("已让 Claude 停止操作", dot: .systemRed)
+        say(tr("已让 Claude 停止操作", "Claude was stopped"), dot: .systemRed)
         bannerGeneration += 1
         let seen = bannerGeneration
         bannerTimer?.invalidate()
