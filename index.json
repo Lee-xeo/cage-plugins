@@ -1225,6 +1225,47 @@
       "bytes": 8697
     },
     {
+      "name": "markdown-viewer",
+      "version": "1.7.0",
+      "description": "Offline Markdown workspace with split hover-sync editing, full-text search engine, interactive Kanban task board with swimlanes, multi-workspace browsing, and Obsidian-style force-directed knowledge graph.",
+      "permissions": [],
+      "displayName": "Markdown 渲染",
+      "categories": [
+        "files",
+        "productivity"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "markdown",
+            "command": [
+              "python3",
+              "server.py",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "reader",
+            "title": "Markdown 渲染",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "markdown"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/markdown-viewer/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/markdown-viewer-1.7.0.tar.gz",
+      "sha256": "ff2769884b5e64abcce5b512a429238bca4d39dd433c4b5a1e09f2fa9fe6118d",
+      "bytes": 131706
+    },
+    {
       "name": "powerpoint-slides",
       "version": "0.2.1",
       "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
