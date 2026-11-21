@@ -116,6 +116,42 @@
       "bytes": 1104
     },
     {
+      "name": "computer-use",
+      "version": "0.2.0",
+      "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.0.tar.gz",
+      "sha256": "357dd67b7137a33c8ee33a5377b33eb5b38f922629763bc963ee14228d52cca4",
+      "bytes": 172365
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.1",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
@@ -545,48 +581,6 @@
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/word-documents-0.2.0.tar.gz",
       "sha256": "8303d7744e5811706a8a7f726e45ef15bb2a3b0bfd5aba65b637cecc32aeffc0",
       "bytes": 99334
-    },
-    {
-      "name": "computer-use",
-      "version": "0.2.0",
-      "description": "Sees and works the apps of this computer in the background, without taking the mouse or keyboard or changing the app in front: window pictures, controls, menus, typing, formatted paste, clicks, drags and shortcuts delivered to a window behind the user's work, scrolling and the clipboard. Asks the user before using each app, keeps the front for the window the user chose, and shows named cursors; Esc stops it. 在后台查看和操作这台电脑上的应用，不占用鼠标键盘，也不改变前台应用：窗口截图、界面元素、菜单、输入、带格式粘贴，以及投递到后台窗口的点击、拖拽和快捷键，还有滚动和剪贴板。每个应用首次使用前先征得你同意，前台只用于你自己放在最前面的窗口，屏幕上显示带名字的光标，按 Esc 即可停止。",
-      "permissions": [
-        "screen",
-        "input"
-      ],
-      "displayName": "Computer Use",
-      "platforms": [
-        "darwin"
-      ],
-      "categories": [
-        "desktop"
-      ],
-      "target": "darwin-arm64",
-      "runtime": "python3",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.0-darwin-arm64.tar.gz",
-      "sha256": "8ae6eaea35242cffff517aefeecf642da2d57cad1c6c57f1d68de2b74a81191c",
-      "bytes": 123311
-    },
-    {
-      "name": "computer-use",
-      "version": "0.2.0",
-      "description": "Sees and works the apps of this computer in the background, without taking the mouse or keyboard or changing the app in front: window pictures, controls, menus, typing, formatted paste, clicks, drags and shortcuts delivered to a window behind the user's work, scrolling and the clipboard. Asks the user before using each app, keeps the front for the window the user chose, and shows named cursors; Esc stops it. 在后台查看和操作这台电脑上的应用，不占用鼠标键盘，也不改变前台应用：窗口截图、界面元素、菜单、输入、带格式粘贴，以及投递到后台窗口的点击、拖拽和快捷键，还有滚动和剪贴板。每个应用首次使用前先征得你同意，前台只用于你自己放在最前面的窗口，屏幕上显示带名字的光标，按 Esc 即可停止。",
-      "permissions": [
-        "screen",
-        "input"
-      ],
-      "displayName": "Computer Use",
-      "platforms": [
-        "darwin"
-      ],
-      "categories": [
-        "desktop"
-      ],
-      "target": "darwin-x64",
-      "runtime": "python3",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.0-darwin-x64.tar.gz",
-      "sha256": "bb98361ba835c6bbacc006346a3e512ccedfe21318910c707fc0e8bd36f9bf54",
-      "bytes": 124140
     },
     {
       "name": "desktop-control",
