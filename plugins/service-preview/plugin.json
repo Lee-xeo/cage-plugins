@@ -1,0 +1,24 @@
+{
+  "name": "service-preview",
+  "displayName": "Service Preview",
+  "version": "0.1.0",
+  "description": "Lists locally accessible TCP listeners and opens HTTP previews in the built-in browser.",
+  "engines": { "cage": ">=0.1.8" },
+  "kind": "guest",
+  "permissions": [],
+  "categories": ["developer"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "services", "command": ["python3", "server.py"] }
+    ],
+    "views": [
+      {
+        "id": "services",
+        "title": "Service Preview",
+        "entry": "view/index.html",
+        "server": "services",
+        "openUrls": ["http://127.0.0.1:*/*", "http://localhost:*/*"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service Preview</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1 id="title">Service Preview</h1>
+        <p id="description">Open HTTP services running in this environment.</p>
+      </div>
+      <button id="refresh" type="button" disabled>Refresh</button>
+    </header>
+    <p id="status" role="status" aria-live="polite">Loading listeners…</p>
+    <ul id="services" aria-labelledby="title"></ul>
+    <p id="open-error" role="alert" hidden></p>
+  </main>
+</body>
+</html>

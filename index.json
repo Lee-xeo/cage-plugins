@@ -1328,6 +1328,112 @@
       "bytes": 27747
     },
     {
+      "name": "service-preview",
+      "version": "0.1.0",
+      "description": "Lists locally accessible TCP listeners and opens HTTP previews in the built-in browser.",
+      "permissions": [],
+      "author": {
+        "name": "Chandler-h-blake"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "服务预览台",
+          "description": "列出可通过本地回环地址访问的 TCP 监听端口，并在内置浏览器打开 HTTP 预览。"
+        },
+        "zh-TW": {
+          "displayName": "服務預覽台",
+          "description": "列出可透過本機回送位址存取的 TCP 監聽連接埠，並在內建瀏覽器開啟 HTTP 預覽。"
+        },
+        "ru": {
+          "displayName": "Предпросмотр сервисов",
+          "description": "Показывает TCP-порты, доступные через loopback, и открывает HTTP-страницы во встроенном браузере."
+        },
+        "ar": {
+          "displayName": "معاينة الخدمات",
+          "description": "يعرض منافذ TCP التي تستمع على عنوان الاسترجاع المحلي ويفتح معاينات HTTP في المتصفح المدمج."
+        },
+        "fa": {
+          "displayName": "پیش‌نمایش سرویس‌ها",
+          "description": "درگاه‌های شنوندهٔ TCP را که از نشانی بازگشت محلی در دسترس‌اند نمایش می‌دهد و پیش‌نمایش HTTP را در مرورگر داخلی باز می‌کند."
+        },
+        "ko": {
+          "displayName": "서비스 미리보기",
+          "description": "루프백에서 접근할 수 있는 TCP 수신 포트를 표시하고 내장 브라우저에서 HTTP 미리보기를 엽니다."
+        },
+        "es": {
+          "displayName": "Vista previa de servicios",
+          "description": "Enumera los puertos TCP en escucha accesibles desde la dirección de bucle local y abre vistas previas HTTP en el navegador integrado."
+        },
+        "my": {
+          "displayName": "ဝန်ဆောင်မှု အစမ်းကြည့်ရှုခြင်း",
+          "description": "ဒေသတွင်း loopback လိပ်စာမှ ဝင်ရောက်နိုင်သော TCP နားထောင်ပေါက်များကို ပြပြီး ပါဝင်သည့် ဘရောက်ဇာတွင် HTTP စာမျက်နှာများကို ဖွင့်ပေးသည်။"
+        },
+        "be": {
+          "displayName": "Папярэдні прагляд сэрвісаў",
+          "description": "Паказвае TCP-парты, даступныя праз лакальны зваротны інтэрфейс, і адкрывае HTTP-старонкі ва ўбудаваным браўзеры."
+        },
+        "ps": {
+          "displayName": "د خدمتونو مخکتنه",
+          "description": "هغه TCP درشلونه ښيي چې د ځايي بېرته‌ګرځېدونکې پتې له لارې لاسرسی ورته کېږي او د HTTP مخکتنې په دننه لټونګر کې پرانیزي."
+        },
+        "prs": {
+          "displayName": "پیش‌نمایش خدمات",
+          "description": "درگاه‌های شنوندهٔ TCP را که از نشانی بازگشت محلی قابل دسترس‌اند فهرست می‌کند و پیش‌نمایش HTTP را در مرورگر داخلی باز می‌کند."
+        },
+        "am": {
+          "displayName": "የአገልግሎት ቅድመ ዕይታ",
+          "description": "በአካባቢያዊ መመለሻ አድራሻ የሚደረስባቸውን የTCP ማዳመጫ ወደቦች ይዘረዝራል፣ የHTTP ገጾችንም በአብሮገነብ አሳሽ ይከፍታል።"
+        },
+        "so": {
+          "displayName": "Horudhaca adeegyada",
+          "description": "Wuxuu taxaa dekedaha TCP ee laga geli karo cinwaanka loopback, wuxuuna bogagga HTTP ka furaa biraawsarka ku dhex jira."
+        },
+        "ti": {
+          "displayName": "ቅድመ ርእይቶ ኣገልግሎታት",
+          "description": "ብናይ ውሽጢ መመለሲ ኣድራሻ ዝብጽሑ ወደባት TCP ይዝርዝር፣ ገጻት HTTP ድማ ኣብ ውሽጣዊ ኣሳሲ ይኸፍት።"
+        },
+        "fr": {
+          "displayName": "Aperçu des services",
+          "description": "Liste les ports TCP en écoute accessibles par l’adresse de bouclage et ouvre les aperçus HTTP dans le navigateur intégré."
+        }
+      },
+      "displayName": "Service Preview",
+      "categories": [
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "services",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "services",
+            "title": "Service Preview",
+            "entry": "view/index.html",
+            "server": "services",
+            "openUrls": [
+              "http://127.0.0.1:*/*",
+              "http://localhost:*/*"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/service-preview-0.1.0.tar.gz",
+      "sha256": "817d9a30c46bd066f1fee1623228b89afac9018134e4b9d01426465398fafd7a",
+      "bytes": 8311
+    },
+    {
       "name": "sqlite",
       "version": "0.1.1",
       "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
