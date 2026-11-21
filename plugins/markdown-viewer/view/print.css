@@ -1,0 +1,96 @@
+@page {
+  margin: 16mm 14mm;
+}
+
+:root,
+:root[data-scheme="dark"] {
+  --paper: #ffffff !important;
+  --ink: #111827 !important;
+  --strong: #000000 !important;
+  --muted: #4b5563 !important;
+  --line: #d1d5db !important;
+  --chrome: #f9fafb !important;
+  --accent: #0369a1 !important;
+  --link: #0369a1 !important;
+}
+
+body {
+  background: #ffffff !important;
+  color: #111827 !important;
+  font-size: 11pt;
+}
+
+.topbar,
+.theme-group,
+.banner,
+.activity-rail,
+.resizer,
+#file-browser,
+#graph-workspace,
+#doc-empty,
+.doc-bar,
+.doc-header,
+.doc-toolbar,
+.doc-alert,
+.alert-strip,
+.find-bar,
+.outline-panel,
+.outline-rail,
+#editor-pane,
+.md-copy-btn,
+.md-heading-fold-btn,
+.md-mermaid-actions,
+#backlinks-panel,
+.modal-backdrop {
+  display: none !important;
+}
+
+.md-folded-hidden {
+  display: revert !important;
+}
+
+.md-heading-collapsed::after {
+  content: none !important;
+}
+
+.shell,
+.workspace-body,
+.doc-workspace,
+.doc-viewer,
+.doc-main-area,
+.workspace-panes,
+.files-layout.has-doc {
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.panel,
+.doc-viewer,
+.preview-pane {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.md-code-block,
+.md-mermaid-block,
+.md-callout,
+.md-frontmatter,
+.md-math-block,
+blockquote,
+table,
+figure {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.md-code-block pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "Markdown 渲染",
+    "description": "离线 Markdown、Excel、Word、PPT 与 PDF 知识工作台，支持斜杠命令与章节联想、双语界面、Dataview 查询、幻灯片演示、全文检索、任务看板与知识图谱。"
+  },
+  "zh-TW": {
+    "displayName": "Markdown 渲染",
+    "description": "離線 Markdown、Excel、Word、PPT 與 PDF 知識工作台，支援斜線命令與章節聯想、雙語介面、Dataview 查詢、簡報模式、全文檢索、任務看板與知識圖譜。"
+  },
+  "ru": {
+    "displayName": "Просмотр Markdown",
+    "description": "Автономная рабочая среда для Markdown, Excel, Word, PowerPoint и PDF со слэш-командами, автодополнением заголовков, запросами Dataview, слайдами, полнотекстовым поиском, канбан-доской и графом знаний."
+  },
+  "ar": {
+    "displayName": "عارض Markdown",
+    "description": "مساحة عمل دون اتصال لملفات Markdown وExcel وWord وPowerPoint وPDF مع الإكمال التلقائي للأوامر والعناوين، واستعلامات Dataview، وعرض الشرائح، والبحث النصي الكامل، ولوحة Kanban، ومخطط المعرفة."
+  },
+  "fa": {
+    "displayName": "نمایشگر Markdown",
+    "description": "محیط کاری آفلاین برای Markdown، اکسل، ورد، پاورپوینت و PDF با دستورات اسلش و تکمیل خودکار سرفصل‌ها، کوئری‌های Dataview، ارائه اسلاید، جستجوی تمام‌متن، تخته کانبان و گراف دانش."
+  },
+  "ko": {
+    "displayName": "Markdown 뷰어",
+    "description": "슬래시 명령어와 제목 자동 완성, Dataview 쿼리, 슬라이드 발표, 전체 텍스트 검색, 칸반 보드 및 지식 그래프를 지원하는 오프라인 Markdown·Excel·Word·PPT·PDF 워크스페이스입니다."
+  },
+  "es": {
+    "displayName": "Visor Markdown",
+    "description": "Espacio de trabajo sin conexión para Markdown, Excel, Word, PowerPoint y PDF con autocompletado de comandos y encabezados, consultas Dataview, presentaciones, búsqueda de texto completo, tablero Kanban y grafo de conocimiento."
+  },
+  "my": {
+    "displayName": "Markdown ကြည့်ရှုကိရိယာ",
+    "description": "Slash command နှင့် ခေါင်းစဉ်အလိုအလျောက်ဖြည့်စွက်မှု၊ Dataview မေးမြန်းမှု၊ ဆလိုက်ပြသမှု၊ စာသားအပြည့်ရှာဖွေမှု၊ Kanban ဘုတ်နှင့် အသိပညာဂရပ်တို့ပါဝင်သော အော့ဖ်လိုင်း Markdown၊ Excel၊ Word၊ PowerPoint နှင့် PDF အလုပ်ခွင်။"
+  },
+  "be": {
+    "displayName": "Прагляд Markdown",
+    "description": "Аўтаномная працоўная прастора для Markdown, Excel, Word, PowerPoint і PDF са слэш-камандамі, аўтадапаўненнем загалоўкаў, запытамі Dataview, слайдамі, паўнатэкставым пошукам, канбан-дошкай і графам ведаў."
+  },
+  "ps": {
+    "displayName": "د Markdown لیدونکی",
+    "description": "د Markdown، Excel، Word، PowerPoint او PDF لپاره آفلاین کارځای چې د سلیش کمانډونو او سرلیکونو بشپړونه، Dataview پوښتنې، سلایډ ننداره، بشپړ متن لټون، Kanban تخته او د پوهې ګراف لري."
+  },
+  "prs": {
+    "displayName": "نمایشگر Markdown",
+    "description": "فضای کاری آفلاین برای Markdown، اکسل، ورد، پاورپوینت و PDF با تکمیل خودکار دستورات و عنوان‌ها، کوئری‌های Dataview، نمایش سلاید، جستجوی متن کامل، تخته کانبان و گراف دانش."
+  },
+  "am": {
+    "displayName": "Markdown መመልከቻ",
+    "description": "ከመስመር ውጭ የMarkdown፣ Excel፣ Word፣ PowerPoint እና PDF የስራ ቦታ ከስላሽ ትዕዛዞች፣ የርዕስ ራስ-አጠናቅቅ፣ Dataview መጠይቆች፣ ስላይድ፣ ሙሉ ጽሑፍ ፍለጋ፣ የKanban ሰሌዳ እና የእውቀት ግራፍ ጋር።"
+  },
+  "so": {
+    "displayName": "Muujiyaha Markdown",
+    "description": "Goob shaqo oo offline ah oo loogu talagalay Markdown, Excel, Word, PowerPoint iyo PDF, leh dhammaystirka amarrada slash iyo cinwaannada, weydiimaha Dataview, bandhigga slide-yada, raadinta qoraalka buuxa, guddiga Kanban iyo garaafka aqoonta."
+  },
+  "ti": {
+    "displayName": "መርኣዪ Markdown",
+    "description": "ካብ መስመር ወጻኢ ንMarkdown፡ Excel፡ Word፡ PowerPoint እና PDF መስርሒ ቦታ ምስ slash ትእዛዛት፡ መመላእቲ ኣርእስቲ፡ Dataview ሕቶታት፡ ስላይድ፡ ምሉእ ጽሑፍ ምድላይ፡ ሰሌዳ Kanban እና ግራፍ ፍልጠት።"
+  },
+  "fr": {
+    "displayName": "Visionneuse Markdown",
+    "description": "Espace de travail hors ligne pour Markdown, Excel, Word, PowerPoint et PDF avec commandes slash, complétion des titres, requêtes Dataview, mode diaporama, recherche plein texte, tableau Kanban et graphe de connaissances."
+  }
+}
