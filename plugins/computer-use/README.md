@@ -1,6 +1,6 @@
 # Computer Use
 
-**English** — Lets Claude see and work the apps of this Mac in the background through the macOS accessibility interface, without taking your mouse or keyboard or bringing apps forward: pictures of a window even when it is covered, its controls and text as numbered elements, pressing buttons, typing (any script, regardless of the input method), menus, scrolling, selection in lists and file dialogs, and the clipboard. While it works, cursors of its own (one per named line of work, so several helpers can work at once in different apps) and a banner show on screen; press Esc to stop it. Whether it may work in front is the user's choice, made by where they keep each window: only a window the user already has in front is used with the real pointer and keyboard. The first time it wants an app, it asks the user on screen (always, for an hour, or no), and only a real click answers; the answers are kept in `app-grants.json` in the user's Application Support folder, outside the plugin. Clicks, drags and command shortcuts reach a window behind the user's work without changing the user's front app, through the window server's private interface. Listings after the first show only what changed, formatted text can be pasted from Markdown or HTML, and steps with effects beyond the screen are asked about first. The app hosting this tool's approvals, password and security prompts are never touched; terminals and code editors are limited to looking and clicking, and password managers are blocked (see `policy.json`). macOS only; Python standard library and system frameworks, plus a small Swift overlay program whose source is included.
+**English** — Lets Claude see and work the apps of this Mac in the background through the macOS accessibility interface, without taking your mouse or keyboard or bringing apps forward: pictures of a window even when it is covered, its controls and text as numbered elements, pressing buttons, typing (any script, regardless of the input method), menus, scrolling, selection in lists and file dialogs, and the clipboard. While it works, cursors of its own (one per named line of work, so several helpers can work at once in different apps) and a banner show on screen; press Esc to stop it (calls still waiting for their turn do nothing, and a drag, long click or held key in progress lets go at once). Whether it may work in front is the user's choice, made by where they keep each window: only a window the user already has in front is used with the real pointer and keyboard. The first time it wants an app, it asks the user on screen (always, for an hour, or no), and only a real click answers; the answers are kept in `app-grants.json` in the user's Application Support folder, outside the plugin. Clicks, drags and command shortcuts reach a window behind the user's work without changing the user's front app, through the window server's private interface. When more than one window of an app has been read, x and y of a picture are used with the `snapshot` name app_state gave that window (a window read again voids its older snapshot); pastes take turns on the clipboard, which is put back only if nothing new was copied meanwhile. Listings after the first show only what changed, formatted text can be pasted from Markdown or HTML, and steps with effects beyond the screen are asked about first. The app hosting this tool's approvals, password and security prompts are never touched; terminals and code editors are limited to looking and clicking, and password managers are blocked (see `policy.json`). macOS only; Python standard library and system frameworks, plus a small Swift overlay program whose source is included.
 
 **中文**：
 让 Claude 通过 macOS 的辅助功能接口读取和操作这台电脑上的应用，**大多在后台完成，不占用你的鼠标和键盘**。它和 desktop-control 并存：desktop-control 负责整屏截图和真实的鼠标键盘；Computer Use 以单个应用为对象，按界面元素操作。思路与 Claude 和 Codex 的电脑操作功能相同。
@@ -15,7 +15,7 @@
 | `app_click` | 按编号或截图坐标点击。默认在后台用辅助功能“按下”按钮、选中行、聚焦输入框，指针不动；做不到时把点击只发给这个应用；`foreground: true`（仅限你放在最前面的窗口）用真实指针点击，点完把指针放回原处。`duration` 秒数用于长按 |
 | `app_drag` | 按编号或截图坐标从一处拖到另一处，可带修饰键和按住时长；默认只发给这个应用，`foreground: true`（仅限你放在最前面的窗口）用真实指针 |
 | `app_type` | 向输入框打字。默认在后台通过辅助功能直接写入文字，**中文等任何文字都不受输入法影响**；不支持时改为把按键只发给这个应用 |
-| `app_paste` | 粘贴纯文本，或把 Markdown / HTML 转成**带格式的文字**（HTML 会先去掉脚本、样式、图片、框架等一切可能让转换器去加载外部内容的部分，只留文字结构和普通网页链接）（标题、粗体、斜体、列表、链接、代码）粘贴进去；用完把剪贴板恢复原样。应用在后台不接受粘贴时，改为写入去掉格式的文字并说明 |
+| `app_paste` | 粘贴纯文本，或把 Markdown / HTML 转成**带格式的文字**（HTML 会先去掉脚本、样式、图片、框架等一切可能让转换器去加载外部内容的部分，只留文字结构和普通网页链接）（标题、粗体、斜体、列表、链接、代码）粘贴进去；用完把剪贴板恢复原样（多个粘贴排队使用剪贴板；若粘贴期间你复制了新内容，就保留你的新内容，不再恢复）。应用在后台不接受粘贴时，改为写入去掉格式的文字并说明 |
 | `app_key` | 向应用按键或组合键（如 `return`、`mod+s`），默认只发给这个应用；`duration` 秒数用于按住 |
 | `app_scroll` | 在后台滚动某个滚动区域，单位是“屏”，可以是小数 |
 | `app_menu` | 在后台使用应用的菜单栏：列出菜单、列出某个菜单的项目和快捷键，或直接选择某个菜单项，例如 `["文件", "导出为 PDF…"]` |
@@ -48,7 +48,7 @@
 Claude 第一次要操作某个应用时，屏幕上方会弹出提问：“Claude 想要操作「某应用」”，三个选项是 **不允许 / 允许 1 小时 / 始终允许**。
 
 - 这个提问**只接受你亲手的鼠标点击**；任何程序（包括这些工具自己）模拟的点击都会被忽略，所以 Claude 不能替你点同意。按 Esc 会把它收起而不作答。
-- “始终允许”和“不允许”记在 `~/Library/Application Support/Computer Use/app-grants.json`（`always` / `never` 两个列表）。它在插件目录之外，更新或重装插件不会丢失；旧版放在插件目录里的记录会在第一次读取时自动沿用。你随时可以编辑；删掉一条，下次用到时会重新问你。“允许 1 小时”只记在内存里。
+- “始终允许”和“不允许”记在 `~/Library/Application Support/Computer Use/app-grants.json`（`always` / `never` 两个列表）。它在插件目录之外，更新或重装插件不会丢失；旧版放在插件目录里的记录会在第一次读取时自动迁移到这里（允许和拒绝都保留；这里已有文件时以它为准，不覆盖）。你随时可以编辑；删掉一条，下次用到时会重新问你。“允许 1 小时”只记在内存里。
 - 等待回答最多 2 分钟；没有回答时，Claude 会在对话里提醒你。
 
 ## 需要先问你的操作
@@ -65,7 +65,7 @@ Claude 第一次要操作某个应用时，屏幕上方会弹出提问：“Clau
 
 - **Claude 的光标**：圆角箭头（尖端朝左上、尾部带缺口），半透明的橙色渐变，带一层柔和的橙色光晕和名字标签；尖端有一圈轻轻扩散的光环，尖端就是实际操作的位置。它会弹性地滑到将要操作的位置，移动时朝行进方向微微倾斜；点击时先压下再弹起，并泛起两圈波纹；打字时轻轻摆动，滚动时上下一跳。它只显示在被操作的窗口正上方，被别的窗口挡住时也一起被挡住，和你的真实鼠标指针是分开的。
 - **顶部横幅**：显示“Claude 正在使用「某应用」· 正在做什么 · 按 Esc 停止”。停止操作 4 秒后，横幅和光标自动淡出。
-- **Esc 停止**：横幅显示时按 Esc，所有光标都会收起，横幅变为“已让 Claude 停止操作”。之后 90 秒内，除 `list_apps` 外所有工具都拒绝执行，并提示 Claude 停下来问你。
+- **Esc 停止**：横幅显示时按 Esc，所有光标都会收起，横幅变为“已让 Claude 停止操作”。之后 90 秒内，除 `list_apps` 外所有工具都拒绝执行，并提示 Claude 停下来问你。已经排队等待的操作不会再执行；正在进行的拖拽、长按、按住的按键会立刻松开。
 - 光标和横幅不接收鼠标和键盘、不会把焦点抢走；包括授权提问在内，这些提示都不会出现在截图里。授权提问只接受你的点击，不抢键盘焦点。
 
 提示由 `overlay/ClaudeOverlay-arm64`（Apple 芯片）或 `overlay/ClaudeOverlay-x64`（Intel）显示，插件按 CPU 自动选择（源码 `overlay/overlay.swift`）。重新编译：在 `overlay` 目录运行 `swiftc -O -swift-version 5 -target arm64-apple-macos13.0 overlay.swift -o ClaudeOverlay-arm64`，Intel 版把 `arm64` 换成 `x86_64`、输出名换成 `ClaudeOverlay-x64`。没有这个程序时，插件照常工作，只是没有屏幕提示。

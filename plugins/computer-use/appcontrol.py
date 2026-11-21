@@ -642,22 +642,58 @@ def app_key(app):
     return app["bundle_id"] or app["path"] or app["name"]
 
 
-def grants():
-    try:
-        with open(GRANTS, encoding="utf-8") as file:
-            data = json.load(file)
-    except (OSError, ValueError):
-        data = {}
-        if not os.path.exists(GRANTS):
-            try:  # the user's answers from an earlier version, kept in the plugin's folder
-                with open(LEGACY_GRANTS, encoding="utf-8") as file:
-                    data = json.load(file)
-            except (OSError, ValueError):
-                data = {}
+def clean_grants(data):
     if not isinstance(data, dict):
         data = {}
     return {key: [item for item in data.get(key, []) if isinstance(item, str)]
             if isinstance(data.get(key), list) else [] for key in ("always", "never")}
+
+
+def write_grants(data, only_new=False):
+    """Save the answers in the user's Application Support folder. With only_new, an existing file is never
+    replaced: whoever got there first stays. True when written."""
+    body = {"_说明": GRANTS_NOTE, "always": sorted(data["always"]), "never": sorted(data["never"])}
+    os.makedirs(DATA_DIR, exist_ok=True)
+    temporary = "%s.%d.%x.tmp" % (GRANTS, os.getpid(), random.getrandbits(32))
+    with open(temporary, "w", encoding="utf-8") as file:
+        json.dump(body, file, ensure_ascii=False, indent=2)
+        file.write("\n")
+    try:
+        if only_new:
+            try:
+                os.link(temporary, GRANTS)  # fails when the file is there already
+            except FileExistsError:
+                return False
+            return True
+        os.replace(temporary, GRANTS)
+        return True
+    finally:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+
+
+def grants():
+    try:
+        with open(GRANTS, encoding="utf-8") as file:
+            return clean_grants(json.load(file))
+    except (OSError, ValueError):
+        pass
+    if os.path.exists(GRANTS):
+        return clean_grants({})  # a file the user has but that cannot be read now: nothing is granted from it
+    try:  # the user's answers from an earlier version, kept in the plugin's folder: moved over once
+        with open(LEGACY_GRANTS, encoding="utf-8") as file:
+            data = clean_grants(json.load(file))
+    except (OSError, ValueError):
+        return clean_grants({})
+    if data["always"] or data["never"]:
+        try:
+            if not write_grants(data, only_new=True):
+                return grants()  # a new file appeared meanwhile; it is the one that counts
+        except OSError:
+            pass  # not saved this time: the old file is read again next time
+    return data
 
 
 def remember(key, answer):
@@ -666,13 +702,7 @@ def remember(key, answer):
         for name in ("always", "never"):
             data[name] = [item for item in data[name] if item != key]
         data[answer].append(key)
-        body = {"_说明": GRANTS_NOTE, "always": sorted(data["always"]), "never": sorted(data["never"])}
-        os.makedirs(DATA_DIR, exist_ok=True)
-        temporary = GRANTS + ".tmp"
-        with open(temporary, "w", encoding="utf-8") as file:
-            json.dump(body, file, ensure_ascii=False, indent=2)
-            file.write("\n")
-        os.replace(temporary, GRANTS)
+        write_grants(data)
 
 
 def consent_of(app, data=None):
@@ -982,6 +1012,8 @@ def text(words):
 
 # ------------------------------------------------------------------- views
 VIEWS = {}  # process id: what the latest app_state of that app showed
+SNAPSHOTS = {}  # process id: snapshot id: the latest view of each window of that app that app_state showed
+_snapshot_count = [0]
 LISTED = {}  # (process id, window): the lines of the latest full listing of that window, by element number
 ACTED_AT = {}  # process id: when a tool last acted in that app
 QUIET_AFTER = 0.8  # seconds an app is given after an action before app_state reads it
@@ -1101,6 +1133,8 @@ class View(object):
         self.numbers = NUMBERS.setdefault(app["pid"], Numbers())
         self.notes = self.numbers.notes
         self.shown = []  # the numbers this app_state listed
+        _snapshot_count[0] += 1
+        self.snapshot = "s%d" % _snapshot_count[0]  # names this reading of this window for x and y of its picture
         self.geometry = None  # window left, top, width, height in points; picture width, height
 
     def add(self, element, note):
@@ -1115,11 +1149,47 @@ class View(object):
         return [self.numbers.elements[n] for n in self.shown if n in self.numbers.elements]
 
 
-def need_view(app):
-    view = VIEWS.get(app["pid"])
-    if view is None:
+def window_alive(view):
+    values, _ = ax_many(view.window["element"], ["AXRole"])
+    return bool(values.get("AXRole"))
+
+
+def register_view(view):
+    """Make this the latest view of its app, and the one snapshot of its window; an earlier snapshot of the same
+    window, and those of windows that are gone, no longer count."""
+    pid = view.pid
+    held = SNAPSHOTS.setdefault(pid, {})
+    for name, old in list(held.items()):
+        if old.window["element"].same(view.window["element"]) or not window_alive(old):
+            del held[name]
+    held[view.snapshot] = view
+    VIEWS[pid] = view
+
+
+def need_view(app, arguments=None, coordinates=False):
+    """The view an action works from. With coordinates (x and y of a picture), it is the snapshot the call names, or,
+    when only one window of the app has been read, that window; with several, the call must say which."""
+    pid = app["pid"]
+    latest = VIEWS.get(pid)
+    if latest is None:
         raise Refused("call app_state for %s first: element numbers and picture positions come from it" % app["name"])
-    return view
+    wanted = (arguments or {}).get("snapshot")
+    held = SNAPSHOTS.get(pid, {})
+    if wanted is not None:
+        view = held.get(wanted) if isinstance(wanted, str) else None
+        if view is None or not window_alive(view):
+            raise Refused("snapshot %s of %s is out of date: that window was read again, or has gone. Call app_state "
+                          "again and use the snapshot it names." % (wanted, app["name"]))
+        return view
+    if coordinates:
+        live = [v for v in held.values() if window_alive(v)]
+        if len(live) > 1:
+            raise Refused("more than one window of %s has been read (%s), and x and y belong to the picture of one of "
+                          "them. Add snapshot, as app_state names it for the window meant." % (
+                              app["name"], ", ".join("%s: window %s" % (v.snapshot, quoted(v.window["title"])
+                                                                         if v.window["title"] else "(untitled)")
+                                                     for v in live)))
+    return latest
 
 
 def element_at(view, number):
@@ -1468,7 +1538,7 @@ def tool_app_state(arguments):
             else:
                 scale = scale_at(frame[0] + frame[2] / 2.0, frame[1] + frame[3] / 2.0)
                 view.geometry = frame + measure(round(frame[2] * scale), round(frame[3] * scale))
-        VIEWS[app["pid"]] = view
+        register_view(view)
         lines.append("%s (%s, pid %d), %s%s%s." % (
             app["name"], app["bundle_id"] or "no bundle identifier", app["pid"],
             "in front, where the user is working: foreground true may be used here"
@@ -1482,8 +1552,10 @@ def tool_app_state(arguments):
         if view.geometry:
             width, height = view.geometry[4], view.geometry[5]
             if content:
-                lines.append("Picture of window %d: %dx%d pixels. Positions are element centers in pixels of this "
-                             "picture, the same as app_click takes x and y." % (chosen, width, height))
+                lines.append("Picture of window %d: %dx%d pixels (snapshot %s). Positions are element centers in pixels "
+                             "of this picture, the same as app_click takes x and y; when more than one window of the "
+                             "app has been read, give snapshot %s with them." % (
+                                 chosen, width, height, view.snapshot, view.snapshot))
             else:
                 lines.append("No picture%s. Positions are element centers in pixels of a %dx%d picture of window %d, "
                              "as app_click takes x and y." % (": " + why if why else "", width, height, chosen))
@@ -1635,13 +1707,24 @@ def parse_keys(keys):
     raise Refused("unknown key %s" % last)
 
 
+def key_event(code, flags, pressed):
+    event = CGEventCreateKeyboardEvent(None, code, pressed)
+    if event:
+        CGEventSetFlags(event, flags)
+    return event
+
+
 def tap(code, flags, pid=None, hold=0.0):
-    for pressed in (True, False):
-        event = CGEventCreateKeyboardEvent(None, code, pressed)
-        if event:
-            CGEventSetFlags(event, flags)
-        deliver(event, pid)
-        time.sleep(hold if pressed and hold else 0.015)
+    down = False
+    try:
+        for pressed in (True, False):
+            check_stopped()
+            deliver(key_event(code, flags, pressed), pid)
+            down = pressed
+            pause(hold if pressed and hold else 0.015)
+    finally:
+        if down:  # stopped while the key was held: let it go
+            deliver(key_event(code, flags, False), pid)
 
 
 def unicode_keys(words, pid=None):
@@ -1911,10 +1994,17 @@ def click_in_background(app, view, point, button, count, flags, hold=0.0):
     down, up, _, number = BUTTONS[button]
     frame = window_frame(view)
     with BackgroundInput(app, view):
-        for press in range(1, count + 1):
-            for kind in (down, up):
-                deliver(placed_mouse(kind, view, point, number, flags, press, frame), app["pid"])
-                time.sleep(hold if kind == down and hold else 0.03)
+        held = 0
+        try:
+            for press in range(1, count + 1):
+                for kind in (down, up):
+                    check_stopped()
+                    deliver(placed_mouse(kind, view, point, number, flags, press, frame), app["pid"])
+                    held = press if kind == down else 0
+                    pause(hold if kind == down and hold else 0.03)
+        finally:
+            if held:  # stopped with the button down: let it go
+                deliver(placed_mouse(up, view, point, number, flags, held, frame), app["pid"])
 
 
 SAFE_ROLES = {"AXWindow", "AXGroup", "AXToolbar", "AXSplitGroup", "AXUnknown", "AXStaticText", "AXLayoutArea",
@@ -1972,14 +2062,19 @@ def chord_in_background(app, view, code, flags, hold=0.0, count=1):
 def click_with_pointer(point, button, count, flags, hold=0.0):
     down, up, _, number = BUTTONS[button]
     back = pointer_location()
+    held = 0
     try:
         deliver(mouse_event(MOVED, point, 0, flags))
         time.sleep(0.05)
         for press in range(1, count + 1):
             for kind in (down, up):
+                check_stopped()
                 deliver(mouse_event(kind, point, number, flags, press))
-                time.sleep(hold if kind == down and hold else 0.02)
+                held = press if kind == down else 0
+                pause(hold if kind == down and hold else 0.02)
     finally:
+        if held:
+            deliver(mouse_event(up, point, number, flags, held))
         time.sleep(0.05)
         CGWarpMouseCursorPosition(back)
         CGAssociateMouseAndMouseCursorPosition(1)
@@ -1996,29 +2091,49 @@ def drag_in_background(app, view, start, end, flags, hold):
     down, up, dragged, number = BUTTONS["left"]
     frame = window_frame(view)
     with BackgroundInput(app, view):
-        deliver(placed_mouse(down, view, start, number, flags, 1, frame), app["pid"])
-        time.sleep(max(hold, 0.12))
-        for point in drag_path(start, end, 16):
-            deliver(placed_mouse(dragged, view, point, number, flags, 1, frame), app["pid"])
-            time.sleep(0.015)
-        time.sleep(0.08)
-        deliver(placed_mouse(up, view, end, number, flags, 1, frame), app["pid"])
+        at, pressed = start, False
+        try:
+            check_stopped()
+            deliver(placed_mouse(down, view, start, number, flags, 1, frame), app["pid"])
+            pressed = True
+            pause(max(hold, 0.12))
+            for point in drag_path(start, end, 16):
+                check_stopped()
+                deliver(placed_mouse(dragged, view, point, number, flags, 1, frame), app["pid"])
+                at = point
+                pause(0.015)
+            pause(0.08)
+            at = end
+            pressed = False
+            deliver(placed_mouse(up, view, end, number, flags, 1, frame), app["pid"])
+        finally:
+            if pressed:  # stopped on the way: the button is let go where the drag had got to
+                deliver(placed_mouse(up, view, at, number, flags, 1, frame), app["pid"])
 
 
 def drag_with_pointer(start, end, flags, hold):
     down, up, dragged, number = BUTTONS["left"]
     back = pointer_location()
+    at, pressed = start, False
     try:
         deliver(mouse_event(MOVED, start, 0, flags))
         time.sleep(0.05)
+        check_stopped()
         deliver(mouse_event(down, start, number, flags, 1))
-        time.sleep(max(hold, 0.12))
+        pressed = True
+        pause(max(hold, 0.12))
         for point in drag_path(start, end, 16):
+            check_stopped()
             deliver(mouse_event(dragged, point, number, flags, 1))
-            time.sleep(0.015)
-        time.sleep(0.08)
+            at = point
+            pause(0.015)
+        pause(0.08)
+        at = end
+        pressed = False
         deliver(mouse_event(up, end, number, flags, 1))
     finally:
+        if pressed:
+            deliver(mouse_event(up, at, number, flags, 1))
         time.sleep(0.05)
         CGWarpMouseCursorPosition(back)
         CGAssociateMouseAndMouseCursorPosition(1)
@@ -2256,7 +2371,7 @@ def pressable_at(app, point):
 OVERLAY = os.path.join(HERE, "overlay", "ClaudeOverlay-x64" if os.uname().machine in ("x86_64", "AMD64")
                        else "ClaudeOverlay-arm64")
 PAUSE = 90.0  # seconds the tools stay stopped after Esc
-_overlay = {"process": None, "failed": False, "stopped_at": 0.0}
+_overlay = {"process": None, "failed": False, "stopped_at": 0.0, "epoch": 0}
 _overlay_lock = threading.Lock()
 
 
@@ -2265,6 +2380,7 @@ def _listen(process):
         words = line.decode("utf-8", "replace").split()
         if words == ["stop"]:
             _overlay["stopped_at"] = time.time()
+            _overlay["epoch"] += 1
         elif len(words) == 3 and words[0] == "answer":
             answered(words[1], words[2])
 
@@ -2476,7 +2592,11 @@ def run_tool(name, arguments, inherited=None):
         return function(arguments)
     if name in UNGUARDED:
         return function(arguments)
+    asked_at = _overlay["epoch"]
     with lock_for(arguments):
+        if _overlay["epoch"] != asked_at:
+            raise_stopped()  # Esc came while this call waited its turn: it does nothing at all
+        check_stopped()
         state, _acted.pid = front_state(), None
         try:
             result = function(arguments)
@@ -2499,10 +2619,25 @@ def run_tool(name, arguments, inherited=None):
     return result
 
 
+def raise_stopped():
+    raise Refused("The user pressed Esc to stop you working in apps. Stop now and ask the user how to go on; do "
+                  "not try again on your own.")
+
+
 def check_stopped():
     if time.time() - _overlay["stopped_at"] < PAUSE:
-        raise Refused("The user pressed Esc to stop you working in apps. Stop now and ask the user how to go on; do "
-                      "not try again on your own.")
+        raise_stopped()
+
+
+def pause(seconds):
+    """Wait, but give up at once, with the Refused, when the user presses Esc."""
+    end = time.time() + seconds
+    while True:
+        check_stopped()
+        left = end - time.time()
+        if left <= 0:
+            return
+        time.sleep(min(left, 0.05))
 
 
 def settle():
@@ -2524,11 +2659,12 @@ def tool_app_click(arguments):
     if button != "left" or flags or hold:
         need_full(app, "a right, middle, modifier or long click")
     guard(app)
-    view = need_view(app)
     number = arguments.get("element")
+    view = need_view(app, arguments, coordinates=number is None)
     if number is not None:
         element = element_at(view, number)
         values = fresh(element, number)
+        view = view_of_element(app, view, element)  # events go to the window the element is in
         target = "[%d] %s" % (number, short(view.notes[number]))
         show(app, ("右键点击 " if button == "right" else "点击 ") + brief(view.notes[number]), center_of(values), "click")
         if not foreground and not hold and (not flags or flags == CMD):
@@ -3412,7 +3548,8 @@ CLIPBOARD_ENV = dict(os.environ, LANG="en_US.UTF-8", LC_ALL="en_US.UTF-8")
 
 
 def tool_read_clipboard(_):
-    run = subprocess.run(["/usr/bin/pbpaste"], capture_output=True, timeout=10, env=CLIPBOARD_ENV)
+    with _board_lock:
+        run = subprocess.run(["/usr/bin/pbpaste"], capture_output=True, timeout=10, env=CLIPBOARD_ENV)
     held = run.stdout.decode("utf-8", "replace")
     if not held:
         return "The clipboard holds no text."
@@ -3421,7 +3558,8 @@ def tool_read_clipboard(_):
 
 def tool_write_clipboard(arguments):
     words = text_argument(arguments, "text", empty=True)
-    subprocess.run(["/usr/bin/pbcopy"], input=words.encode("utf-8"), check=True, timeout=10, env=CLIPBOARD_ENV)
+    with _board_lock:
+        subprocess.run(["/usr/bin/pbcopy"], input=words.encode("utf-8"), check=True, timeout=10, env=CLIPBOARD_ENV)
     return "Put %d characters on the clipboard." % len(words)
 
 
@@ -3462,11 +3600,14 @@ def tool_app_drag(arguments):
     app = find_app(arguments.get("app"))
     need_full(app, "dragging")
     guard(app)
-    view = need_view(app)
+    pictured = arguments.get("from_element") is None or arguments.get("to_element") is None
+    view = need_view(app, arguments, coordinates=pictured)
     flags = modifier_flags(arguments.get("modifiers"))
     hold = seconds_argument(arguments, "duration", 5.0)
     start, first = place_of(app, view, arguments, "from_")
     end, last = place_of(app, view, arguments, "to_")
+    if arguments.get("from_element") is not None:
+        view = view_of_element(app, view, element_at(view, arguments["from_element"]))
     show(app, "拖拽", start, "click")
     if arguments.get("foreground") is True:
         need_front(app, view.window)
@@ -3494,9 +3635,21 @@ def ns_data(raw):
     return send(objc_getClass(b"NSData"), "dataWithBytes:length:", raw, len(raw), types=(c.c_char_p, c.c_ulong))
 
 
+_board_lock = threading.RLock()  # every use of the clipboard by this plugin takes its turn on this
+
+
+def the_board():
+    return send(objc_getClass(b"NSPasteboard"), "generalPasteboard")
+
+
+def board_count():
+    """changeCount of the pasteboard: it goes up each time anything, in any program, puts something on it."""
+    return send(the_board(), "changeCount", result=c.c_long)
+
+
 def board_items():
     """Everything on the general pasteboard, item by item, as (type, bytes) pairs, to be put back later."""
-    board = send(objc_getClass(b"NSPasteboard"), "generalPasteboard")
+    board = the_board()
     items = send(board, "pasteboardItems")
     saved = []
     for i in range(send(items, "count", result=c.c_ulong) if items else 0):
@@ -3515,7 +3668,7 @@ def board_items():
 
 
 def put_on_board(items):
-    board = send(objc_getClass(b"NSPasteboard"), "generalPasteboard")
+    board = the_board()
     send(board, "clearContents", result=c.c_long)
     if not items:
         return
@@ -3736,35 +3889,55 @@ def tool_app_paste(arguments):
         return False
 
     items = rich_items(words, kind)
-    saved = board_items()
     how = None
-    try:
+    restored = True
+    with _board_lock:  # one paste at a time: the pasteboard is one for the whole computer
+        saved = board_items()
         put_on_board(items)
-        time.sleep(0.05)
-        tries = []
-        if in_front:
-            tries.append(("with command V on the keyboard, the window being in front", lambda: tap(KEYS["v"], CMD)))
-        elif view is not None:
-            tries.append(("with command V sent to its window alone, in the background",
-                          lambda: chord_in_background(app, view, KEYS["v"], CMD)))
-        found = paste_item(app)
-        if found is not None:
-            item = found[1]
-            tries.append(("with its Paste menu item", lambda: perform(item, "AXPress")))
-        for name, attempt in tries:
-            attempt()
-            done = arrived()
-            if done is not False:
-                how = name if done else name + " (whether it arrived cannot be read back here: check with app_state)"
-                break
-        time.sleep(0.3)  # an app may still be reading the pasteboard
-    finally:
-        put_on_board(saved)
+        mine = board_count()
+        try:
+            how = paste_attempts(app, view, in_front, arrived)
+        finally:
+            if board_count() == mine:
+                put_on_board(saved)
+            else:  # the user, or a program, put something on it since: that is kept
+                restored = False
     label = {"text": "plain text", "md": "formatted text from Markdown", "html": "formatted text from HTML"}[kind]
     if how is not None:
         settle()
-        return ("Pasted %d characters as %s into %s of %s %s; the clipboard holds what it held before." % (
-            len(words), label, target, app["name"], how))
+        return ("Pasted %d characters as %s into %s of %s %s; %s." % (
+            len(words), label, target, app["name"], how,
+            "the clipboard holds what it held before" if restored else
+            "the clipboard was left as it is, as something new was copied meanwhile"))
+    return paste_as_text(app, element, words, kind, target)
+
+
+def paste_attempts(app, view, in_front, arrived):
+    """Try the ways of pasting what is on the pasteboard now; how it went, or None when none took."""
+    how = None
+    time.sleep(0.05)
+    tries = []
+    if in_front:
+        tries.append(("with command V on the keyboard, the window being in front", lambda: tap(KEYS["v"], CMD)))
+    elif view is not None:
+        tries.append(("with command V sent to its window alone, in the background",
+                      lambda: chord_in_background(app, view, KEYS["v"], CMD)))
+    found = paste_item(app)
+    if found is not None:
+        item = found[1]
+        tries.append(("with its Paste menu item", lambda: perform(item, "AXPress")))
+    for name, attempt in tries:
+        attempt()
+        done = arrived()
+        if done is not False:
+            how = name if done else name + " (whether it arrived cannot be read back here: check with app_state)"
+            break
+    time.sleep(0.3)  # an app may still be reading the pasteboard
+
+    return how
+
+
+def paste_as_text(app, element, words, kind, target):
     plain = words if kind == "text" else plain_of_html(markdown_html(words) if kind == "md" else words)
     if kind == "md":
         plain = "\n" * (len(words) - len(words.lstrip("\n"))) + plain + "\n" * (len(words) - len(words.rstrip("\n")))

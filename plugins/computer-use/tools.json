@@ -163,6 +163,10 @@
             "minimum": 0,
             "maximum": 10,
             "description": "seconds to hold the button down, for a long press; default 0, a plain click"
+          },
+          "snapshot": {
+            "type": "string",
+            "description": "which window's picture x and y refer to, by the snapshot name app_state gave it (such as s3); needed when more than one window of the app has been read, and refused when that window was read again since"
           }
         },
         "required": [
@@ -226,6 +230,10 @@
           "cursor": {
             "type": "string",
             "description": "a name for the on-screen cursor of this line of work, up to 24 characters; give each helper working at the same time a name of its own, such as A, B or 搜索, and each shows its own cursor, labelled with that name; calls for different apps go on at the same time, and calls for one app take turns step by step; default Claude"
+          },
+          "snapshot": {
+            "type": "string",
+            "description": "which window's picture x and y refer to, by the snapshot name app_state gave it (such as s3); needed when more than one window of the app has been read, and refused when that window was read again since"
           }
         },
         "required": [
