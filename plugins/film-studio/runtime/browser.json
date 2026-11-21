@@ -1,0 +1,32 @@
+{
+  "playwrightCore": "1.61.1",
+  "browser": "chromium-headless-shell",
+  "revision": "1228",
+  "browserVersion": "149.0.7827.55",
+  "folder": "chromium_headless_shell-1228",
+  "markers": [
+    "INSTALLATION_COMPLETE"
+  ],
+  "builds": {
+    "x64": {
+      "file": "chrome-headless-shell-linux64.zip",
+      "urls": [
+        "https://cdn.playwright.dev/builds/cft/149.0.7827.55/linux64/chrome-headless-shell-linux64.zip"
+      ],
+      "size": 119778157,
+      "sha256": "410c9407d5de3fea80d9398666be06f2aa09154a3fa7b327dc254e336bb4c4b7",
+      "executable": "chrome-headless-shell-linux64/chrome-headless-shell"
+    },
+    "arm64": {
+      "file": "chromium-headless-shell-linux-arm64.zip",
+      "urls": [
+        "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1228/chromium-headless-shell-linux-arm64.zip",
+        "https://playwright.download.prss.microsoft.com/dbazure/download/playwright/builds/chromium/1228/chromium-headless-shell-linux-arm64.zip",
+        "https://cdn.playwright.dev/builds/chromium/1228/chromium-headless-shell-linux-arm64.zip"
+      ],
+      "size": 115342043,
+      "sha256": "1652929a70f4afb17aca36fce073fb7ed22262d16825be761b0801972f43ac4f",
+      "executable": "chrome-linux/headless_shell"
+    }
+  }
+}

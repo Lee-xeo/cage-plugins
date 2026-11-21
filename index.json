@@ -818,6 +818,123 @@
       "bytes": 34935
     },
     {
+      "name": "film-studio",
+      "version": "0.1.0",
+      "description": "Makes, checks and renders videos written as web pages, and opens the editor to change them by hand. Works with OpenFilm.",
+      "permissions": [
+        "network"
+      ],
+      "author": {
+        "name": "nunicjasperx"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "影片工作室",
+          "description": "把视频写成网页：制作、检查画面并渲染成 MP4，再打开编辑器亲手修改。与 OpenFilm 配合使用。"
+        },
+        "zh-TW": {
+          "displayName": "影片工作室",
+          "description": "把影片寫成網頁：製作、檢查畫面並算繪成 MP4，再開啟編輯器親手修改。與 OpenFilm 配合使用。"
+        },
+        "ru": {
+          "displayName": "Киностудия",
+          "description": "Создаёт видео в виде веб-страниц, проверяет кадры и рендерит их в MP4, а также открывает редактор для ручной правки. Работает с OpenFilm."
+        },
+        "ar": {
+          "displayName": "استوديو الأفلام",
+          "description": "يصنع مقاطع فيديو مكتوبة كصفحات ويب، ويتحقق من لقطاتها ويصدّرها بصيغة MP4، ويفتح المحرر لتعديلها يدويًا. يعمل مع OpenFilm."
+        },
+        "fa": {
+          "displayName": "استودیوی فیلم",
+          "description": "ویدیوهایی را که به شکل صفحه‌های وب نوشته شده‌اند می‌سازد، فریم‌هایشان را بررسی و به MP4 رندر می‌کند و ویرایشگر را برای تغییر دستی باز می‌کند. با OpenFilm کار می‌کند."
+        },
+        "ko": {
+          "displayName": "필름 스튜디오",
+          "description": "웹 페이지로 작성한 영상을 만들고, 화면을 확인하고, MP4로 렌더링하며, 편집기를 열어 직접 수정할 수 있습니다. OpenFilm과 함께 작동합니다."
+        },
+        "es": {
+          "displayName": "Estudio de cine",
+          "description": "Crea vídeos escritos como páginas web, revisa sus fotogramas y los renderiza en MP4, y abre el editor para cambiarlos a mano. Funciona con OpenFilm."
+        },
+        "my": {
+          "displayName": "ရုပ်ရှင်စတူဒီယို",
+          "description": "ဝဘ်စာမျက်နှာအဖြစ် ရေးထားသော ဗီဒီယိုများကို ဖန်တီးပြီး ဘောင်များကို စစ်ဆေးကာ MP4 အဖြစ် ထုတ်ပေးသည်။ လက်ဖြင့် ပြင်ဆင်ရန် တည်းဖြတ်ကိရိယာကိုလည်း ဖွင့်ပေးသည်။ OpenFilm နှင့် တွဲသုံးသည်။"
+        },
+        "be": {
+          "displayName": "Кінастудыя",
+          "description": "Стварае відэа ў выглядзе вэб-старонак, правярае кадры і рэндэрыць іх у MP4, а таксама адкрывае рэдактар для ручной праўкі. Працуе з OpenFilm."
+        },
+        "ps": {
+          "displayName": "د فلم سټوډیو",
+          "description": "هغه ویډیوګانې جوړوي چې د ویب پاڼو په بڼه لیکل شوې وي، چوکاټونه یې ګوري او MP4 ته یې رینډر کوي، او د لاسي بدلون لپاره سمونګر پرانیزي. له OpenFilm سره کار کوي."
+        },
+        "prs": {
+          "displayName": "استودیوی فلم",
+          "description": "ویدیوهایی را که به شکل صفحه‌های ویب نوشته شده‌اند می‌سازد، چوکات‌های آن را بررسی و به MP4 رندر می‌کند و ویرایشگر را برای تغییر دستی باز می‌کند. با OpenFilm کار می‌کند."
+        },
+        "am": {
+          "displayName": "የፊልም ስቱዲዮ",
+          "description": "እንደ ድረ-ገጽ የተጻፉ ቪዲዮዎችን ይሠራል፣ ፍሬሞቻቸውን ይፈትሻል፣ ወደ MP4 ያቀርባል፣ እና በእጅ ለማስተካከል አርታኢውን ይከፍታል። ከOpenFilm ጋር ይሠራል።"
+        },
+        "so": {
+          "displayName": "Istuudiyaha Filimka",
+          "description": "Wuxuu sameeyaa muuqaallo loo qoray sida bogag shabakad, wuxuu hubiyaa sawirradooda oo u beddelaa MP4, wuxuuna furaa tifaftiraha si gacanta loogu beddelo. Wuxuu la shaqeeyaa OpenFilm."
+        },
+        "ti": {
+          "displayName": "ስቱድዮ ፊልም",
+          "description": "ከም ገጻት መርበብ ዝተጻሕፉ ቪድዮታት ይሰርሕ፡ ፍሬማቶም ይፍትሽ፡ ናብ MP4 የውጽእ፡ ብኢድ ንምቕያር ድማ ኣርታዒ ይኸፍት። ምስ OpenFilm ይሰርሕ።"
+        },
+        "fr": {
+          "displayName": "Studio de film",
+          "description": "Crée des vidéos écrites comme des pages web, vérifie leurs images et les rend en MP4, puis ouvre l'éditeur pour les modifier à la main. Fonctionne avec OpenFilm."
+        }
+      },
+      "displayName": "Film Studio",
+      "categories": [
+        "productivity",
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "film",
+            "command": [
+              "node",
+              "server.mjs"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "films",
+            "title": "Film Studio",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "film",
+            "openUrls": [
+              "http://127.0.0.1:*/*",
+              "http://localhost:*/*"
+            ]
+          }
+        ]
+      },
+      "runtime": "node",
+      "source": {
+        "project": "openfilm/openfilm",
+        "version": "0.4.1",
+        "license": "MIT",
+        "url": "https://github.com/openfilm/openfilm"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/film-studio/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/film-studio-0.1.0.tar.gz",
+      "sha256": "777b08fb089c92921bc62a7ee5cdab6e61b9df6975dd9233ec13b16575303e7c",
+      "bytes": 57331
+    },
+    {
       "name": "git-repository",
       "version": "0.1.2",
       "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",
