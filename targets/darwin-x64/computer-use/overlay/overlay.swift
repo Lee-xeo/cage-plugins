@@ -6,13 +6,15 @@
 //   {"op": "act", "app": "...", "what": "...", "x": 100, "y": 200, "kind": "click"}
 //   {"op": "hide"}
 // x and y are in points from the top left of the main display and may be left
-// out. When the user presses Esc while the banner shows, this program writes
-// "stop" on a line of its own. It ends when its input does.
+// out; the cursor then stays as it is. When the user presses Esc while the
+// banner shows, this program writes "stop" on a line of its own. It ends when
+// its input does.
 //
 // "window" in an order is the number of the window acted in. The cursor and
 // its ripple sit just above that window, among the ordinary windows, so other
 // windows in front of it hide them too; while that window is not on screen
-// (minimized, hidden, on another space) they do not show. The banner stays on
+// (minimized, hidden, on another space) or not named, they do not show. The
+// cursor is never put over other windows. The banner stays on
 // top of everything. These windows never take the keyboard or the mouse,
 // never come in front of the user's work as an app, and are left out of
 // screen pictures.
@@ -157,8 +159,9 @@ final class Overlay {
         let app = order["app"] as? String ?? ""
         let what = order["what"] as? String ?? ""
         say("Claude 正在使用「\(app)」" + (what.isEmpty ? "" : " · \(what)") + "   ·   按 Esc 停止", dot: accent)
-        target = (order["window"] as? NSNumber)?.intValue ?? 0
+        // An order without a place (looking, a key, a menu) leaves the cursor where it is.
         if let x = (order["x"] as? NSNumber)?.doubleValue, let y = (order["y"] as? NSNumber)?.doubleValue {
+            target = (order["window"] as? NSNumber)?.intValue ?? 0
             let tip = screenPoint(CGFloat(x), CGFloat(y))
             // The arrow's tip is 2 points in from the top left of its window.
             let frame = NSRect(x: tip.x - 2, y: tip.y + 2 - cursorSize.height, width: cursorSize.width,
@@ -186,16 +189,13 @@ final class Overlay {
         later(4) { self.fade() }
     }
 
-    /// Put a window just above the one acted in, or out of sight when that one is not on screen.
+    /// Put a window just above the one acted in, or out of sight when that one is not known or not on screen:
+    /// the cursor never shows over other windows.
     func place(_ panel: NSPanel) {
-        if target > 0 {
-            if onScreen(target) {
-                panel.order(.above, relativeTo: target)
-            } else {
-                panel.orderOut(nil)
-            }
+        if target > 0 && onScreen(target) {
+            panel.order(.above, relativeTo: target)
         } else {
-            panel.orderFrontRegardless()
+            panel.orderOut(nil)
         }
     }
 
