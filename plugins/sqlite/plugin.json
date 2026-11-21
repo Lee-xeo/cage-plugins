@@ -1,7 +1,7 @@
 {
   "name": "sqlite",
   "displayName": "SQLite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
   "icon": "icon.svg",
   "engines": {

@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "桌面控制",
+    "description": "查看这台电脑的屏幕，并控制鼠标和键盘进行操作。"
+  },
+  "zh-TW": {
+    "displayName": "桌面控制",
+    "description": "檢視這台電腦的螢幕，並控制滑鼠和鍵盤進行操作。"
+  },
+  "ru": {
+    "displayName": "Управление рабочим столом",
+    "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+  },
+  "ar": {
+    "displayName": "التحكم بسطح المكتب",
+    "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+  },
+  "fa": {
+    "displayName": "کنترل دسکتاپ",
+    "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+  },
+  "ko": {
+    "displayName": "데스크톱 제어",
+    "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+  },
+  "es": {
+    "displayName": "Control de escritorio",
+    "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+  },
+  "my": {
+    "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+    "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+  },
+  "be": {
+    "displayName": "Кіраванне працоўным сталом",
+    "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+  },
+  "ps": {
+    "displayName": "د ډېسکټاپ کنټرول",
+    "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+  },
+  "prs": {
+    "displayName": "کنترول دسکتاپ",
+    "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+  },
+  "am": {
+    "displayName": "የዴስክቶፕ ቁጥጥር",
+    "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+  },
+  "so": {
+    "displayName": "Xakamaynta Shaashadda",
+    "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+  },
+  "ti": {
+    "displayName": "ቁጽጽር ደስክቶፕ",
+    "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+  },
+  "fr": {
+    "displayName": "Contrôle du bureau",
+    "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+  }
+}

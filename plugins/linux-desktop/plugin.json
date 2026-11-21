@@ -1,7 +1,7 @@
 {
   "name": "linux-desktop",
   "displayName": "Linux Desktop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Sees the Linux desktop of the environment and uses its mouse and keyboard, to work with the programs shown there.",
   "icon": "icon.svg",
   "engines": { "cage": ">=0.1.8" },

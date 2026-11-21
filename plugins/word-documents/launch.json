@@ -1,6 +1,6 @@
 {
   "name": "word-documents",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "server": {
     "entry": "word_document_server.main:run_server",
     "args": []

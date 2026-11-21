@@ -42,7 +42,7 @@ def answer(message):
     method = message.get("method")
     if method == "initialize":
         return {"protocolVersion": message["params"]["protocolVersion"], "capabilities": {"tools": {}},
-                "serverInfo": {"name": "system-status", "version": "0.1.0"}}
+                "serverInfo": {"name": "system-status", "version": "0.1.1"}}
     if method == "tools/list":
         return {"tools": TOOLS}
     if method == "tools/call" and message["params"].get("name") == "system_status":

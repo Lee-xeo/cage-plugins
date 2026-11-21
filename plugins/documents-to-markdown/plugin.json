@@ -1,7 +1,7 @@
 {
   "name": "documents-to-markdown",
   "displayName": "Documents to Markdown",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reads, outlines and searches PDF, Word, Excel, PowerPoint, EPUB and HTML documents as clean Markdown.",
   "icon": "icon.svg",
   "engines": {

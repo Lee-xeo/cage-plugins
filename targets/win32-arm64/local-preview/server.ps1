@@ -5,7 +5,7 @@
 # the user's everyday browser profile is left alone. Windows only; it needs
 # nothing beyond Windows PowerShell.
 $ErrorActionPreference = 'Stop'
-$Version = '0.1.0'
+$Version = '0.1.1'
 $Name = 'local-preview'
 $MaxUrl = 2048
 # A path set here is used before any browser found on the computer.
