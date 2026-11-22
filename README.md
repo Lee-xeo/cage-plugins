@@ -130,7 +130,7 @@ Cage 客户端会根据当前界面语言自动显示插件名称与说明（若
 | [`web-fetch`](plugins/web-fetch) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/fetch) v2.5.0（`mcp-server-fetch` 2026.11.18） | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
 | [`sqlite`](plugins/sqlite) | [modelcontextprotocol/servers-archived](https://github.com/modelcontextprotocol/servers-archived) 2025.4.25 | MIT | 环境内 | 环境自带 Python 3（`pylock.json` SHA-256 锁定） |
 | [`knowledge-memory`](plugins/knowledge-memory) | [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/v2.5.0/src/memory) v2.5.0（`@modelcontextprotocol/server-memory` 2.2.1） | Apache-2.0 AND MIT | 环境内 | 环境自带 Node.js 与 Python 3（随包锁定依赖，完全离线） |
-| [`film-studio`](plugins/film-studio) | [openfilm/openfilm](https://github.com/openfilm/openfilm) 0.4.1 | MIT | 环境内 | 环境自带 Node.js（npm `package-lock.json` 完整性锁定，首次使用时安装）+ SHA-256 锁定的 Chromium Headless Shell + apt 安装的 ffmpeg |
+| [`film-studio`](plugins/film-studio) | [openfilm/openfilm](https://github.com/openfilm/openfilm) 0.4.1 | MIT | 这台电脑 | 本机 Node.js 22.2+ 与 ffmpeg；npm `package-lock.json` 完整性锁定、首次使用时安装；SHA-256 锁定的 Chrome Headless Shell |
 | [`blender`](plugins/blender) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) 1.3.1 | MIT | 这台电脑 | 本机 `uv`、Blender 3.0+ 及随附的插件 |
 
 ## 索引格式

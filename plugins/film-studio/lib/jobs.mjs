@@ -1,27 +1,25 @@
 // Work that takes longer than a call: renders, installs, long `openfilm`
-// commands. Each job is a process of its own, started detached, with its record
-// in a folder:
-//
-//   jobs/<id>/meta.json   what it runs, where, since when, its process id
-//   jobs/<id>/out.log     everything it prints
-//   jobs/<id>/exit.code   its exit status, written when it ends
-//
-// so a job outlives the server that started it (the server is restarted when
-// the plugin is reloaded or updated), and the next server reads where it is.
+// commands. Each job is run by a process of its own (lib/job-runner.mjs) that
+// outlives the server, and everything about it is in its folder, jobs/<id>/,
+// so the next server reads where it is. A job is alive while its runner keeps
+// touching its folder: no process id is trusted, which another program may
+// have by then.
 // One render runs at a time, the others wait their turn: each takes about a
 // gigabyte of memory per browser it draws in.
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import {
-  closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, rmSync, statSync, writeFileSync,
+  closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, rmSync, statSync, writeFileSync,
 } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { JOBS, Refused } from './paths.mjs';
+import { JOBS, PLUGIN, Refused } from './paths.mjs';
 
 const KEPT = 32;
 const OTHERS_AT_ONCE = 4;
 const TAIL_LINES = 30;
 const TAIL_BYTES = 64 * 1024;
+/** A runner not heard of for this long is gone. */
+const SILENT_MS = 15_000;
 
 /** Text without terminal colours, and with only what the last carriage return left of each line. */
 export const plain = (text) => text.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').split('\n')
@@ -74,7 +72,6 @@ export class Jobs {
   constructor({ root = JOBS, environment }) {
     this.root = root;
     this.environment = environment;
-    this.killers = new Map();
   }
 
   folder(id) {
@@ -88,15 +85,16 @@ export class Jobs {
 
   save(meta) {
     const at = join(this.folder(meta.id), 'meta.json');
-    writeFileSync(`${at}.tmp`, JSON.stringify(meta, null, 1));
-    writeFileSync(at, JSON.stringify(meta, null, 1));
-    rmSync(`${at}.tmp`, { force: true });
+    writeFileSync(`${at}.new`, JSON.stringify(meta, null, 1));
+    renameSync(`${at}.new`, at);
   }
 
-  /** Whether the job's process is still there (the same one: its command line names the job's folder). */
+  /** Whether the job's runner is still there. */
   alive(meta) {
-    if (!meta?.pid) return false;
-    try { return readFileSync(`/proc/${meta.pid}/cmdline`, 'utf8').includes(join(this.folder(meta.id), 'exit.code')); } catch { return false; }
+    if (!meta?.ran) return false;
+    let heard = Date.parse(meta.ran);
+    try { heard = Math.max(heard, statSync(join(this.folder(meta.id), 'alive')).mtimeMs); } catch { /* just started */ }
+    return Date.now() - heard < SILENT_MS;
   }
 
   exitCode(id) {
@@ -107,7 +105,7 @@ export class Jobs {
     const code = this.exitCode(meta.id);
     if (meta.cancelled && (code !== null || !this.alive(meta))) return 'cancelled';
     if (code !== null) return code === 0 ? 'done' : 'failed';
-    if (!meta.pid) return meta.cancelled ? 'cancelled' : 'queued';
+    if (!meta.ran) return meta.cancelled ? 'cancelled' : 'queued';
     return this.alive(meta) ? 'running' : 'stopped';
   }
 
@@ -142,9 +140,9 @@ export class Jobs {
       .sort((a, b) => String(b.meta.started).localeCompare(String(a.meta.started)));
   }
 
-  /** Every job, newest first. */
-  list(limit = 12) {
-    return this.ids().slice(0, limit).map(({ id }) => this.view(id));
+  /** The jobs a caller may see, newest first. */
+  list(limit = 12, mine = () => true) {
+    return this.ids().filter(({ meta }) => mine(meta)).slice(0, limit).map(({ id }) => this.view(id));
   }
 
   /** The newest job of a kind that has not finished, if any. */
@@ -165,7 +163,7 @@ export class Jobs {
     this.prune();
     const id = `${kind}-${randomBytes(3).toString('hex')}`;
     mkdirSync(this.folder(id), { recursive: true });
-    const meta = { id, kind, title, program, args, cwd, folder, agent, started: new Date().toISOString(), pid: null };
+    const meta = { id, kind, title, program, args, cwd, folder, agent, started: new Date().toISOString(), ran: null };
     this.save(meta);
     writeFileSync(join(this.folder(id), 'out.log'), '');
     const busy = kind === 'render' && running.some((other) => other.kind === 'render');
@@ -175,20 +173,13 @@ export class Jobs {
   }
 
   start(meta) {
-    const folder = this.folder(meta.id);
-    const out = openSync(join(folder, 'out.log'), 'a');
-    try {
-      // sh waits for the program and writes its exit status; the job's folder in
-      // its command line is how a later server knows the process is this job's.
-      const child = spawn('/bin/sh', ['-c', '"$@"; echo $? > "$0"', join(folder, 'exit.code'), meta.program, ...meta.args], {
-        cwd: meta.cwd, env: this.environment(meta), detached: true, stdio: ['ignore', out, out],
-      });
-      child.on('error', (error) => writeFileSync(join(folder, 'exit.code'), `127 ${error.message}\n`));
-      child.unref();
-      this.save({ ...meta, pid: child.pid, started: meta.pid ? meta.started : new Date().toISOString() });
-    } finally {
-      closeSync(out);
-    }
+    const now = new Date().toISOString();
+    this.save({ ...meta, ran: now, started: now });
+    const runner = spawn(process.execPath, [join(PLUGIN, 'lib', 'job-runner.mjs'), this.folder(meta.id)], {
+      cwd: this.folder(meta.id), env: this.environment(meta), detached: true, stdio: 'ignore', windowsHide: true,
+    });
+    runner.on('error', (error) => writeFileSync(join(this.folder(meta.id), 'exit.code'), `127 ${error.message}\n`));
+    runner.unref();
   }
 
   /** Start the next waiting render once none runs. */
@@ -213,18 +204,13 @@ export class Jobs {
     return view;
   }
 
-  /** Stop a job: a waiting one never starts, a running one gets SIGTERM, then SIGKILL after 5 s. */
+  /** Stop a job: a waiting one never starts, a running one is asked to end, then ended after 6 s. */
   cancel(id) {
     const meta = this.meta(id);
     if (!meta) throw new Refused(`there is no job ${id}`);
-    const state = this.state(meta);
-    if (!['queued', 'running'].includes(state)) return this.view(id);
-    this.save({ ...meta, cancelled: true });
-    if (state === 'running') {
-      const group = (signal) => { try { process.kill(-meta.pid, signal); } catch { /* gone */ } };
-      group('SIGTERM');
-      const killer = setTimeout(() => { if (this.alive(meta)) group('SIGKILL'); }, 5000);
-      killer.unref();
+    if (['queued', 'running'].includes(this.state(meta))) {
+      writeFileSync(join(this.folder(id), 'cancel'), '');
+      this.save({ ...meta, cancelled: true });
     }
     return this.view(id);
   }

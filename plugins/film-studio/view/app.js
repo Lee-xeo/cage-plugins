@@ -17,9 +17,11 @@ const TEXT = {
     chipBrowser: "渲染浏览器",
     chipFfmpeg: "ffmpeg",
     chipMemory: gb => `可用内存 ${gb} GB`,
-    memoryHint: "做视频建议至少 8 GB 内存，可以在 Cage 的设置里调大。",
+    chipMemoryTotal: gb => `内存共 ${gb} GB`,
+    memoryHint: "可用内存不足 2 GB，渲染可能失败。请先关闭其他占内存的程序。",
     studioRunning: "Studio 运行中", studioStopped: "Studio 未运行",
-    openStudio: "打开 Studio",
+    projectLabel: path => `项目：${path}`,
+    nodeProblemTitle: "这台电脑的 Node.js 不满足要求",
     // banner
     bannerOpened: name => `Claude 刚打开了「${name}」`,
     bannerOpen: "在 Studio 中打开",
@@ -27,22 +29,28 @@ const TEXT = {
     setupTitle: "还差几步才能开始",
     setupOpenfilm: mb => `安装 OpenFilm${mb ? `（下载约 ${mb} MB）` : ""}`,
     setupBrowser: mb => `下载渲染浏览器${mb ? `（约 ${mb} MB）` : ""}`,
-    setupFfmpeg: "安装 ffmpeg（系统软件包）",
+    setupFfmpeg: "安装 ffmpeg（需要你自己安装）",
     setupAll: "一键准备",
     setupRunning: "正在准备…",
     setupFailed: "上次准备没有成功，详情见下方「任务」里的日志。",
-    ffmpegManual: "ffmpeg 需要管理员权限。请在终端里运行下面的命令，装好后回到这里刷新：",
+    ffmpegManual: "插件不会替你安装 ffmpeg。请在这台电脑的终端里运行下面的命令，装好后点「重新检查」：",
+    recheck: "重新检查",
     copy: "复制", copied: "已复制",
     // films
     filmsTitle: "影片",
-    filmsEmpty: "还没有影片。在下面新建一个，或者让 Claude 帮你做。",
-    newName: "影片名称", newLocation: "保存位置（绝对路径）", newCreate: "新建影片",
-    newNameBad: "请填写影片名称，不要包含 / 或 \\。",
-    newLocBad: "保存位置需要是绝对路径，例如 /home/…/Videos。",
+    filmsEmpty: "还没有影片。在上面新建一个，或者让 Claude 帮你做。",
+    newName: "影片名称（建在项目文件夹里）", newCreate: "新建影片",
+    newNameBad: "请填写影片名称，不要包含 / 或 \\，也不要以点开头。",
     openInStudio: "在 Studio 中打开",
-    studioAlready: name => `Studio 已经显示「${name}」。`,
+    studioOpened: "已在浏览器中打开",
+    studioAlready: "浏览器中的 Studio 已切换到此影片",
+    localize: "下载在线素材",
+    localizeConfirmTitle: "下载在线素材？",
+    localizeConfirm: name => `将为「${name}」下载字体和脚本：通过这台电脑自己的网络（不经过代理）访问 Google Fonts、jsDelivr、unpkg 和 cdnjs，并修改这部影片的页面，改为使用下载到本地的文件。`,
+    localizeConfirmLabel: "下载",
+    localizeStarted: "已开始下载，进度见「任务」。",
     render: "渲染", render1080: "渲染 1080p", render4k: "渲染 4K", renderLoud: "发布音量 -14 LUFS",
-    copyPath: "复制路径",
+    copyPath: "复制路径", more: "更多",
     renderConfirmTitle: "开始渲染？",
     renderConfirm: (name, what) => `将渲染「${name}」（${what}）。渲染会占用较多内存和处理器。`,
     renderStarted: "已开始渲染，进度见「任务」。",
@@ -65,8 +73,6 @@ const TEXT = {
     cancelConfirmLabel: "取消渲染", cancelStarted: "已请求取消。",
     // settings
     settingsTitle: "设置",
-    terminalToggle: "在终端中使用 openfilm 命令",
-    terminalHint: "开启后可在终端直接输入 openfilm。命令位置：",
     defaultLoudness: "渲染默认使用发布音量（-14 LUFS）",
     // problems
     approvalTitle: "需要授权才能继续",
@@ -86,29 +92,37 @@ const TEXT = {
     chipBrowser: "Render browser",
     chipFfmpeg: "ffmpeg",
     chipMemory: gb => `Free memory ${gb} GB`,
-    memoryHint: "Video work wants at least 8 GB; raise it in Cage's settings.",
+    chipMemoryTotal: gb => `Memory ${gb} GB`,
+    memoryHint: "Less than 2 GB of memory is free; rendering may fail. Close other programs that use a lot of memory first.",
     studioRunning: "Studio running", studioStopped: "Studio not running",
-    openStudio: "Open Studio",
+    projectLabel: path => `Project: ${path}`,
+    nodeProblemTitle: "This computer's Node.js is not good enough",
     bannerOpened: name => `Claude just opened "${name}"`,
     bannerOpen: "Open in Studio",
     setupTitle: "A few steps before you start",
     setupOpenfilm: mb => `Install OpenFilm${mb ? ` (about ${mb} MB download)` : ""}`,
     setupBrowser: mb => `Download the render browser${mb ? ` (about ${mb} MB)` : ""}`,
-    setupFfmpeg: "Install ffmpeg (system package)",
+    setupFfmpeg: "Install ffmpeg (you install it yourself)",
     setupAll: "Set everything up",
     setupRunning: "Setting up…",
     setupFailed: "The last setup did not finish; see the log under Jobs below.",
-    ffmpegManual: "ffmpeg needs administrator rights. Run this command in the terminal, then refresh here:",
+    ffmpegManual: "The plugin does not install ffmpeg. Run this command in a terminal of this computer, then press Check again:",
+    recheck: "Check again",
     copy: "Copy", copied: "Copied",
     filmsTitle: "Films",
-    filmsEmpty: "No films yet. Create one below, or ask Claude to make one.",
-    newName: "Film name", newLocation: "Location (absolute path)", newCreate: "New film",
-    newNameBad: "Enter a film name without / or \\.",
-    newLocBad: "The location must be an absolute path, e.g. /home/.../Videos.",
+    filmsEmpty: "No films yet. Create one above, or ask Claude to make one.",
+    newName: "Film name (made in the project folder)", newCreate: "New film",
+    newNameBad: "Enter a film name without / or \\, not starting with a dot.",
     openInStudio: "Open in Studio",
-    studioAlready: name => `Studio already shows "${name}".`,
+    studioOpened: "Opened in the browser",
+    studioAlready: "Studio in the browser now shows this film",
+    localize: "Download online files",
+    localizeConfirmTitle: "Download online files?",
+    localizeConfirm: name => `This downloads fonts and scripts for "${name}" from Google Fonts, jsDelivr, unpkg and cdnjs through this computer's own network (not the proxy), and changes the film's pages to use them.`,
+    localizeConfirmLabel: "Download",
+    localizeStarted: "Download started; see Jobs for progress.",
     render: "Render", render1080: "Render 1080p", render4k: "Render 4K", renderLoud: "Release loudness -14 LUFS",
-    copyPath: "Copy path",
+    copyPath: "Copy path", more: "More",
     renderConfirmTitle: "Start rendering?",
     renderConfirm: (name, what) => `"${name}" will be rendered (${what}). Rendering uses a lot of memory and CPU.`,
     renderStarted: "Rendering started; see Jobs for progress.",
@@ -128,8 +142,6 @@ const TEXT = {
     cancelConfirmTitle: "Cancel this render?", cancelConfirm: title => `"${title}" will be stopped; what has been rendered is not kept.`,
     cancelConfirmLabel: "Cancel render", cancelStarted: "Cancel requested.",
     settingsTitle: "Settings",
-    terminalToggle: "Use the openfilm command in the terminal",
-    terminalHint: "When on, you can type openfilm in the terminal. Command location: ",
     defaultLoudness: "Render with release loudness (-14 LUFS) by default",
     approvalTitle: "Approval needed to continue",
     approvalBody: "Cage asks for approval on every call of this plugin. Open the plugin's details page, go to \"授权与权限\" (Authorization and permissions) and turn on \"始终允许\" (Always allow), or tick \"安装后始终允许\" when installing. Then press Retry.",
@@ -256,8 +268,6 @@ function formatDuration(seconds) {
 
 const isActive = job => job && (job.state === "queued" || job.state === "running");
 const baseName = path => String(path || "").split(/[\\/]/).filter(Boolean).pop() || String(path || "");
-const parentOf = path => { const cut = Math.max(String(path).lastIndexOf("/"), String(path).lastIndexOf("\\")); return cut > 0 ? String(path).slice(0, cut) : ""; };
-const isAbsolute = path => /^(\/|[A-Za-z]:[\\/])/.test(path);
 
 /* ------------------------------------------------------------------ */
 /* State                                                               */
@@ -268,10 +278,8 @@ let problem = null;                    // {code, message} while a card is shown
 let ui = { settingsOpen: false, defaults: { loudness: false } };   // persisted with ui/setState
 const thumbs = new Map();              // folder -> {status:"loading"|"ok"|"error", url?, modified}
 const expandedLogs = new Set();        // job ids whose log is open
-let menuFolder = null;                 // film whose render menu is open
+let menuFolder = null;                 // "<folder>|render" or "<folder>|more" while that film's menu is open
 let bannerDismissedAt = null;          // lastOpened.at the person already dismissed
-let ffmpegManual = false;              // setup said ffmpeg needs a manual command
-let locationTouched = false;
 const lastSig = {};                    // section -> signature, to avoid needless DOM rebuilds
 
 function saveUi() { request("ui/setState", { state: ui }).catch(() => {}); }
@@ -324,7 +332,7 @@ function renderProblem() {
   if (problem.code === -32003) { title = T.retry; body = T.notRunning; }
   else if (problem.code === -32004) { title = T.retry; body = T.timedOut; }
   else if (problem.code === undefined || ![-32001].includes(problem.code)) { title = ""; body = T.genericProblem(problem.message || ""); }
-  box.replaceChildren(
+  fill(box,
     title ? h("h2", { text: title }) : null,
     h("p", { text: body }),
     h("div", { class: "actions" }, h("button", { type: "button", class: "primary", text: T.retry, onclick: () => setProblem(null) })),
@@ -392,6 +400,7 @@ function renderAll() {
   if (!dash) return;
   $("loading").hidden = true;
   renderStatus();
+  renderNode();
   renderBanner();
   renderSetup();
   renderFilms();
@@ -402,22 +411,40 @@ function renderAll() {
 function chip(kind, text) { return h("span", { class: "chip " + kind, text }); }
 
 /* 1. Status chips */
+/* Put children into a box, leaving out the ones that are not there. */
+function fill(box, ...children) { box.replaceChildren(...children.filter(child => child !== null && child !== undefined && child !== false)); }
+
 function renderStatus() {
   const box = $("status");
   const of = dash.openfilm || {}, br = dash.browser || {}, ff = dash.ffmpeg || {}, mem = dash.memory || {}, st = dash.studio || {};
-  const availableMB = Number(mem.availableMB);
-  const lowMemory = Number.isFinite(availableMB) && availableMB < 3072;
-  const model = [of, br, ff, availableMB, st.running];
+  const availableMB = mem.availableMB === null || mem.availableMB === undefined ? NaN : Number(mem.availableMB);
+  const totalMB = Number(mem.totalMB);
+  const lowMemory = Number.isFinite(availableMB) && availableMB < 2048;
+  const model = [of, br, ff, availableMB, totalMB, st.running, dash.project];
   renderIfChanged("status", model, () => {
-    box.replaceChildren(
+    const project = $("project");
+    project.textContent = dash.project ? T.projectLabel(dash.project) : "";
+    project.hidden = !dash.project;
+    fill(box,
       chip(of.installed ? "ok" : "bad", `${T.chipOpenfilm(of.version)} · ${of.installed ? T.installed : T.missing}`),
       chip(br.installed ? "ok" : "bad", `${T.chipBrowser} · ${br.installed ? T.ready : T.missing}`),
       chip(ff.found ? "ok" : "bad", `${T.chipFfmpeg}${ff.found && ff.version ? " " + ff.version : ""} · ${ff.found ? T.installed : T.missing}`),
-      Number.isFinite(availableMB) ? chip(lowMemory ? "warn" : "ok", T.chipMemory((availableMB / 1024).toFixed(1))) : null,
+      Number.isFinite(availableMB) ? chip(lowMemory ? "warn" : "ok", T.chipMemory((availableMB / 1024).toFixed(1)))
+        : Number.isFinite(totalMB) && totalMB > 0 ? chip("", T.chipMemoryTotal((totalMB / 1024).toFixed(1))) : null,
       chip(st.running ? "ok" : "", st.running ? T.studioRunning : T.studioStopped),
-      h("button", { type: "button", class: "primary", text: T.openStudio, onclick: ev => openStudioTop(ev.currentTarget) }),
       lowMemory ? h("p", { class: "hint", text: T.memoryHint }) : null,
     );
+  });
+  box.hidden = false;
+}
+
+/* Node.js too old (or otherwise unusable) on this computer */
+function renderNode() {
+  const box = $("node");
+  const problem = dash.node && dash.node.problem;
+  if (!problem) { box.hidden = true; lastSig.node = null; return; }
+  renderIfChanged("node", [problem], () => {
+    box.replaceChildren(h("h2", { text: T.nodeProblemTitle }), h("p", { text: String(problem) }));
   });
   box.hidden = false;
 }
@@ -432,7 +459,7 @@ function renderBanner() {
   recentFolder = last.folder;
   const name = filmName(last.folder, last.shown);
   renderIfChanged("banner", [last.folder, name], () => {
-    box.replaceChildren(
+    fill(box,
       h("span", { text: T.bannerOpened(name) }),
       h("span", { class: "actions" },
         h("button", { type: "button", class: "primary", text: T.bannerOpen, onclick: ev => openFilmInStudio(last.folder, name, ev.currentTarget) }),
@@ -456,42 +483,44 @@ function renderSetup() {
   const missing = [];
   if (!of.installed) missing.push(T.setupOpenfilm(setup.downloadMB && setup.downloadMB.openfilm));
   if (!br.installed) missing.push(T.setupBrowser(setup.downloadMB && setup.downloadMB.browser));
+  const needsInstall = missing.length > 0;
   if (!ff.found) missing.push(T.setupFfmpeg);
   const jobs = Array.isArray(dash.jobs) ? dash.jobs : [];
   const running = jobs.find(j => j && j.kind === "setup" && isActive(j));
   const latestSetup = jobs.find(j => j && j.kind === "setup");
   const lastFailed = !running && latestSetup && latestSetup.state === "failed";
-  const showCommand = !ff.found && (setup.sudo === false || ffmpegManual);
-  if (!missing.length) { box.hidden = true; lastSig.setup = null; ffmpegManual = false; return; }
-  const model = [missing, running && [running.id, running.progress, running.state], lastFailed, showCommand, setup.ffmpegCommand];
+  if (!missing.length) { box.hidden = true; lastSig.setup = null; return; }
+  const command = setup.ffmpegCommand || "";
+  const model = [missing, running && [running.id, running.progress, running.state], lastFailed, needsInstall, ff.found, command];
   renderIfChanged("setup", model, () => {
-    box.replaceChildren(
+    fill(box,
       h("h2", { text: T.setupTitle }),
       h("ul", { class: "steps" }, missing.map(text => h("li", { text }))),
       running ? progressBlock(running) : null,
       lastFailed ? h("p", { class: "note", text: T.setupFailed }) : null,
-      h("div", { class: "actions" },
-        h("button", { type: "button", class: "primary", disabled: !!running, text: running ? T.setupRunning : T.setupAll, onclick: ev => runSetup(ev.currentTarget) })),
-      showCommand ? h("div", {},
+      needsInstall ? h("div", { class: "actions" },
+        h("button", { type: "button", class: "primary", disabled: !!running, text: running ? T.setupRunning : T.setupAll, onclick: ev => runSetup(ev.currentTarget) })) : null,
+      !ff.found ? h("div", {},
         h("p", { class: "note", text: T.ffmpegManual }),
         h("div", { class: "cmd" },
-          h("code", { text: setup.ffmpegCommand || "sudo apt-get install -y ffmpeg" }),
-          h("button", { type: "button", text: T.copy, onclick: () => copyText(setup.ffmpegCommand || "sudo apt-get install -y ffmpeg") }))) : null,
+          command ? h("code", { text: command }) : null,
+          command ? h("button", { type: "button", text: T.copy, onclick: () => copyText(command) }) : null,
+          h("button", { type: "button", text: T.recheck, onclick: ev => recheck(ev.currentTarget) }))) : null,
     );
   });
   box.hidden = false;
+}
+
+async function recheck(button) {
+  button.disabled = true;
+  try { await refresh(); } finally { button.disabled = false; }
 }
 
 async function runSetup(button) {
   button.disabled = true;
   try {
     const result = await callTool("film_setup", { step: "all" });
-    if (result.isError) {
-      // Most likely ffmpeg cannot be installed without a password: show the manual command.
-      ffmpegManual = true;
-      lastSig.setup = null;
-      notify(resultText(result) || "setup failed", "error");
-    }
+    toolFailed(result);
   } catch (error) { reportFailure(error); }
   await refresh();
   lastSig.setup = null; renderSetup();
@@ -505,7 +534,7 @@ function filmModel(film) {
     exists: film.exists !== false, modified: film.modified ? relativeTime(film.modified) : "",
     video: film.video && film.video.bytes ? formatBytes(film.video.bytes) : "",
     thumb: thumb && thumb.status === "ok" ? thumb.url.length : thumb && thumb.status,
-    recent: film.folder === recentFolder, menu: menuFolder === film.folder,
+    recent: film.folder === recentFolder, menu: menuFolder === film.folder + "|render" ? "render" : menuFolder === film.folder + "|more" ? "more" : "",
   };
 }
 
@@ -517,15 +546,6 @@ function renderFilms() {
     $("films-empty").hidden = films.length > 0;
     $("films").replaceChildren(...films.map((film, i) => filmItem(film, models[i])));
   });
-  // Default location for the "new film" form: parent of the most recent film.
-  const input = $("new-loc");
-  if (!locationTouched && !input.dataset.filled) {
-    let newest = null;
-    for (const f of films) if (f.modified && (!newest || Date.parse(f.modified) > Date.parse(newest.modified))) newest = f;
-    const parent = parentOf((newest || films[0] || {}).folder || "");
-    input.value = parent || "~/Videos/OpenFilm/Projects";
-    input.dataset.filled = "1";
-  }
 }
 
 function filmItem(film, m) {
@@ -545,26 +565,21 @@ function filmItem(film, m) {
       h("div", { class: "actions" },
         h("button", { type: "button", class: "primary", text: T.openInStudio, onclick: ev => openFilmInStudio(film.folder, m.name, ev.currentTarget) }),
         h("div", { class: "menu-wrap" },
-          h("button", { type: "button", text: T.render + " ▾", "aria-haspopup": "menu", "aria-expanded": String(m.menu),
-            onclick: ev => { ev.stopPropagation(); menuFolder = m.menu ? null : film.folder; renderFilms(); } }),
-          m.menu ? h("div", { class: "menu", role: "menu" },
+          h("button", { type: "button", text: T.render + " ▾", "aria-haspopup": "menu", "aria-expanded": String(m.menu === "render"),
+            onclick: ev => { ev.stopPropagation(); menuFolder = m.menu === "render" ? null : film.folder + "|render"; renderFilms(); } }),
+          m.menu === "render" ? h("div", { class: "menu", role: "menu" },
             menuItem(T.render1080, () => startRender(film, m.name, {}, T.renderKind1080)),
             menuItem(T.render4k, () => startRender(film, m.name, { uhd: true }, T.renderKind4k)),
             menuItem(T.renderLoud, () => startRender(film, m.name, { loudness: -14 }, T.renderKindLoud, true))) : null),
+        h("div", { class: "menu-wrap" },
+          h("button", { type: "button", text: T.more + " ▾", "aria-haspopup": "menu", "aria-expanded": String(m.menu === "more"),
+            onclick: ev => { ev.stopPropagation(); menuFolder = m.menu === "more" ? null : film.folder + "|more"; renderFilms(); } }),
+          m.menu === "more" ? h("div", { class: "menu", role: "menu" },
+            menuItem(T.localize, () => startLocalize(film, m.name))) : null),
         h("button", { type: "button", text: T.copyPath, onclick: () => copyText(film.folder) }),
       )));
 }
 function menuItem(text, handler) { return h("button", { type: "button", role: "menuitem", text, onclick: handler }); }
-
-async function openStudioTop(button) {
-  button.disabled = true;
-  try {
-    const result = await callTool("film_studio", {});
-    if (toolFailed(result)) return;
-    const url = result.structuredContent && result.structuredContent.url;
-    if (url) await request("ui/openUrl", { url });
-  } catch (error) { reportFailure(error); } finally { button.disabled = false; }
-}
 
 async function openFilmInStudio(folder, name, button) {
   if (button) button.disabled = true;
@@ -572,10 +587,21 @@ async function openFilmInStudio(folder, name, button) {
     const result = await callTool("film_studio", { folder });
     if (toolFailed(result)) return;
     const data = result.structuredContent || {};
-    if (data.alreadyOpen) notify(T.studioAlready(name));
-    else if (data.url) await request("ui/openUrl", { url: data.url });
+    notify(data.alreadyOpen ? T.studioAlready : T.studioOpened);
     refresh();
   } catch (error) { reportFailure(error); } finally { if (button) button.disabled = false; }
+}
+
+async function startLocalize(film, name) {
+  menuFolder = null; renderFilms();
+  try {
+    const { confirmed } = await request("ui/confirm", { title: T.localizeConfirmTitle, message: T.localizeConfirm(name), confirmLabel: T.localizeConfirmLabel });
+    if (!confirmed) return;
+    const result = await callTool("film_localize", { folder: film.folder });
+    if (toolFailed(result)) return;
+    notify(T.localizeStarted);
+    refresh();
+  } catch (error) { reportFailure(error); }
 }
 
 async function startRender(film, name, options, what, forceLoudness) {
@@ -621,19 +647,26 @@ async function pumpThumbs() {
 async function createFilm(event) {
   event.preventDefault();
   const name = $("new-name").value.trim();
-  const location = $("new-loc").value.trim().replace(/[\\/]+$/, "");
-  if (!name || /[\\/]/.test(name)) { notify(T.newNameBad, "error"); return; }
-  if (!isAbsolute(location) && !location.startsWith("~/")) { notify(T.newLocBad, "error"); return; }
+  if (!name || /[\\/]/.test(name) || name.startsWith(".") || /[\0-\x1f]/.test(name)) { notify(T.newNameBad, "error"); return; }
   const button = $("new-submit");
   button.disabled = true;
   try {
-    const result = await callTool("film_studio", { folder: `${location}/${name}` });
+    // A bare name is relative to the project; the plugin makes the film there.
+    const result = await callTool("film_studio", { folder: name });
     if (toolFailed(result)) return;
     $("new-name").value = "";
-    const url = result.structuredContent && result.structuredContent.url;
-    if (url) await request("ui/openUrl", { url });
+    updateTarget();
+    notify((result.structuredContent || {}).alreadyOpen ? T.studioAlready : T.studioOpened);
     refresh();
   } catch (error) { reportFailure(error); } finally { button.disabled = false; }
+}
+
+/** Shows where the film will be made: project + separator + name. */
+function updateTarget() {
+  const name = $("new-name").value.trim();
+  const project = dash && dash.project ? String(dash.project) : "";
+  const sep = project.includes("\\") && !project.includes("/") ? "\\" : "/";
+  $("new-target").textContent = project && name ? project.replace(/[\\/]+$/, "") + sep + name : "";
 }
 
 /* 4. Jobs */
@@ -702,19 +735,10 @@ async function cancelJob(job, button) {
 
 /* 5. Settings */
 function renderSettings() {
-  const term = (dash && dash.terminal) || {};
   const details = $("settings");
   $("settings-section").hidden = false;
-  renderIfChanged("settings", [term, ui.defaults.loudness], () => {
-    $("settings-body").replaceChildren(
-      h("div", {},
-        h("label", { class: "toggle" },
-          h("input", { type: "checkbox", checked: term.linked ? true : null, onchange: ev => setTerminal(ev.target) }),
-          h("span", { text: T.terminalToggle })),
-        h("div", { class: "cmd" },
-          h("span", { class: "small", text: T.terminalHint }),
-          h("code", { text: term.command || "" }),
-          term.command ? h("button", { type: "button", text: T.copy, onclick: () => copyText(term.command) }) : null)),
+  renderIfChanged("settings", [ui.defaults.loudness], () => {
+    fill($("settings-body"),
       h("label", { class: "toggle" },
         h("input", { type: "checkbox", checked: ui.defaults.loudness ? true : null, onchange: ev => { ui.defaults.loudness = ev.target.checked; saveUi(); } }),
         h("span", { text: T.defaultLoudness })),
@@ -725,16 +749,6 @@ function renderSettings() {
     details.dataset.bound = "1";
     details.addEventListener("toggle", () => { ui.settingsOpen = details.open; saveUi(); });
   }
-}
-
-async function setTerminal(checkbox) {
-  checkbox.disabled = true;
-  try {
-    const result = await callTool("film_terminal", { enable: checkbox.checked });
-    if (toolFailed(result)) checkbox.checked = !checkbox.checked;
-  } catch (error) { checkbox.checked = !checkbox.checked; reportFailure(error); }
-  checkbox.disabled = false;
-  refresh();
 }
 
 /* ------------------------------------------------------------------ */
@@ -748,7 +762,6 @@ function applyStaticText() {
   $("films-title").textContent = T.filmsTitle;
   $("films-empty").textContent = T.filmsEmpty;
   $("new-name-label").textContent = T.newName;
-  $("new-loc-label").textContent = T.newLocation;
   $("new-submit").textContent = T.newCreate;
   $("jobs-title").textContent = T.jobsTitle;
   $("jobs-empty").textContent = T.jobsEmpty;
@@ -757,7 +770,7 @@ function applyStaticText() {
 
 $("refresh").addEventListener("click", () => { if (problem) setProblem(null); else refresh(); });
 $("new-film").addEventListener("submit", createFilm);
-$("new-loc").addEventListener("input", () => { locationTouched = true; });
+$("new-name").addEventListener("input", updateTarget);
 document.addEventListener("click", () => { if (menuFolder) { menuFolder = null; renderFilms(); } });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && menuFolder) { menuFolder = null; renderFilms(); } });
 

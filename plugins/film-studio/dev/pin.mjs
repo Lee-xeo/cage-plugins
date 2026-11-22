@@ -8,7 +8,7 @@
 //   1. resolves the whole dependency tree into runtime/package-lock.json (no packages are installed),
 //   2. reads which playwright-core the lock contains and what browser build that release wants
 //      (its browsers.json: chromium-headless-shell revision + Chrome version),
-//   3. downloads that browser for linux x64 and arm64, measures size and SHA-256,
+//   3. downloads that browser for each system and processor, measures size and SHA-256,
 //   4. writes runtime/browser.json, which the plugin uses to verify the download.
 // Needs: node, npm, network. Downloads about 200 MB into a temporary folder that is removed afterwards.
 //
@@ -19,7 +19,8 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { copyFile, mkdtemp, readFile, rm, writeFile, stat } from 'node:fs/promises';
+import { access, copyFile, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { unzip } from '../lib/zip.mjs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -134,6 +135,12 @@ try {
   const expectSnippets = [
     'path: `builds/cft/${browserVersion}/${suffix}`',
     'cftUrl("linux64/chrome-headless-shell-linux64.zip")',
+    'cftUrl("mac-arm64/chrome-headless-shell-mac-arm64.zip")',
+    'cftUrl("mac-x64/chrome-headless-shell-mac-x64.zip")',
+    'cftUrl("win64/chrome-headless-shell-win64.zip")',
+    '"mac-arm64": ["chrome-headless-shell-mac-arm64", "chrome-headless-shell"]',
+    '"mac-x64": ["chrome-headless-shell-mac-x64", "chrome-headless-shell"]',
+    '"win-x64": ["chrome-headless-shell-win64", "chrome-headless-shell.exe"]',
     '"builds/chromium/%s/chromium-headless-shell-linux-arm64.zip"',
     ...MIRRORS.map((m) => `"${m}"`),
     '"linux-x64": ["chrome-headless-shell-linux64", "chrome-headless-shell"]',
@@ -144,17 +151,22 @@ try {
   if (missing.length) throw new Error(`playwright-core ${playwrightCore} changed; update pin.mjs. Not found:\n${missing.join('\n')}`);
 
   // (d) download addresses, built the way playwright-core builds them
+  const cft = (name, program = 'chrome-headless-shell') => ({
+    file: `chrome-headless-shell-${name}.zip`,
+    urls: [`${CDN}/builds/cft/${browserVersion}/${name}/chrome-headless-shell-${name}.zip`],
+    executable: `chrome-headless-shell-${name}/${program}`,
+  });
+  // keys are `${process.platform}-${process.arch}`
   const targets = {
-    x64: {
-      file: 'chrome-headless-shell-linux64.zip',
-      urls: [`${CDN}/builds/cft/${browserVersion}/linux64/chrome-headless-shell-linux64.zip`],
-      executable: 'chrome-headless-shell-linux64/chrome-headless-shell',
-    },
-    arm64: {
+    'darwin-arm64': cft('mac-arm64'),
+    'darwin-x64': cft('mac-x64'),
+    'linux-x64': cft('linux64'),
+    'linux-arm64': {
       file: 'chromium-headless-shell-linux-arm64.zip',
       urls: MIRRORS.map((m) => `${m}/builds/chromium/${revision}/chromium-headless-shell-linux-arm64.zip`),
       executable: 'chrome-linux/headless_shell',
     },
+    'win32-x64': cft('win64', 'chrome-headless-shell.exe'),
   };
 
   // (e) fetch and measure
@@ -162,6 +174,10 @@ try {
   for (const [arch, target] of Object.entries(targets)) {
     console.log(`Browser for ${arch} ...`);
     const got = await fetchFirst(target.urls, join(work, target.file));
+    // it must unpack with the plugin's own unpacker, to the program it names
+    unzip(join(work, target.file), join(work, arch));
+    await access(join(work, arch, target.executable));
+    await rm(join(work, arch), { recursive: true, force: true });
     await rm(join(work, target.file), { force: true });
     builds[arch] = { file: target.file, urls: target.urls, size: got.size, sha256: got.sha256, executable: target.executable };
     console.log(`  ${got.size} bytes, sha256 ${got.sha256}`);

@@ -12,10 +12,14 @@
     <h1 id="title">Film Studio</h1>
     <button type="button" id="refresh" class="ghost"></button>
   </header>
+  <p id="project" class="small" hidden></p>
 
   <!-- Approval / connection problem card (filled by app.js) -->
   <section id="problem" class="card warn" hidden></section>
   <p id="loading" class="note"></p>
+
+  <!-- Node.js problem -->
+  <section id="node" class="card warn" hidden></section>
 
   <!-- 1. Status chips -->
   <section id="status" class="chips" aria-live="polite" hidden></section>
@@ -31,9 +35,9 @@
     <h2 id="films-title"></h2>
     <form id="new-film" class="new-film" autocomplete="off">
       <label><span id="new-name-label"></span><input id="new-name" type="text" required></label>
-      <label><span id="new-loc-label"></span><input id="new-loc" type="text" spellcheck="false" required></label>
       <button type="submit" id="new-submit" class="primary"></button>
     </form>
+    <p id="new-target" class="small"></p>
     <p id="films-empty" class="note" hidden></p>
     <ul id="films" class="films"></ul>
   </section>

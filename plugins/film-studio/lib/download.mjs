@@ -4,7 +4,7 @@
 import { createHash } from 'node:crypto';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { Refused } from './paths.mjs';
+import { Refused } from './refused.mjs';
 
 /** A download that brings nothing for this long has stalled: it is stopped and tried again. */
 const STALL_MS = 30_000;

@@ -58,7 +58,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .cmd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 
 /* Films */
-.new-film { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: end; margin-bottom: 12px; }
+.new-film { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-bottom: 12px; }
 .new-film label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); min-width: 0; }
 .films, .jobs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .film { display: grid; grid-template-columns: 128px 1fr; gap: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
@@ -96,6 +96,7 @@ details.log summary { cursor: pointer; min-height: 28px; display: flex; align-it
 pre.tail { margin: 4px 0 0; padding: 8px; background: var(--chrome); border-radius: 6px; max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
 
 /* Settings */
+#project { overflow-wrap: anywhere; margin: 0; }
 #settings > summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; color: var(--strong); }
 .settings-body { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
 .toggle { display: flex; align-items: center; gap: 8px; min-height: 32px; }
