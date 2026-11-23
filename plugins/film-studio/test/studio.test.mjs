@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, statSync, symlinkSync, utimesSync, writeFileSy
 import { basename, join } from 'node:path';
 import { folderIn } from './helpers.mjs';
 
-const { changed, openBrowser, giveLocalize, localizeIn, films, studio, noteOpened, lastOpened } = await import('../lib/studio.mjs');
+const { changed, withoutAddress, openBrowser, giveLocalize, localizeIn, films, studio, noteOpened, lastOpened } = await import('../lib/studio.mjs');
 const { Project, Refused, OPENFILM_HOME, PLUGIN } = await import('../lib/paths.mjs');
 
 /** A stand-in for spawn that writes down what it was asked and answers as told. */
@@ -128,6 +128,15 @@ test('a film changes when a page, style or picture of it does, not when it is re
   assert.equal(changed(root), 3_000_000);
   for (const name of ['film.mp4', 'sound.wav', '.film/cache/x.png', 'node_modules/x/y.js']) put(name, 9000);
   assert.equal(changed(root), 3_000_000);
+});
+
+test('withoutAddress takes out the editor\'s address and key', () => {
+  const printed = 'Studio http://127.0.0.1:4747/open?key=0123456789abcdef0123456789abcdef0123456789abcdef\n'
+    + 'at http://localhost:4748/x, "agentKey":"fedcba9876543210fedcba9876543210" key=0123456789abcdef0123 [::1]\n'
+    + 'https://fonts.googleapis.com/css2?family=Inter stays, and so does a key of 3 letters: key=abc';
+  const out = withoutAddress(printed);
+  for (const gone of ['4747', '4748', '0123456789abcdef', 'fedcba9876543210', '127.0.0.1', 'localhost']) assert.ok(!out.includes(gone), gone);
+  assert.ok(out.includes('https://fonts.googleapis.com/css2?family=Inter') && out.includes('key=abc'), out);
 });
 
 test('films: none, and a project with no films', () => {

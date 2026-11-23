@@ -21,7 +21,7 @@ import { Jobs } from './lib/jobs.mjs';
 import { commandArgs, lookArgs, openfilm, renderArgs } from './lib/openfilm.mjs';
 import { images } from './lib/images.mjs';
 import { addressesIn } from './lib/localize.mjs';
-import { films, giveLocalize, lastOpened, localizeIn, markShown, noteOpened, openEditor, studio, thumbnail } from './lib/studio.mjs';
+import { films, giveLocalize, lastOpened, localizeIn, markShown, withoutAddress, noteOpened, openEditor, studio, thumbnail } from './lib/studio.mjs';
 
 /** The plugin's version, as plugin.json says (test/server.test.mjs checks they agree). */
 export const VERSION = '0.1.0';
@@ -41,7 +41,7 @@ const jobs = new Jobs({ environment: (meta) => environment({ agent: meta.agent !
 // ---------------------------------------------------------------- answers
 
 const text = (body, structured, isError = false) => ({
-  content: [{ type: 'text', text: project.text(body) }], ...(structured ? { structuredContent: structured } : {}), ...(isError ? { isError } : {}),
+  content: [{ type: 'text', text: withoutAddress(project.text(body)) }], ...(structured ? { structuredContent: structured } : {}), ...(isError ? { isError } : {}),
 });
 
 /** A job as a few lines of text. */
@@ -233,7 +233,7 @@ const handlers = {
       studio: { running: studio().running },
       lastOpened: lastOpened(project),
       films: films(project),
-      jobs: jobs.list(12, mine),
+      jobs: jobs.list(12, mine).map((job) => ({ ...job, title: withoutAddress(job.title), tail: job.tail.map(withoutAddress) })),
     });
   },
 

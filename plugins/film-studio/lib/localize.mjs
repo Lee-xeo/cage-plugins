@@ -45,6 +45,11 @@ export function packageOf(url) {
   const found = url.hostname === 'cdn.jsdelivr.net' ? path.match(/^\/npm\/((?:@[^/]+\/)?[^/@]+)(?:@([^/]+))?(?:\/(.*))?$/)
     : url.hostname === 'unpkg.com' ? path.match(/^\/((?:@[^/]+\/)?[^/@]+)(?:@([^/]+))?(?:\/(.*))?$/) : null;
   if (url.hostname === 'cdn.jsdelivr.net' && !found) throw new Error('only its npm packages can be used (cdn.jsdelivr.net/npm/…)');
+  if (url.hostname === 'cdnjs.cloudflare.com') {
+    const lib = path.match(/^\/ajax\/libs\/[^/]+\/([^/]+)\/./);
+    if (!lib) throw new Error('only its libraries can be used (cdnjs.cloudflare.com/ajax/libs/…)');
+    if (!/^\d/.test(lib[1]) || /^latest$/i.test(lib[1])) throw new Error('name an exact version, such as gsap/3.12.5');
+  }
   if (!found) return null;
   if (!/^\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/.test(found[2] ?? '')) throw new Error('name an exact version, such as gsap@3.12.5');
   if (!found[3]) throw new Error('name a file of the package');
@@ -194,7 +199,8 @@ export async function localize(folder, { say = () => {}, get = fetch } = {}) {
         } else {
           say(`fetching ${address}`);
           const place = await fetched(address);
-          text = text.replace(new RegExp(`${quote(raw)}(?=[\\s"'\`)<>\\\\]|$)`, 'g'), from(page, place));
+          const local = from(page, place);
+          text = text.replace(new RegExp(`${quote(raw)}(?=[\\s"'\`)<>\\\\]|$)`, 'g'), () => local);
         }
       } catch (error) {
         problems.push(`${slash(relative(root, page))}: ${address}: ${error.message}`);

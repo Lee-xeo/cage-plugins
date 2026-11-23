@@ -73,7 +73,7 @@ export const COMMANDS = {
   skills: [null], skill: null, doctor: [null],
   edit: ['add', 'look'], canvas: [undefined, 'apply', 'add'], color: ['look', 'input', 'balance', 'match', 'filter'],
 };
-/** Options whose value is words, not a path. */
+/** Options of `get` whose value is words, not a path. */
 const WORDS = new Set(['--prompt', '--text', '--lyrics', '--voice', '--style', '--negative', '--title', '--query']);
 
 export function commandArgs(args, { project, folder }) {
@@ -99,9 +99,12 @@ export function commandArgs(args, { project, folder }) {
   for (let i = 0; i < rest.length; i += 1) {
     const arg = rest[i];
     const option = arg.match(/^(--[a-z0-9-]+)(?:=(.*))?$/is);
-    if (option && WORDS.has(option[1])) {
+    if (name === 'get' && option && WORDS.has(option[1])) {
       checked.push(arg);
-      if (option[2] === undefined && i + 1 < rest.length) checked.push(rest[i += 1]);
+      // the words that follow, unless what follows is an option of its own (then this one has no value)
+      if (option[2] === undefined && i + 1 < rest.length && !rest[i + 1].startsWith('-')) checked.push(rest[i += 1]);
+    } else if (name === 'canvas' && verb === 'apply' && /^\s*[[{]/.test(arg)) {
+      checked.push(canvasSteps(arg, project, folder));
     } else if (option) {
       checked.push(option[2] === undefined ? arg : `${option[1]}=${value(option[2], project, folder)}`);
     } else {
@@ -109,6 +112,18 @@ export function commandArgs(args, { project, folder }) {
     }
   }
   return verb === undefined ? [name] : [name, verb, ...checked];
+}
+
+/** Steps for `canvas apply` given as JSON: every path in them must be a file of the project. */
+function canvasSteps(text, project, folder) {
+  let steps;
+  try { steps = JSON.parse(text); } catch { throw new Refused('the canvas steps are not JSON'); }
+  const walk = (item) => {
+    if (Array.isArray(item)) return item.map(walk);
+    if (!item || typeof item !== 'object') return item;
+    return Object.fromEntries(Object.entries(item).map(([key, inner]) => [key, key === 'path' && typeof inner === 'string' ? value(inner, project, folder) : walk(inner)]));
+  };
+  return JSON.stringify(walk(steps));
 }
 
 /** A word that may be a path: left as it is when it names nothing elsewhere, this computer's path when it is one in the project. */

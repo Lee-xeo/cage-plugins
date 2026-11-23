@@ -11,6 +11,14 @@ import { ffmpeg } from './runtime.mjs';
 
 const json = (file) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return null; } };
 
+/**
+ * Text without the editor's address or key, which open it with the person's
+ * rights: OpenFilm prints them where it opens the editor itself.
+ */
+export const withoutAddress = (text) => String(text)
+  .replace(/https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):\d+[^\s"'<>)]*/gi, '(the editor)')
+  .replace(/\b(key|agentKey|x-studio-key)(["']?\s*[=:]\s*["']?)[0-9a-f]{16,}/gi, '$1$2…');
+
 /** Whether the editor runs. Its address and key stay where they are. */
 export function studio() {
   const run = json(join(OPENFILM_HOME, 'run.json'));
@@ -40,7 +48,7 @@ export async function openEditor(folder, project) {
   if (folder === project.root && !existsSync(join(folder, 'film.html'))) throw new Refused('the film needs a folder of its own inside the project');
   const answer = await openfilm(['open', folder], { cwd: project.root, agent: false });
   const opened = parseOpen(`${answer.stdout}\n${answer.stderr}`);
-  if (answer.code !== 0 || !opened.url) throw new Refused((answer.stderr || answer.stdout).trim() || 'the editor did not start');
+  if (answer.code !== 0 || !opened.url) throw new Refused(withoutAddress((answer.stderr || answer.stdout).trim()) || 'the editor did not start');
   giveLocalize(folder, project);
   const shown = opened.alreadyOpen || await openBrowser(opened.url);
   return { folder, alreadyOpen: opened.alreadyOpen, shown };

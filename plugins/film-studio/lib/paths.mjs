@@ -135,7 +135,8 @@ export class Project {
     let seen = 0;
     const look = (dir) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if ((seen += 1) > 50_000) return;
+        if (entry.name === 'node_modules') continue; // a film's packages, which nothing is written into
+        if ((seen += 1) > 50_000) throw new Refused(`${this.shown(folder)} holds too many files to check for links out of the project`);
         const at = join(dir, entry.name);
         if (entry.isSymbolicLink()) {
           try { this.inside(at, 'a link'); } catch { throw new Refused(`${this.shown(at)} is a link out of the project folder; remove it first`); }

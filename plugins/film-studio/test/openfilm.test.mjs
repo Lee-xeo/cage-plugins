@@ -159,6 +159,28 @@ test('commandArgs leaves the words of --prompt and the like alone, slashes and a
   refuses(['get', 'tts', '--text', 'hi', '/etc/passwd']);
   // an option left without its value
   assert.deepEqual(run(['get', 'tts', '--text']), ['get', 'tts', '--text']);
+  // an option right after it is not its words: it is checked as itself
+  refuses(['get', 'image', '--prompt', '--src=/etc/passwd']);
+  refuses(['get', 'image', '--prompt', '--ref', '/etc/passwd']);
+  assert.deepEqual(run(['get', 'image', '--prompt', '--out=a.png']), ['get', 'image', '--prompt', '--out=a.png']);
+  // only get's options are words: elsewhere their value is checked like any other
+  refuses(['edit', 'add', '--title', '/etc/passwd']);
+  refuses(['color', 'look', '--text=/etc/passwd']);
+});
+
+test('commandArgs: canvas apply with steps as JSON checks the paths in them', () => {
+  const steps = [{ op: 'add', kind: 'file', id: 'a', path: 'assets/shot.png' }, { op: 'add', kind: 'note', id: 'n', text: 'see C:\\x and /etc/passwd: "quoted"' }];
+  assert.deepEqual(JSON.parse(run(['canvas', 'apply', JSON.stringify(steps)])[2]), steps);
+  const inside = run(['canvas', 'apply', JSON.stringify({ op: 'version', id: 'a', path: join(folder, 'assets', 'v2.png') })]);
+  assert.equal(JSON.parse(inside[2]).path, join(folder, 'assets', 'v2.png'));
+  for (const path of ['/etc/passwd', '../../../x.png', 'https://example.com/x.png', '@x']) {
+    refuses(['canvas', 'apply', JSON.stringify([{ op: 'add', kind: 'file', path }])]);
+    refuses(['canvas', 'apply', JSON.stringify([{ op: 'set', id: 'a', deep: { path } }])]);
+  }
+  refuses(['canvas', 'apply', '[not json'], /not JSON/);
+  // a .json file of the project is still a path
+  assert.deepEqual(run(['canvas', 'apply', 'steps.json']), ['canvas', 'apply', 'steps.json']);
+  refuses(['canvas', 'apply', '/etc/steps.json']);
 });
 
 test('commandArgs: folder is required for get and edit', () => {

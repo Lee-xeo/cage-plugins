@@ -147,6 +147,9 @@ test('Project.noLinksOut', (t) => {
   project.noLinksOut(join(root, 'not-there'));
   try { symlinkSync(join(root, 'sub'), join(film, 'ok'), 'junction'); } catch { t.skip('links cannot be made here'); return; }
   project.noLinksOut(film);
+  mkdirSync(join(film, 'node_modules'));
+  symlinkSync(join(base, 'outside'), join(film, 'node_modules', 'pkg'), 'junction');
+  project.noLinksOut(film); // a film's packages are not looked through: nothing is written there
   symlinkSync(join(base, 'outside'), join(film, 'deep', 'bad'), 'junction');
   assert.throws(() => project.noLinksOut(film), /link out of the project/);
 });

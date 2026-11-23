@@ -36,7 +36,7 @@ film-studio 与 OpenFilm 配合使用（works with OpenFilm），并非 OpenFilm
 
   `cache` 里是能重新下载的内容（OpenFilm、渲染浏览器、缩略图），`data` 里是 OpenFilm 自己的状态（`home`）和后台任务记录（`jobs`）。
 - 支持：Windows x64、macOS arm64 与 x64、Linux x64 与 arm64。
-- 实测情况：在 Windows 11 x64（NVIDIA 显卡，在 Cage 里）和 Linux x64 上真正运行过。macOS 和 Linux arm64 的渲染浏览器已固定下载地址和 SHA-256，并检查过能否解包，但还没有运行过，请当作尚未验证。
+- 实测情况：在 Windows 11 x64（NVIDIA 显卡，在 Cage 里）、macOS arm64（由插件市场维护者实测）和 Linux x64 上真正运行过。macOS x64 和 Linux arm64 的渲染浏览器已固定下载地址和 SHA-256，并检查过能否解包，但还没有运行过，请当作尚未验证。
 
 ## 工具
 
@@ -71,7 +71,7 @@ Claude 能用的工具：
 影片页面是在断网状态下绘制的，所以字体和脚本必须放在影片文件夹里。页面里仍可以按常规写这五个地址：Google Fonts（`fonts.googleapis.com`、`fonts.gstatic.com`）、jsDelivr（`cdn.jsdelivr.net/npm/…`）、unpkg、cdnjs，脚本包要写明确切版本，例如 `gsap@3.12.5`。
 
 - `film_look` 会报告被拒绝的在线资源，并给出一条命令：`node '<影片>/.film/film-studio/localize.mjs' '<影片>'`。Claude Code 在自己的终端里运行它（走环境自己的代理）。
-- 没有终端时，用页面里影片的「更多」菜单里的「下载在线素材」。点击后会先请你确认，然后通过这台电脑自己的网络（不经过代理）下载，并把影片的页面改为使用下载到本地的文件。
+- 没有终端时，用页面里影片的「更多」菜单里的「下载在线素材」。点击后会先请你确认，然后通过这台电脑的网络下载（不走环境的代理；这台电脑自己设了 `HTTP_PROXY`/`HTTPS_PROXY` 时走它们），并把影片的页面改为使用下载到本地的文件。
 - 文件放在影片的 `assets/vendor/`，下载记录和每个文件的 SHA-256 写在 `assets/vendor/vendor.json`；再次下载时，已记录的文件必须与记录一致。
 
 ## 安全边界
@@ -80,7 +80,7 @@ Claude 能用的工具：
 - `film_run` 只运行白名单内的命令；会运行外来代码的命令（技能自带的命令、添加技能）、让调用方指定网址的命令和发布类命令都不在其中，`update` 也被拦下。
 - 影片页面是离线的：画面检查、渲染、导出和缩略图都在网络关闭的状态下绘制（见上文五处改动）。
 - 仍有一个缺口：Studio 预览在你的浏览器里播放，页面策略管不到 WebRTC，插件的做法是在页面脚本运行前把它去掉；但从一个特意做出的空白 iframe 里仍能取到 WebRTC。除此之外，预览页受页面策略限制。
-- OpenFilm 自己的流量（素材库、模型列表、npm 与 Playwright 下载）走这台电脑自己的网络，不走环境的代理。
+- OpenFilm 自己的流量（素材库、模型列表、npm 与 Playwright 下载）走这台电脑的网络，不走环境的代理；这台电脑自己设了 `HTTP_PROXY`/`HTTPS_PROXY` 时走它们。
 - 主机插件以你的账号运行，权限是你的权限。
 - 影片的页面是 Claude 写的程序：它们在无头浏览器里，以及在你这台电脑的浏览器里运行。请像对待别人给你的代码一样，留意 Claude 写进去的内容。
 

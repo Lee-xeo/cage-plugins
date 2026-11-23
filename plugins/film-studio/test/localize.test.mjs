@@ -94,6 +94,9 @@ test('packageOf', () => {
   assert.deepEqual(packageOf(new URL('https://unpkg.com/@scope/pkg@2.0.0/x.js')), { name: '@scope/pkg', version: '2.0.0', file: 'x.js' });
   assert.deepEqual(packageOf(new URL('https://unpkg.com/gsap@3.12.5/dist/gsap.js')), { name: 'gsap', version: '3.12.5', file: 'dist/gsap.js' });
   assert.equal(packageOf(new URL(GSAP)), null);
+  for (const bad of ['https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/gsap.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/gsap.min.js', 'https://cdnjs.cloudflare.com/polyfill/v3/x.js']) {
+    assert.throws(() => packageOf(new URL(bad)), /exact version|libraries/, bad);
+  }
   assert.equal(packageOf(new URL(CSS)), null);
   assert.equal(packageOf(new URL(FONT_A)), null);
   for (const bad of ['https://cdn.jsdelivr.net/npm/gsap/dist/x.js', 'https://cdn.jsdelivr.net/npm/gsap@3/dist/x.js', 'https://cdn.jsdelivr.net/npm/gsap@latest/x.js',
@@ -300,6 +303,15 @@ test('files that load each other are fetched once each, and it ends', async () =
   assert.equal(done.files, 4);
   assert.equal(read(folder, 'assets/vendor/unpkg.com/cyc@1.0.0/y.css'), '@import url(./x.css);');
   for (const url of [a, b, x, y]) assert.equal(net.asked().filter((asked) => asked === url).length, 1);
+});
+
+test('a file whose name holds $ is named as it is (escaped as the address of a file)', async () => {
+  const odd = 'https://unpkg.com/odd@1.0.0/a$&b$1.js';
+  const folder = makeFilm({ 'film.html': `<script src="${odd}"></script>\n` });
+  const done = await localize(folder, { get: fake({ [odd]: ['1', JS] }).get });
+  assert.deepEqual(done.problems, []);
+  assert.equal(read(folder, 'film.html'), '<script src="./assets/vendor/unpkg.com/odd@1.0.0/a%24%26b%241.js"></script>\n');
+  assert.ok(existsSync(join(folder, 'assets/vendor/unpkg.com/odd@1.0.0/a$&b$1.js')));
 });
 
 test('a symlinked assets/vendor that leaves the film is refused', async (t) => {

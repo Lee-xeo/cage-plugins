@@ -46,7 +46,7 @@ const TEXT = {
     studioAlready: "浏览器中的 Studio 已切换到此影片",
     localize: "下载在线素材",
     localizeConfirmTitle: "下载在线素材？",
-    localizeConfirm: name => `将为「${name}」下载字体和脚本：通过这台电脑自己的网络（不经过代理）访问 Google Fonts、jsDelivr、unpkg 和 cdnjs，并修改这部影片的页面，改为使用下载到本地的文件。`,
+    localizeConfirm: name => `将为「${name}」下载字体和脚本：通过这台电脑的网络访问 Google Fonts、jsDelivr、unpkg 和 cdnjs，并修改这部影片的页面，改为使用下载到本地的文件。`,
     localizeConfirmLabel: "下载",
     localizeStarted: "已开始下载，进度见「任务」。",
     render: "渲染", render1080: "渲染 1080p", render4k: "渲染 4K", renderLoud: "发布音量 -14 LUFS",
@@ -69,7 +69,7 @@ const TEXT = {
     elapsed: s => `已用 ${s}`,
     showLog: "日志", noLog: "（暂无日志）",
     cancel: "取消",
-    cancelConfirmTitle: "取消渲染？", cancelConfirm: title => `「${title}」会被停止，已渲染的部分不会保留。`,
+    cancelConfirmTitle: "取消渲染？", cancelConfirm: title => `「${title}」会被停止。已完成的分段会保留，再次开始同样的渲染时从中断处继续。`,
     cancelConfirmLabel: "取消渲染", cancelStarted: "已请求取消。",
     // settings
     settingsTitle: "设置",
@@ -118,7 +118,7 @@ const TEXT = {
     studioAlready: "Studio in the browser now shows this film",
     localize: "Download online files",
     localizeConfirmTitle: "Download online files?",
-    localizeConfirm: name => `This downloads fonts and scripts for "${name}" from Google Fonts, jsDelivr, unpkg and cdnjs through this computer's own network (not the proxy), and changes the film's pages to use them.`,
+    localizeConfirm: name => `This downloads fonts and scripts for "${name}" from Google Fonts, jsDelivr, unpkg and cdnjs through this computer's network, and changes the film's pages to use them.`,
     localizeConfirmLabel: "Download",
     localizeStarted: "Download started; see Jobs for progress.",
     render: "Render", render1080: "Render 1080p", render4k: "Render 4K", renderLoud: "Release loudness -14 LUFS",
@@ -139,7 +139,7 @@ const TEXT = {
     elapsed: s => `elapsed ${s}`,
     showLog: "Log", noLog: "(no log yet)",
     cancel: "Cancel",
-    cancelConfirmTitle: "Cancel this render?", cancelConfirm: title => `"${title}" will be stopped; what has been rendered is not kept.`,
+    cancelConfirmTitle: "Cancel this render?", cancelConfirm: title => `"${title}" will be stopped. The finished parts are kept: the same render started again carries on from there.`,
     cancelConfirmLabel: "Cancel render", cancelStarted: "Cancel requested.",
     settingsTitle: "Settings",
     defaultLoudness: "Render with release loudness (-14 LUFS) by default",
@@ -618,10 +618,13 @@ async function startRender(film, name, options, what, forceLoudness) {
   } catch (error) { reportFailure(error); }
 }
 
-/* Thumbnails: strictly one film_thumbnail call at a time, only for films not yet loaded. */
+/* Thumbnails: strictly one film_thumbnail call at a time, only for films not yet loaded, and only once what draws them is
+   installed (asked for before, each would fail, or ask the person to allow it for nothing). One that failed is tried
+   again when its film changes. */
 let thumbBusy = false;
+const thumbsReady = () => Boolean(dash && dash.openfilm && dash.openfilm.installed && dash.browser && dash.browser.installed && dash.ffmpeg && dash.ffmpeg.found);
 async function pumpThumbs() {
-  if (thumbBusy || !visible || problem || !dash) return;
+  if (thumbBusy || !visible || problem || !dash || !thumbsReady()) return;
   const films = Array.isArray(dash.films) ? dash.films : [];
   const next = films.find(f => f && f.folder && f.exists !== false && (!thumbs.has(f.folder) || (thumbs.get(f.folder).modified !== (f.modified || null) && thumbs.get(f.folder).status !== "loading")));
   if (!next) return;
@@ -636,7 +639,8 @@ async function pumpThumbs() {
     else thumbs.set(next.folder, { status: "error", modified: next.modified || null });
   } catch (error) {
     thumbs.set(next.folder, { status: "error", modified: next.modified || null });
-    if ([-32001, -32003, -32004].includes(error && error.code)) setProblem({ code: error.code });
+    // a picture that takes too long fails on its own card; the page goes on
+    if ([-32001, -32003].includes(error && error.code)) setProblem({ code: error.code });
   }
   thumbBusy = false;
   renderFilms();

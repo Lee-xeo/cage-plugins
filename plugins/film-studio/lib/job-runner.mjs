@@ -7,11 +7,19 @@
 //   cancel      asks it to stop  alive      touched while it runs
 //   exit.code   how it ended
 import { spawn, spawnSync } from 'node:child_process';
-import { closeSync, existsSync, openSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const folder = process.argv[2];
-const { program, args, cwd } = JSON.parse(readFileSync(join(folder, 'meta.json'), 'utf8'));
+const { program, args, cwd, folder: film } = JSON.parse(readFileSync(join(folder, 'meta.json'), 'utf8'));
+// A film is marked as shown again when its job starts, which may be long after it was asked for (a render waits for the
+// one before it): a film never shown has OpenFilm open the editor itself, and print its address.
+if (film) {
+  try {
+    mkdirSync(join(film, '.film'), { recursive: true });
+    if (!existsSync(join(film, '.film', 'opened'))) writeFileSync(join(film, '.film', 'opened'), '');
+  } catch { /* the job says what went wrong */ }
+}
 const out = openSync(join(folder, 'out.log'), 'a');
 const windows = process.platform === 'win32';
 const child = spawn(program, args, { cwd, stdio: ['ignore', out, out], detached: !windows, windowsHide: true });

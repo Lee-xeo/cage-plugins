@@ -64,6 +64,18 @@ test('job ids are checked', () => {
   assert.throws(() => jobs.cancel('command-abcdef'), Refused);
 });
 
+test('a film\'s job marks the film as shown when it starts, so OpenFilm does not open the editor itself', async () => {
+  const { jobs } = fresh();
+  const film = folderIn('film');
+  const made = jobs.create(node("console.log(require('fs').existsSync('.film/opened'))", { cwd: film, folder: film }));
+  const done = await jobs.wait(made.id, 20);
+  assert.equal(done.state, 'done');
+  assert.deepEqual(done.tail, ['true']);
+  const other = jobs.create(node('1', { cwd: folderIn('plain') }));
+  assert.equal((await jobs.wait(other.id, 20)).state, 'done');
+  assert.ok(!existsSync(join(jobs.meta(other.id).cwd, '.film')));
+});
+
 test('a job runs, ends done, lists its outputs and its log', async () => {
   const { jobs } = fresh();
   const made = jobs.create(node("console.log('hi'); console.log('→ out.txt'); console.log('→ gone.txt'); require('fs').writeFileSync('out.txt', 'x')"));
