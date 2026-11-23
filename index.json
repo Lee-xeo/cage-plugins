@@ -1327,8 +1327,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/markdown-viewer/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/markdown-viewer-1.10.0.tar.gz",
-      "sha256": "1eabaee02bc08f25c0282399a5d8d9ea20f712dcfe3e42ccc08e7c36f19dba12",
-      "bytes": 202000
+      "sha256": "cc1fe033211752a7d69fd9df1b4c9211674298471182b670c36c29c2c2c2df54",
+      "bytes": 202294
     },
     {
       "name": "powerpoint-slides",

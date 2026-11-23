@@ -32,7 +32,7 @@
 
 ## 运行环境与测试
 
-仅依赖标准 Python 3 与浏览器原生 DOM/SVG，无任何第三方包与外网请求。
+插件在 Cage 环境内使用 Python 3 标准库读取已共享的项目文档，由工作台用原生 DOM/SVG 渲染。不需要主机安装 Office，也不会在启动或解析文档时联网下载依赖。跨工作区模式根据环境的 SSHFS 挂载表识别同级共享项目，普通同级目录不会被纳入。
 
 ```sh
 python3 plugins/markdown-viewer/tests/test_server.py -v

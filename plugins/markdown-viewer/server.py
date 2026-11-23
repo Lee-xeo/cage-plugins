@@ -24,11 +24,6 @@ from office_reader import OFFICE_EXTENSIONS, doc_type_for_path, read_office_file
 SERVER_NAME = "markdown-viewer"
 SERVER_VERSION = "1.10.0"
 _INDEX = ProjectIndex()
-SCOPE_PROP = {
-    "type": "string",
-    "enum": ["project", "all"],
-    "description": "Scope of operation: 'project' (current workspace, default) or 'all' (all mounted sibling workspaces).",
-}
 TASK_TOGGLE_RE = re.compile(r"^(\s*(?:[-*+]|\d{1,9}[.)])\s+\[)([ xX])(\]\s*.*)$")
 MARKDOWN_EXTENSIONS = {".md", ".markdown", ".mdx"}
 ASSET_MIME_TYPES = {
@@ -46,385 +41,11 @@ MAX_READ_BYTES = 512 * 1024
 MAX_ASSET_BYTES = 4 * 1024 * 1024
 MAX_PATH_ARG_BYTES = 1024
 MAX_SEARCH_MATCHES = 200
+MOUNTINFO_PATH = pathlib.Path("/proc/self/mountinfo")
 WIKILINK_RE = re.compile(r"\[\[([^\[\]]+)\]\]")
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+[\"'][^\"']*[\"'])?\)")
 
-TOOLS = [
-    {
-        "name": "list_markdown_files",
-        "title": "List Markdown Files",
-        "description": (
-            "Recursively list Markdown files (.md, .markdown, .mdx) under the project root, "
-            "returning relative POSIX paths, byte sizes, and modification times."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "scope": SCOPE_PROP,
-                "includeDocs": {
-                    "type": "boolean",
-                    "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files.",
-                },
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "read_markdown_file",
-        "title": "Read Markdown File",
-        "description": (
-            "Read a UTF-8 Markdown file inside the project root by its relative POSIX path. "
-            "Files larger than 512 KiB are safely truncated at a UTF-8 boundary and marked readOnly."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative POSIX path to a Markdown file inside the project root.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "search_markdown_files",
-        "title": "Search Markdown Files",
-        "description": (
-            "Search Markdown files under the project root with multi-term AND, quoted phrases, "
-            "exclusions (-word), inline path:/tag:/heading: operators, case sensitivity, whole word, "
-            "and regex support, returning ranked grouped files and centered highlighted snippets."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query (supports multi-word, quotes, -exclude, path:, tag:, heading:, or regex).",
-                },
-                "limit": {
-                    "type": "integer",
-                    "description": "Maximum number of matches to return (1-200, default 80).",
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Optional list of tags (AND filter) to narrow the search.",
-                },
-                "caseSensitive": {
-                    "type": "boolean",
-                    "description": "Match case sensitively (default false).",
-                },
-                "wholeWord": {
-                    "type": "boolean",
-                    "description": "Match whole words only (default false).",
-                },
-                "regex": {
-                    "type": "boolean",
-                    "description": "Interpret query as a regular expression (default false).",
-                },
-                "pathPrefix": {
-                    "type": "string",
-                    "description": "Optional relative directory/path prefix to restrict search scope.",
-                },
-                "sortBy": {
-                    "type": "string",
-                    "enum": ["relevance", "matches", "path", "mtime"],
-                    "description": "Result ordering mode (default relevance).",
-                },
-                "includeContext": {
-                    "type": "boolean",
-                    "description": "Include previous and next line context around each hit.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["query"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "get_backlinks",
-        "title": "Get Backlinks",
-        "description": (
-            "Find Markdown files in the project that link to the specified Markdown file "
-            "via [[wikilinks]] or relative Markdown links."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative POSIX path of the target Markdown file.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "save_markdown_file",
-        "title": "Save Markdown File",
-        "description": (
-            "Atomically write UTF-8 Markdown content to a relative .md/.markdown/.mdx file path "
-            "inside the project root (max 512 KiB), with optional ETag conflict detection."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative POSIX path to a Markdown file inside the project root.",
-                },
-                "content": {
-                    "type": "string",
-                    "description": "UTF-8 Markdown text content to save.",
-                },
-                "expectedEtag": {
-                    "type": "string",
-                    "description": "Optional ETag from read_markdown_file for optimistic conflict detection.",
-                },
-                "force": {
-                    "type": "boolean",
-                    "description": "Whether to overwrite even if the file changed on disk.",
-                },
-                "createDirs": {
-                    "type": "boolean",
-                    "description": "Whether to create missing parent directories inside the project root.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path", "content"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "read_markdown_asset",
-        "title": "Read Markdown Image Asset",
-        "description": (
-            "Read a relative image asset referenced by a Markdown document inside the project root "
-            "(PNG, JPEG, GIF, WebP, AVIF, SVG up to 4 MiB) and return base64-encoded data."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "docPath": {
-                    "type": "string",
-                    "description": "Relative POSIX path of the Markdown document referencing the asset.",
-                },
-                "assetHref": {
-                    "type": "string",
-                    "description": "Relative POSIX image path resolved from the document directory.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["docPath", "assetHref"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "list_project_tags",
-        "title": "List Project Tags",
-        "description": "Aggregate Frontmatter and inline tags across Markdown files in the project.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "scope": SCOPE_PROP,
-                "includeDocs": {
-                    "type": "boolean",
-                    "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files.",
-                },
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "list_project_tasks",
-        "title": "List Project Tasks",
-        "description": "List Markdown task checkboxes across the project, optionally filtered by status or path prefix.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "enum": ["all", "open", "done"],
-                    "description": "Filter tasks by completion status.",
-                },
-                "pathPrefix": {
-                    "type": "string",
-                    "description": "Optional relative path prefix to filter tasks.",
-                },
-                "limit": {
-                    "type": "integer",
-                    "description": "Maximum number of tasks to return (default 500).",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "toggle_markdown_task",
-        "title": "Toggle Markdown Task",
-        "description": "Safely toggle a single task checkbox line in a Markdown file with ETag conflict protection.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Relative POSIX path to the Markdown file."},
-                "line": {"type": "integer", "description": "1-based line number of the task item."},
-                "checked": {"type": "boolean", "description": "Target checked state."},
-                "expectedEtag": {"type": "string", "description": "Expected file ETag for conflict detection."},
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path", "line", "checked", "expectedEtag"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "inspect_project_links",
-        "title": "Inspect Project Links",
-        "description": "Scan Markdown files for broken links and ambiguous wikilink targets.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "scope": SCOPE_PROP,
-                "includeDocs": {
-                    "type": "boolean",
-                    "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files.",
-                },
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "update_markdown_task_meta",
-        "title": "Update Markdown Task Metadata",
-        "description": (
-            "Update workflow status, priority, due date, assignee, group, and color metadata on a single "
-            "Markdown task line with ETag conflict protection."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Relative POSIX path to the Markdown file."},
-                "line": {"type": "integer", "description": "1-based line number of the task item."},
-                "expectedEtag": {"type": "string", "description": "Expected file ETag for conflict detection."},
-                "status": {
-                    "type": "string",
-                    "enum": ["", "todo", "doing", "review", "done"],
-                    "description": "Optional workflow status (updates checkbox state automatically).",
-                },
-                "checked": {"type": "boolean", "description": "Optional explicit checkbox state."},
-                "priority": {"type": "string", "enum": ["", "high", "medium", "low"], "description": "Task priority level."},
-                "due": {"type": "string", "description": "Optional YYYY-MM-DD due date or empty string."},
-                "assignee": {"type": "string", "description": "Optional assignee handle without @ or empty string."},
-                "group": {"type": "string", "description": "Optional custom group name or empty string."},
-                "color": {
-                    "type": "string",
-                    "enum": ["", "red", "orange", "amber", "green", "blue", "purple", "pink"],
-                    "description": "Optional color tag.",
-                },
-                "cleanText": {
-                    "type": "string",
-                    "description": "Optional replacement task title text.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path", "line", "expectedEtag"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "get_project_graph",
-        "title": "Get Project Link Graph",
-        "description": "Build a node-and-edge graph of Markdown files linked by wikilinks and relative Markdown links.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "scope": SCOPE_PROP,
-                "includeDocs": {
-                    "type": "boolean",
-                    "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files.",
-                },
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "rename_markdown_file",
-        "title": "Rename or Move Markdown File",
-        "description": "Safely rename or move a Markdown file inside the project root and optionally update wikilinks and relative links.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "oldPath": {"type": "string", "description": "Existing relative POSIX path."},
-                "newPath": {"type": "string", "description": "Destination relative POSIX path."},
-                "updateLinks": {"type": "boolean", "description": "Whether to rewrite references across project Markdown files."},
-                "scope": SCOPE_PROP,
-            },
-            "required": ["oldPath", "newPath"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "save_markdown_asset",
-        "title": "Save Markdown Image Asset",
-        "description": "Save a base64-encoded image into the document's assets/ directory inside the project root.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "docPath": {"type": "string", "description": "Relative POSIX path of the Markdown document."},
-                "filename": {"type": "string", "description": "Image file name with valid image extension."},
-                "data": {"type": "string", "description": "Base64-encoded image bytes (max 4 MiB)."},
-                "scope": SCOPE_PROP,
-            },
-            "required": ["docPath", "filename", "data"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "replace_in_markdown_files",
-        "title": "Replace in Markdown Files",
-        "description": "Atomically replace matching text across selected Markdown files with optional ETag conflict checking.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Search query or regex pattern."},
-                "replacement": {"type": "string", "description": "Replacement text."},
-                "paths": {"type": "array", "items": {"type": "string"}, "description": "Relative POSIX paths to update."},
-                "caseSensitive": {"type": "boolean", "description": "Case-sensitive matching."},
-                "wholeWord": {"type": "boolean", "description": "Whole-word matching."},
-                "regex": {"type": "boolean", "description": "Treat query as a regular expression."},
-                "expectedEtags": {"type": "object", "description": "Optional map of path to expected ETag."},
-                "scope": SCOPE_PROP,
-            },
-            "required": ["query", "replacement"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "read_office_document",
-        "title": "Read Office or PDF Document",
-        "description": (
-            "Read and parse an Excel (.xlsx/.xlsm/.csv/.tsv), Word (.docx), PowerPoint (.pptx), "
-            "or PDF (.pdf) document inside the project root for offline preview and Markdown conversion."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative POSIX path to an Excel, Word, PowerPoint, or PDF file inside the project root.",
-                },
-                "scope": SCOPE_PROP,
-            },
-            "required": ["path"],
-            "additionalProperties": False,
-        },
-    },
-]
+TOOLS = json.loads(pathlib.Path(__file__).with_name("tools.json").read_text(encoding="utf-8"))
 
 
 def _compute_etag(raw: bytes) -> str:
@@ -522,66 +143,47 @@ def _resolve_markdown_path(
     return root_real, target_real, normalized
 
 
-UNSAFE_PARENT_DIRS = {
-    "/",
-    "/Users",
-    "/home",
-    "/tmp",
-    "/private/tmp",
-    "/var",
-    "/private/var",
-    "/etc",
-    "/opt",
-    "/usr",
-    os.path.realpath(os.path.expanduser("~")),
-}
+def _mounted_project_roots() -> set[str]:
+    try:
+        mountinfo = MOUNTINFO_PATH.read_text(encoding="utf-8", errors="surrogateescape")
+    except OSError:
+        return set()
 
-
-def _dir_has_markdown(dir_real: str, max_depth: int = 3) -> bool:
-    for cur_root, dirnames, filenames in os.walk(dir_real, topdown=True, followlinks=False):
-        rel = os.path.relpath(cur_root, dir_real)
-        depth = 0 if rel == "." else rel.count(os.sep) + 1
-        for fname in filenames:
-            if not fname.startswith(".") and os.path.splitext(fname)[1].lower() in MARKDOWN_EXTENSIONS:
-                return True
-        if depth >= max_depth:
-            dirnames[:] = []
+    roots = set()
+    for line in mountinfo.split("\n"):
+        mount, _, filesystem = line.partition(" - ")
+        if not filesystem.startswith("fuse.sshfs "):
             continue
-        dirnames[:] = [
-            d for d in sorted(dirnames)
-            if not d.startswith(".") and d not in SKIP_DIRS and not os.path.islink(os.path.join(cur_root, d))
-        ]
-    return False
+        fields = mount.split(" ")
+        if len(fields) >= 5:
+            # mountinfo escapes spaces, tabs, newlines and backslashes as octal.
+            root = re.sub(r"\\(040|011|012|134)", lambda match: chr(int(match[1], 8)), fields[4])
+            roots.add(root)
+    return roots
 
 
 def discover_workspaces(root_dir: str) -> dict[str, str]:
-    """Safely discover mounted sibling workspace folders alongside the primary project root."""
+    """Discover sibling project shares from the mount table, without scanning their parent."""
     root_real = os.path.realpath(root_dir)
     if not os.path.isdir(root_real):
         raise ValueError("Project root directory does not exist.")
     current_name = os.path.basename(root_real) or "project"
     workspaces: dict[str, str] = {current_name: root_real}
 
-    parent = os.path.realpath(os.path.dirname(root_real))
-    if parent == root_real or parent in UNSAFE_PARENT_DIRS or not os.path.isdir(parent):
+    mounted_roots = _mounted_project_roots()
+    if root_real not in mounted_roots:
         return workspaces
 
-    try:
-        children = sorted(os.listdir(parent))
-    except OSError:
-        return workspaces
-
-    for name in children:
+    parent = os.path.dirname(root_real)
+    for path in sorted(mounted_roots):
+        if os.path.dirname(path) != parent:
+            continue
+        name = os.path.basename(path)
         if name.startswith(".") or name in SKIP_DIRS or name in workspaces:
             continue
-        full = os.path.join(parent, name)
-        if os.path.islink(full) or not os.path.isdir(full):
+        if os.path.realpath(path) != path or not os.path.isdir(path):
             continue
-        real_child = os.path.realpath(full)
-        if not _is_within_root(parent, real_child):
-            continue
-        if _dir_has_markdown(real_child):
-            workspaces[name] = real_child
+        workspaces[name] = path
         if len(workspaces) >= 20:
             break
     return workspaces

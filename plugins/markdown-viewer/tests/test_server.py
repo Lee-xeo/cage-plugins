@@ -81,6 +81,7 @@ class ServerTests(unittest.TestCase):
         replies = self.run_rpc([
             json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}}),
             json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+            "  ",
             json.dumps({"jsonrpc": "2.0", "id": 2, "method": "ping"}),
             json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/list"}),
             json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "list_markdown_files", "arguments": {}}}),
@@ -88,7 +89,8 @@ class ServerTests(unittest.TestCase):
             "{not-json",
         ])
         self.assertEqual(len(replies), 6)
-        self.assertEqual(replies[0]["result"]["serverInfo"]["name"], "markdown-viewer")
+        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(replies[0]["result"]["serverInfo"], {"name": manifest["name"], "version": manifest["version"]})
         self.assertEqual(replies[1]["result"], {})
         tool_names = [t["name"] for t in replies[2]["result"]["tools"]]
         self.assertEqual(
@@ -446,9 +448,9 @@ class ServerTests(unittest.TestCase):
 
     def test_multi_workspace_scope_and_task_workflow_statuses(self):
         with tempfile.TemporaryDirectory() as parent_tmp:
-            parent = pathlib.Path(parent_tmp)
+            parent = pathlib.Path(parent_tmp).resolve()
             ws_a = parent / "alpha-ws"
-            ws_b = parent / "beta-ws"
+            ws_b = parent / "beta ws"
             ws_a.mkdir()
             ws_b.mkdir()
             (ws_a / "a.md").write_text(
@@ -460,9 +462,28 @@ class ServerTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
+            unshared = parent / "unlisted-ws"
+            unshared.mkdir()
+            unshared_note = unshared / "x.md"
+            unshared_note.write_text("# Private fixture\n", encoding="utf-8")
+
+            mountinfo = parent / "mountinfo"
+            records = []
+            for mount_id, workspace in enumerate((ws_a, ws_b), start=1):
+                escaped = str(workspace).replace("\\", "\\134").replace(" ", "\\040")
+                records.append(f"{mount_id} 0 0:{mount_id} / {escaped} rw - fuse.sshfs :/project rw\n")
+            mountinfo.write_text("".join(records), encoding="utf-8")
+            entrypoint = (
+                "import pathlib, sys\n"
+                "sys.path.insert(0, sys.argv[1])\n"
+                "import server\n"
+                "server.MOUNTINFO_PATH = pathlib.Path(sys.argv[2])\n"
+                "raise SystemExit(server.main(sys.argv[3:]))\n"
+            )
+
             def run_scoped(msgs: list[str]) -> list[dict]:
                 proc = subprocess.run(
-                    [sys.executable, str(SERVER_PATH), str(ws_a)],
+                    [sys.executable, "-c", entrypoint, str(PLUGIN_DIR), str(mountinfo), str(ws_a)],
                     input="\n".join(msgs) + "\n",
                     text=True,
                     capture_output=True,
@@ -473,36 +494,39 @@ class ServerTests(unittest.TestCase):
 
             replies = run_scoped([
                 json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_markdown_files", "arguments": {"scope": "all"}}}),
-                json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "read_markdown_file", "arguments": {"path": "beta-ws/b.md", "scope": "all"}}}),
+                json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "read_markdown_file", "arguments": {"path": "beta ws/b.md", "scope": "all"}}}),
                 json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "list_project_tasks", "arguments": {"status": "open", "scope": "all"}}}),
                 json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "get_project_graph", "arguments": {"scope": "all"}}}),
                 json.dumps({"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "read_markdown_file", "arguments": {"path": "unlisted-ws/x.md", "scope": "all"}}}),
+                json.dumps({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "save_markdown_file", "arguments": {"path": "unlisted-ws/x.md", "content": "# Changed\n", "scope": "all"}}}),
             ])
 
             listed = replies[0]["result"]["structuredContent"]
             self.assertEqual(listed["scope"], "all")
-            self.assertEqual(set(listed["workspaces"]), {"alpha-ws", "beta-ws"})
-            self.assertEqual([f["path"] for f in listed["files"]], ["alpha-ws/a.md", "beta-ws/b.md"])
+            self.assertEqual(set(listed["workspaces"]), {"alpha-ws", "beta ws"})
+            self.assertEqual([f["path"] for f in listed["files"]], ["alpha-ws/a.md", "beta ws/b.md"])
 
             beta_doc = replies[1]["result"]["structuredContent"]
-            self.assertEqual(beta_doc["path"], "beta-ws/b.md")
+            self.assertEqual(beta_doc["path"], "beta ws/b.md")
             self.assertIn("# Beta", beta_doc["content"])
 
             tasks = replies[2]["result"]["structuredContent"]["tasks"]
             self.assertEqual(len(tasks), 2)
             by_path = {t["path"]: t for t in tasks}
             self.assertEqual(by_path["alpha-ws/a.md"]["status"], "doing")
-            self.assertEqual(by_path["beta-ws/b.md"]["status"], "review")
+            self.assertEqual(by_path["beta ws/b.md"]["status"], "review")
 
             graph = replies[3]["result"]["structuredContent"]
             node_ids = {n["id"] for n in graph["nodes"]}
-            self.assertEqual(node_ids, {"alpha-ws/a.md", "beta-ws/b.md"})
+            self.assertEqual(node_ids, {"alpha-ws/a.md", "beta ws/b.md"})
 
-            # Unauthorized workspace name is rejected
+            # A sibling containing Markdown still needs a project mount.
             self.assertTrue(replies[4]["result"].get("isError"))
+            self.assertTrue(replies[5]["result"].get("isError"))
+            self.assertEqual(unshared_note.read_text(encoding="utf-8"), "# Private fixture\n")
 
             # Move beta task from review -> done via update_markdown_task_meta with scope="all"
-            beta_task = by_path["beta-ws/b.md"]
+            beta_task = by_path["beta ws/b.md"]
             upd = run_scoped([
                 json.dumps({
                     "jsonrpc": "2.0",
@@ -511,7 +535,7 @@ class ServerTests(unittest.TestCase):
                     "params": {
                         "name": "update_markdown_task_meta",
                         "arguments": {
-                            "path": "beta-ws/b.md",
+                            "path": beta_task["path"],
                             "line": beta_task["line"],
                             "expectedEtag": beta_task["etag"],
                             "status": "done",
