@@ -1,0 +1,64 @@
+[
+  {
+    "name": "privacy_boundary_report",
+    "description": "Run an offline, strictly read-only, redacted host audit covering active routes, IPv6 exposure, DNS configuration, firewall outbound defaults and native app Allow rules, local client data footprints, CLI anti-telemetry switches, local MCP bridge counts, and a 10-check tri-state summary (pass, gap, unknown) with explicit evidence tiers.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "model",
+          "app"
+        ]
+      }
+    }
+  },
+  {
+    "name": "privacy_client_boundary",
+    "description": "Run a fast, offline, strictly read-only redacted check of host OS timezone and locale, local Claude Desktop/MSIX and CLI data footprints, the 5 CLI anti-telemetry switches, and local MCP server bridge counts without querying OS routing or firewall tables.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "model",
+          "app"
+        ]
+      }
+    }
+  },
+  {
+    "name": "privacy_web_login_triage",
+    "description": "Return an offline stage-by-stage checklist for distinguishing web login challenge widget load failures, challenge loops, and post-challenge site notices, plus redaction guidelines for diagnostic notes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "all",
+            "widget_load",
+            "challenge_loop",
+            "post_challenge"
+          ],
+          "description": "Optional failure stage filter (defaults to 'all')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "model",
+          "app"
+        ]
+      }
+    }
+  }
+]

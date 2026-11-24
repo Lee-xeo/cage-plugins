@@ -52,6 +52,31 @@ html[data-scheme="dark"] {
   --unknown-bg: rgba(251, 191, 36, 0.14);
 }
 
+@media (prefers-color-scheme: dark) {
+  html:not([data-scheme="light"]) {
+    --paper: #14171c;
+    --chrome: #1c2129;
+    --ink: #d6dde8;
+    --strong: #f3f6fb;
+    --muted: #93a0b2;
+    --line: #2b3340;
+    --hover: #252c37;
+    --selected: #193534;
+    --accent: #2dd4bf;
+    --link: #5eead4;
+    --focus: #2dd4bf;
+    --input: #171c23;
+    --button: #14b8a6;
+    --button-ink: #0b1615;
+    --success: #4ade80;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --pass-bg: rgba(74, 222, 128, 0.13);
+    --gap-bg: rgba(248, 113, 113, 0.14);
+    --unknown-bg: rgba(251, 191, 36, 0.14);
+  }
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -61,6 +86,14 @@ html, body {
   font-size: 13.5px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+body {
+  transition: opacity 0.1s ease;
+}
+
+body.booting {
+  opacity: 0;
 }
 
 .shell {
@@ -577,6 +610,10 @@ h3 { font-size: 14px; }
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--ink);
+}
+
+.compact-note {
+  margin: 0 0 10px;
 }
 
 .foot {

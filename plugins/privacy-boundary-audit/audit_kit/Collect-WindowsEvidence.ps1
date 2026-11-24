@@ -67,7 +67,7 @@ function Read-JsonTextAutoEncoding {
 }
 
 function Get-RouteSummary {
-    param($RouteObservation, $InterfaceObservation)
+    param($RouteObservation, $InterfaceObservation, $TunnelIndices = @{})
 
     $prefixes = @('0.0.0.0/0', '0.0.0.0/1', '128.0.0.0/1', '::/0', '::/1', '8000::/1')
     $routes = @(
@@ -80,11 +80,13 @@ function Get-RouteSummary {
             $interfaceMetric = Get-OptionalField $interface 'InterfaceMetric'
             $connectionState = Get-OptionalField $interface 'ConnectionState'
             if ([string]$connectionState -notin @('Connected', 'Disconnected')) { $connectionState = $null }
+            $ifCategory = if ($TunnelIndices.ContainsKey([int]$route.InterfaceIndex)) { 'tunnel_candidate' } else { 'other' }
             [pscustomobject]@{
                 DestinationPrefix = [string]$route.DestinationPrefix
                 AddressFamily     = [string]$route.AddressFamily
                 InterfaceIndex    = [int]$route.InterfaceIndex
                 InterfaceState    = $connectionState
+                InterfaceCategory = $ifCategory
                 RouteMetric       = if ($null -ne $routeMetric) { [int]$routeMetric } else { $null }
                 InterfaceMetric   = if ($null -ne $interfaceMetric) { [int]$interfaceMetric } else { $null }
                 CombinedMetric    = if ($null -ne $routeMetric -and $null -ne $interfaceMetric) {
@@ -141,23 +143,121 @@ function Get-DnsSummary {
 function Read-FilteringEvents {
     param([datetime]$Since)
 
-    $filter = @{ LogName = 'Security'; Id = @(5152, 5157); StartTime = $Since }
+    $lookbackMs = [Math]::Max([int64]([Math]::Ceiling(([datetime]::UtcNow - $Since).TotalMilliseconds)), [int64]1000)
+    $xpath = "*[System[(EventID=5152 or EventID=5157) and TimeCreated[timediff(@SystemTime) <= $lookbackMs]]]"
+    $packetBlocks = 0
+    $connectionBlocks = 0
+    $total = 0
     try {
-        $events = @(Get-WinEvent -FilterHashtable $filter -MaxEvents 201 -ErrorAction Stop)
-    } catch {
-        if ($_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*') {
-            return [pscustomobject]@{
-                Status = 'unavailable'; PacketBlocks = $null; ConnectionBlocks = $null; Truncated = $null
+        $query = [System.Diagnostics.Eventing.Reader.EventLogQuery]::new(
+            'Security',
+            [System.Diagnostics.Eventing.Reader.PathType]::LogName,
+            $xpath
+        )
+        $query.ReverseDirection = $true
+        $reader = [System.Diagnostics.Eventing.Reader.EventLogReader]::new($query)
+        try {
+            while ($total -lt 201 -and ($ev = $reader.ReadEvent())) {
+                try {
+                    if ($total -lt 200) {
+                        if ($ev.Id -eq 5152) { $packetBlocks += 1 }
+                        elseif ($ev.Id -eq 5157) { $connectionBlocks += 1 }
+                    }
+                    $total += 1
+                } finally {
+                    $ev.Dispose()
+                }
             }
+        } finally {
+            $reader.Dispose()
         }
-        $events = @()
+    } catch {
+        return [pscustomobject]@{
+            Status = 'unavailable'; PacketBlocks = $null; ConnectionBlocks = $null; Truncated = $null
+        }
     }
-    $sample = @($events | Select-Object -First 200)
     [pscustomobject]@{
         Status           = 'observed'
-        PacketBlocks     = @($sample | Where-Object { $_.Id -eq 5152 }).Count
-        ConnectionBlocks = @($sample | Where-Object { $_.Id -eq 5157 }).Count
-        Truncated        = $events.Count -gt 200
+        PacketBlocks     = $packetBlocks
+        ConnectionBlocks = $connectionBlocks
+        Truncated        = $total -gt 200
+    }
+}
+
+function Get-TunnelInterfaceMap {
+    param($InterfaceObservation)
+
+    $map = @{}
+    $vpnPattern = '(?i)(tun|tap|wintun|wireguard|sing-box|singbox|clash|mihomo|tailscale|zerotier|openvpn|vpn|utun|hiddify|nekoray|v2ray|xray)'
+    $excludePattern = '(?i)(vethernet|hyper-v|wsl|docker|loopback|teredo|isatap|6to4|iphttps|kdnet|bluetooth|wi-fi direct|virtual wi-fi)'
+
+    foreach ($iface in $InterfaceObservation.Data) {
+        $alias = [string](Get-OptionalField $iface 'InterfaceAlias')
+        if ($alias -and ($alias -match $vpnPattern) -and ($alias -notmatch $excludePattern)) {
+            $map[[int]$iface.InterfaceIndex] = $true
+        }
+    }
+    try {
+        $nics = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()
+        foreach ($nic in $nics) {
+            $blob = "$([string]$nic.Name) $([string]$nic.Description)"
+            if (($blob -notmatch $vpnPattern) -or ($blob -match $excludePattern)) { continue }
+            $ipProps = $nic.GetIPProperties()
+            try { $map[[int]$ipProps.GetIPv4Properties().Index] = $true } catch {}
+            try { $map[[int]$ipProps.GetIPv6Properties().Index] = $true } catch {}
+        }
+    } catch {
+        # Keep alias-derived observations if NetworkInterface enumeration is unavailable.
+    }
+    return $map
+}
+
+function Read-ClaudeOutboundAllowRules {
+    $regPaths = @(
+        'HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules',
+        'HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\RestrictedServices\AppIso\FirewallRules'
+    )
+    $total = 0
+    $msix = 0
+    $appPath = 0
+    $observedAny = $false
+
+    foreach ($regPath in $regPaths) {
+        try {
+            if (-not (Test-Path -LiteralPath $regPath)) { continue }
+            $key = Get-Item -LiteralPath $regPath -ErrorAction Stop
+            $observedAny = $true
+            foreach ($valName in $key.GetValueNames()) {
+                $raw = [string]$key.GetValue($valName, '', 'DoNotExpandEnvironmentNames')
+                if (-not $raw) { continue }
+                if ($raw -notmatch '(?i)(claude|anthropic)') { continue }
+                if ($raw -notmatch '(?i)\|Action=Allow\|') { continue }
+                if ($raw -notmatch '(?i)\|Active=TRUE\|') { continue }
+                if ($raw -notmatch '(?i)\|Dir=Out\|') { continue }
+                $total += 1
+                if ($raw -match '(?i)\|AppPkgId=') {
+                    $msix += 1
+                } elseif ($raw -match '(?i)\|App=') {
+                    $appPath += 1
+                }
+            }
+        } catch {
+            continue
+        }
+    }
+    if (-not $observedAny) {
+        return [pscustomobject]@{
+            Status                    = 'unavailable'
+            ClaudeAllowRuleCount      = $null
+            MsixPackageAllowRuleCount = $null
+            AppPathAllowRuleCount     = $null
+        }
+    }
+    [pscustomobject]@{
+        Status                    = 'observed'
+        ClaudeAllowRuleCount      = $total
+        MsixPackageAllowRuleCount = $msix
+        AppPathAllowRuleCount     = $appPath
     }
 }
 
@@ -256,6 +356,7 @@ function Read-SavedProbes {
 
 $now = [datetime]::UtcNow
 $interfaces = Read-LocalObservation { Get-NetIPInterface -ErrorAction Stop }
+$TunnelIndices = Get-TunnelInterfaceMap $interfaces
 $routes = Read-LocalObservation { Get-NetRoute -PolicyStore ActiveStore -ErrorAction Stop }
 $resolvers = Read-LocalObservation { Get-DnsClientServerAddress -ErrorAction Stop }
 $doh = Read-LocalObservation { Get-DnsClientDohServerAddress -ErrorAction Stop }
@@ -270,13 +371,14 @@ $profiles = Read-LocalObservation {
 
 [pscustomobject]@{
     ObservedAtUtc      = $now.ToString('o')
-    Routing            = Get-RouteSummary $routes $interfaces
+    Routing            = Get-RouteSummary $routes $interfaces $TunnelIndices
     Dns                = Get-DnsSummary $resolvers $doh
     Firewall           = [pscustomobject]@{
         ActiveStore        = $profiles.Status
         Profiles           = $profiles.Data
         LookbackMinutes    = $FirewallLookbackMinutes
         SecurityDropEvents = Read-FilteringEvents $now.AddMinutes(-$FirewallLookbackMinutes)
+        OutboundAllowBypass = Read-ClaudeOutboundAllowRules
     }
     SavedProbes        = Read-SavedProbes $EvidenceDirectory
     FailClosedVerified = $false

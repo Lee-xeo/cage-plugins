@@ -81,6 +81,10 @@
       copiedSummary: "已复制脱敏体检摘要",
       copiedJson: "已复制脱敏 JSON",
       copiedTriage: "已复制网页登录分步记录模板",
+      btnLoadTriage: "同步核查清单",
+      syncedTriage: "已从后端同步排查清单",
+      jsonCompactNote: "当前展示的是面板持久化精简快照（已省略大体积原始子字段）；点击“运行完整体检”可重新加载完整脱敏 JSON。",
+      footMeta: "Privacy Boundary Audit v0.1.0 · MIT · 100% 离线只读",
       notCollected: "尚未采集",
       lastCollected: (ts) => `最近采集：${ts}`,
       noMatches: "当前筛选条件下没有匹配项。",
@@ -172,6 +176,10 @@
       copiedSummary: "Redacted audit summary copied",
       copiedJson: "Redacted JSON copied",
       copiedTriage: "Web login triage template copied",
+      btnLoadTriage: "Sync Checklist",
+      syncedTriage: "Synced triage checklist from server",
+      jsonCompactNote: "Showing compacted saved panel snapshot (large raw sub-sections omitted); click 'Run Full Audit' to reload full redacted JSON.",
+      footMeta: "Privacy Boundary Audit v0.1.0 · MIT · 100% Offline Read-Only",
       notCollected: "Not collected yet",
       lastCollected: (ts) => `Last collected: ${ts}`,
       noMatches: "No checks match the current filter.",
@@ -261,22 +269,36 @@
   let activeTab = "checks";
   let activeFilter = "all";
   let fullReport = null;
+  let fullReportCompacted = false;
   let boundaryData = null;
   let triageData = DEFAULT_TRIAGE;
+  let triageLoadedFromServer = false;
   let lastTimestamp = "";
   let busy = false;
+  const appliedTokenKeys = new Set();
 
   const byId = (id) => document.getElementById(id);
 
+  function formatUtcOffset(hours) {
+    if (typeof hours !== "number" || !Number.isFinite(hours)) return "UTC";
+    return `UTC${hours >= 0 ? "+" : ""}${hours}`;
+  }
+
   function applyTheme(theme) {
+    const rootStyle = document.documentElement.style;
+    for (const prop of appliedTokenKeys) {
+      rootStyle.removeProperty(prop);
+    }
+    appliedTokenKeys.clear();
     const scheme = theme && theme.scheme === "dark" ? "dark" : "light";
     document.documentElement.dataset.scheme = scheme;
     const tokens = theme && theme.tokens && typeof theme.tokens === "object" ? theme.tokens : null;
     if (!tokens) return;
-    const rootStyle = document.documentElement.style;
     for (const [key, value] of Object.entries(tokens)) {
       if (typeof value === "string" && value.trim()) {
-        rootStyle.setProperty(`--${key}`, value.trim());
+        const prop = `--${key}`;
+        rootStyle.setProperty(prop, value.trim());
+        appliedTokenKeys.add(prop);
       }
     }
   }
@@ -322,10 +344,12 @@
     byId("sec-boundary-notes").textContent = copy.secBoundaryNotes;
     byId("triage-title").textContent = copy.triageTitle;
     byId("triage-lead").textContent = copy.triageLead;
+    byId("btn-load-triage").textContent = copy.btnLoadTriage;
     byId("btn-copy-triage").textContent = copy.btnCopyTriage;
     byId("json-title").textContent = copy.jsonTitle;
     byId("json-lead").textContent = copy.jsonLead;
     byId("btn-copy-json").textContent = copy.btnCopyJson;
+    byId("foot-meta").textContent = copy.footMeta;
   }
 
   function showBanner(text, kind = "info") {
@@ -368,11 +392,25 @@
   }
 
   function persistState() {
+    const fullCandidate = {
+      activeTab,
+      activeFilter,
+      lastTimestamp,
+      boundaryData,
+      fullReport,
+      fullReportCompacted: false,
+    };
+    const fullSerialized = JSON.stringify(fullCandidate);
+    if (fullSerialized.length < 56000) {
+      rpc("ui/setState", { state: fullCandidate }).catch(() => {});
+      return;
+    }
     const compact = {
       activeTab,
       activeFilter,
       lastTimestamp,
       boundaryData,
+      fullReportCompacted: Boolean(fullReport),
       fullReport: fullReport
         ? {
             schemaVersion: fullReport.schemaVersion,
@@ -400,9 +438,7 @@
 
     const host = boundaryData && boundaryData.hostEnvironment;
     if (host) {
-      const offset = typeof host.utcOffsetHours === "number"
-        ? `UTC${host.utcOffsetHours >= 0 ? "+" : ""}${host.utcOffsetHours}`
-        : "";
+      const offset = typeof host.utcOffsetHours === "number" ? formatUtcOffset(host.utcOffsetHours) : "";
       byId("kpi-host").textContent = `${boundaryData.platform || ""} · ${host.timezoneName || "unknown"}`;
       byId("kpi-host-sub").textContent = `${offset} · ${host.detectedLocale || "unknown"}`;
     } else {
@@ -621,6 +657,14 @@
   }
 
   function renderJson() {
+    const noteEl = byId("json-compact-note");
+    if (fullReport && fullReportCompacted) {
+      noteEl.hidden = false;
+      noteEl.textContent = copy.jsonCompactNote;
+    } else {
+      noteEl.hidden = true;
+      noteEl.textContent = "";
+    }
     const payload = fullReport || boundaryData || {};
     byId("json-output").textContent = JSON.stringify(payload, null, 2);
   }
@@ -633,7 +677,7 @@
     renderJson();
   }
 
-  function switchTab(tabName) {
+  function syncTabUI(tabName) {
     activeTab = tabName;
     for (const btn of document.querySelectorAll(".tab")) {
       const active = btn.dataset.tab === tabName;
@@ -643,15 +687,26 @@
     for (const panel of document.querySelectorAll(".panel")) {
       panel.hidden = panel.id !== `panel-${tabName}`;
     }
+  }
+
+  function switchTab(tabName) {
+    syncTabUI(tabName);
+    if (tabName === "triage" && !triageLoadedFromServer) {
+      loadTriageFromServer(false);
+    }
     persistState();
   }
 
-  function setFilter(filterName) {
+  function syncFilterUI(filterName) {
     activeFilter = filterName;
     for (const chip of document.querySelectorAll(".chip")) {
       chip.classList.toggle("is-active", chip.dataset.filter === filterName);
     }
     renderChecks();
+  }
+
+  function setFilter(filterName) {
+    syncFilterUI(filterName);
     persistState();
   }
 
@@ -668,7 +723,7 @@
       }
     } else if (boundaryData) {
       const host = boundaryData.hostEnvironment || {};
-      lines.push(`- Host: ${boundaryData.platform} | ${host.timezoneName} (UTC${host.utcOffsetHours}) | ${host.detectedLocale}`);
+      lines.push(`- Host: ${boundaryData.platform} | ${host.timezoneName} (${formatUtcOffset(host.utcOffsetHours)}) | ${host.detectedLocale}`);
       for (const note of boundaryData.boundaryNotes || []) {
         lines.push(`- ${note}`);
       }
@@ -698,6 +753,7 @@
       const res = await rpc("tools/call", { name: "privacy_boundary_report", arguments: {} });
       const data = parseToolPayload(res);
       fullReport = data;
+      fullReportCompacted = false;
       if (data.clientBoundary && data.clientBoundary.status === "collected" && data.clientBoundary.data) {
         boundaryData = data.clientBoundary.data;
       }
@@ -721,14 +777,57 @@
       boundaryData = data;
       lastTimestamp = new Date().toISOString();
       showBanner("");
+      if (!fullReport) syncTabUI("boundary");
       renderAll();
-      if (!fullReport) switchTab("boundary");
       persistState();
     } catch (err) {
       showBanner(String(err.message || err), "error");
     } finally {
       setBusy(false, "");
     }
+  }
+
+  async function loadTriageFromServer(notifyUser) {
+    try {
+      const res = await rpc("tools/call", { name: "privacy_web_login_triage", arguments: { stage: "all" } });
+      const data = parseToolPayload(res);
+      if (data && Array.isArray(data.stages)) {
+        triageData = data;
+        triageLoadedFromServer = true;
+        renderTriage();
+        if (notifyUser) {
+          await rpc("ui/notify", { message: copy.syncedTriage, tone: "info" });
+        }
+      }
+    } catch (err) {
+      if (notifyUser) {
+        showBanner(String(err.message || err), "error");
+      }
+    }
+  }
+
+  function buildClipboardJsonText() {
+    const payload = fullReport || boundaryData || {};
+    const pretty = JSON.stringify(payload, null, 2);
+    if (pretty.length <= 60000) {
+      return pretty;
+    }
+    const minified = JSON.stringify(payload);
+    if (minified.length <= 60000) {
+      return minified;
+    }
+    return JSON.stringify(
+      {
+        truncatedForClipboard: true,
+        schemaVersion: payload.schemaVersion ?? 1,
+        generatedAtUtc: payload.generatedAtUtc ?? lastTimestamp,
+        platform: payload.platform ?? null,
+        summary: payload.summary ?? null,
+        clientBoundary: payload.clientBoundary ?? null,
+      },
+      null,
+      2
+    );
   }
 
   async function copyText(text, successMsg) {
@@ -743,10 +842,8 @@
   byId("btn-full-audit").addEventListener("click", runFullAudit);
   byId("btn-quick-audit").addEventListener("click", runQuickAudit);
   byId("btn-copy-summary").addEventListener("click", () => copyText(buildMarkdownSummary(), copy.copiedSummary));
-  byId("btn-copy-json").addEventListener("click", () => {
-    const raw = JSON.stringify(fullReport || boundaryData || {}, null, 2);
-    copyText(raw.slice(0, 60000), copy.copiedJson);
-  });
+  byId("btn-copy-json").addEventListener("click", () => copyText(buildClipboardJsonText(), copy.copiedJson));
+  byId("btn-load-triage").addEventListener("click", () => loadTriageFromServer(true));
   byId("btn-copy-triage").addEventListener("click", () => copyText(buildTriageTemplate(), copy.copiedTriage));
 
   for (const btn of document.querySelectorAll(".tab")) {
@@ -764,18 +861,24 @@
       const saved = init && init.state && typeof init.state === "object" ? init.state : null;
       if (saved) {
         if (saved.fullReport) fullReport = saved.fullReport;
+        fullReportCompacted = Boolean(saved.fullReportCompacted);
         if (saved.boundaryData) boundaryData = saved.boundaryData;
         if (saved.lastTimestamp) lastTimestamp = saved.lastTimestamp;
         if (saved.activeFilter) activeFilter = saved.activeFilter;
         if (saved.activeTab) activeTab = saved.activeTab;
       }
+      syncTabUI(activeTab);
+      syncFilterUI(activeFilter);
       renderAll();
-      switchTab(activeTab);
-      setFilter(activeFilter);
+      loadTriageFromServer(false);
     } catch (err) {
       applyLocale("zh-CN");
+      syncTabUI(activeTab);
+      syncFilterUI(activeFilter);
       renderAll();
       showBanner(String(err.message || err), "error");
+    } finally {
+      document.body.classList.remove("booting");
     }
   }
 

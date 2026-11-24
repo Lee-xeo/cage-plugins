@@ -98,7 +98,7 @@ TOOLS: list[dict[str, Any]] = [
         "name": "privacy_boundary_report",
         "description": (
             "Run an offline, strictly read-only, redacted host audit covering active routes, "
-            "IPv6 exposure, DNS configuration, firewall outbound defaults, local client data footprints, "
+            "IPv6 exposure, DNS configuration, firewall outbound defaults and native app Allow rules, local client data footprints, "
             "CLI anti-telemetry switches, local MCP bridge counts, and a 10-check tri-state summary "
             "(pass, gap, unknown) with explicit evidence tiers."
         ),
@@ -146,29 +146,45 @@ TOOLS: list[dict[str, Any]] = [
 ]
 
 
-def _neutralize_summary(report: dict[str, Any]) -> dict[str, Any]:
-    summary = report.get("summary")
-    if not isinstance(summary, dict):
-        return report
-    checks = summary.get("checks")
-    if isinstance(checks, list):
-        for item in checks:
-            if not isinstance(item, dict):
-                continue
-            detail = item.get("detail")
-            if isinstance(detail, str):
-                item["detail"] = (
-                    detail.replace("virtual-machine", "isolated-environment")
-                    .replace("virtual machine", "isolated environment")
-                )
-    return report
+class ToolInputError(ValueError):
+    """Controlled input validation error containing no local paths or secrets."""
+
+
+_STATE_LOCK = threading.Lock()
+_CANCELLED_IDS: set[Any] = set()
+_INFLIGHT_REPORT: concurrent.futures.Future[dict[str, Any]] | None = None
+_WORKER_SEM = threading.Semaphore(2)
+
+
+def _run_shared_boundary_report() -> dict[str, Any]:
+    global _INFLIGHT_REPORT
+    with _STATE_LOCK:
+        future = _INFLIGHT_REPORT
+        if future is None or future.done():
+            future = concurrent.futures.Future()
+            _INFLIGHT_REPORT = future
+            owner = True
+        else:
+            owner = False
+    if not owner:
+        return json.loads(json.dumps(future.result()))
+    try:
+        system = platform.system()
+        report = environment_report.build_report(system)
+        future.set_result(report)
+        return json.loads(json.dumps(report))
+    except BaseException as exc:
+        future.set_exception(exc)
+        raise
+    finally:
+        with _STATE_LOCK:
+            if _INFLIGHT_REPORT is future:
+                _INFLIGHT_REPORT = None
 
 
 def handle_tool_call(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any]:
     if tool_name == "privacy_boundary_report":
-        system = platform.system()
-        report = environment_report.build_report(system)
-        return _neutralize_summary(report)
+        return _run_shared_boundary_report()
 
     if tool_name == "privacy_client_boundary":
         return audit_client_boundary.collect_boundary_audit()
@@ -176,7 +192,7 @@ def handle_tool_call(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any
     if tool_name == "privacy_web_login_triage":
         stage = str(tool_args.get("stage") or "all").strip()
         if stage not in ("all", "widget_load", "challenge_loop", "post_challenge"):
-            raise ValueError(f"Unsupported stage filter: {stage}")
+            raise ToolInputError("Unsupported stage filter; expected all, widget_load, challenge_loop, or post_challenge.")
         stages = (
             WEB_LOGIN_TRIAGE_STAGES
             if stage == "all"
@@ -190,7 +206,7 @@ def handle_tool_call(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any
             "redaction": TRIAGE_REDACTION_RULES,
         }
 
-    raise ValueError(f"Unknown tool: {tool_name}")
+    raise ToolInputError("Unknown tool name requested.")
 
 
 def send_json(payload: dict[str, Any]) -> None:
@@ -200,37 +216,74 @@ def send_json(payload: dict[str, Any]) -> None:
         sys.stdout.flush()
 
 
+def _consume_cancelled(req_id: Any) -> bool:
+    with _STATE_LOCK:
+        if req_id in _CANCELLED_IDS:
+            _CANCELLED_IDS.discard(req_id)
+            return True
+        return False
+
+
 def _execute_tool_call(req_id: Any, tool_name: str, tool_args: dict[str, Any]) -> None:
-    try:
-        result = handle_tool_call(tool_name, tool_args)
-        send_json(
-            {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False, indent=2)}],
-                    "structuredContent": result,
-                    "isError": False,
-                },
-            }
-        )
-    except Exception as exc:
-        send_json(
-            {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{"type": "text", "text": f"Error: {exc}"}],
-                    "isError": True,
-                },
-            }
-        )
+    if _consume_cancelled(req_id):
+        return
+    with _WORKER_SEM:
+        if _consume_cancelled(req_id):
+            return
+        try:
+            result = handle_tool_call(tool_name, tool_args)
+            if _consume_cancelled(req_id):
+                return
+            send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False, indent=2)}],
+                        "structuredContent": result,
+                        "isError": False,
+                    },
+                }
+            )
+        except ToolInputError as exc:
+            if _consume_cancelled(req_id):
+                return
+            send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": f"Error: {exc}"}],
+                        "isError": True,
+                    },
+                }
+            )
+        except Exception as exc:
+            if _consume_cancelled(req_id):
+                return
+            send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{"type": "text", "text": f"Error: Tool execution failed ({type(exc).__name__})"}],
+                        "isError": True,
+                    },
+                }
+            )
 
 
-def handle_request(msg: dict[str, Any], executor: concurrent.futures.ThreadPoolExecutor) -> None:
+def handle_request(msg: dict[str, Any]) -> None:
     req_id = msg.get("id")
     method = msg.get("method", "")
     params = msg.get("params") if isinstance(msg.get("params"), dict) else {}
+
+    if method == "notifications/cancelled":
+        cancelled_id = params.get("requestId")
+        if cancelled_id is not None:
+            with _STATE_LOCK:
+                _CANCELLED_IDS.add(cancelled_id)
+        return
 
     if req_id is None:
         return
@@ -260,7 +313,13 @@ def handle_request(msg: dict[str, Any], executor: concurrent.futures.ThreadPoolE
     if method == "tools/call":
         tool_name = str(params.get("name") or "")
         tool_args = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}
-        executor.submit(_execute_tool_call, req_id, tool_name, tool_args)
+        worker = threading.Thread(
+            target=_execute_tool_call,
+            args=(req_id, tool_name, tool_args),
+            name="privacy-audit-worker",
+            daemon=True,
+        )
+        worker.start()
         return
 
     send_json(
@@ -280,19 +339,21 @@ def main() -> None:
             except Exception:
                 pass
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="privacy-audit") as executor:
-        for raw in sys.stdin:
-            raw = raw.strip()
-            if not raw:
-                continue
-            try:
-                msg = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                sys.stderr.write(f"Invalid JSON-RPC input: {exc}\n")
-                sys.stderr.flush()
-                continue
-            if isinstance(msg, dict):
-                handle_request(msg, executor)
+    while True:
+        raw_line = sys.stdin.readline()
+        if not raw_line:
+            break
+        raw = raw_line.strip()
+        if not raw:
+            continue
+        try:
+            msg = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            sys.stderr.write(f"Invalid JSON-RPC input: {exc}\n")
+            sys.stderr.flush()
+            continue
+        if isinstance(msg, dict):
+            handle_request(msg)
 
 
 if __name__ == "__main__":

@@ -1547,6 +1547,127 @@
       "bytes": 27747
     },
     {
+      "name": "privacy-boundary-audit",
+      "version": "0.1.0",
+      "description": "Offline read-only host network, firewall, DNS, local client footprint, and tri-state privacy boundary audit with a workbench view.",
+      "permissions": [
+        "files",
+        "commands"
+      ],
+      "author": {
+        "name": "rumpelpalmour757-lgtm"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "隐私边界体检",
+          "description": "离线只读体检本机路由、防火墙、DNS、本地客户端痕迹、防后台外联开关与本地 MCP 桥接，输出三态核验摘要与侧栏工作台视图。"
+        },
+        "zh-TW": {
+          "displayName": "隱私邊界體檢",
+          "description": "離線唯讀體檢本機路由、防火牆、DNS、本地用戶端痕跡、防背景外聯開關與本地 MCP 橋接，輸出三態核驗摘要與側欄工作台檢視。"
+        },
+        "ru": {
+          "displayName": "Аудит границ приватности",
+          "description": "Автономный аудит хоста только для чтения: маршруты, брандмауэр, DNS, следы локальных клиентов, флаги телеметрии и мосты MCP с трёхсостоятельной сводкой и панелью."
+        },
+        "ar": {
+          "displayName": "تدقيق حدود الخصوصية",
+          "description": "فحص محلي غير متصل للقراءة فقط لمسارات الشبكة وجدار الحماية وDNS وآثار العملاء المحليين ومفاتيح منع القياس عن بُعد وجسور MCP مع ملخص ثلاثي الحالات."
+        },
+        "fa": {
+          "displayName": "ممیزی مرز حریم خصوصی",
+          "description": "بررسی آفلاین و فقط‌خواندنی مسیرهای شبکه، فایروال، DNS، ردپای کلاینت‌های محلی، کلیدهای منع تله‌متری و پل‌های MCP با خلاصه سه‌حالته و نمای کارگاه."
+        },
+        "ko": {
+          "displayName": "프라이버시 경계 점검",
+          "description": "호스트 경로, 방화벽, DNS, 로컬 클라이언트 흔적, 텔레메트리 차단 스위치 및 로컬 MCP 브리지를 오프라인 읽기 전용으로 점검하고 3상태 요약과 패널 뷰를 제공합니다."
+        },
+        "es": {
+          "displayName": "Auditoría de privacidad",
+          "description": "Auditoría local sin conexión y de solo lectura de rutas, cortafuegos, DNS, rastros de clientes locales, interruptores de telemetría y puentes MCP con resumen triestado y panel."
+        },
+        "my": {
+          "displayName": "ကိုယ်ရေးလုံခြုံမှု နယ်နိမိတ်စစ်ဆေးမှု",
+          "description": "အော့ဖ်လိုင်း ဖတ်ရန်သီးသန့်ဖြင့် စက်၏လမ်းကြောင်း၊ ဖိုင်းယားဝေါလ်၊ DNS၊ ဒေသခံကလိုင်းယင့်အမှတ်အသားနှင့် MCP ချိတ်ဆက်မှုများကို စစ်ဆေးပြီး အခြေအနေသုံးမျိုးအနှစ်ချုပ်ပြသသည်။"
+        },
+        "be": {
+          "displayName": "Аўдыт межаў прыватнасці",
+          "description": "Аўтаномны аўдыт хоста толькі для чытання: маршруты, брандмаўэр, DNS, сляды лакальных кліентаў, сцягі тэлеметрыі і масты MCP з трохстаннай зводкай і панэллю."
+        },
+        "ps": {
+          "displayName": "د محرمیت پولو پلټنه",
+          "description": "آفلاین او یوازې لوستلو محلي پلټنه د شبکې لارو، فایروال، DNS، محلي کلاینټ نښو، د ټیلیمیټري سویچونو او MCP پلونو لپاره د درې حالته لنډیز او پینل سره."
+        },
+        "prs": {
+          "displayName": "بررسی مرز حریم خصوصی",
+          "description": "بررسی آفلاین و فقط‌خواندنی مسیرهای شبکه، فایروال، DNS، آثار کلاینت‌های محلی، کلیدهای جلوگیری از تله‌متری و پل‌های MCP با خلاصه سه‌حالته و نمای پنل."
+        },
+        "am": {
+          "displayName": "የግላዊነት ወሰን ፍተሻ",
+          "description": "ከመስመር ውጭ ለንባብ ብቻ የሚሰራ የአውታረ መረብ መንገድ፣ ፋየርዎል፣ DNS፣ የአካባቢ ደንበኛ ዱካዎች እና የMCP ድልድይ ፍተሻ ከሶስት-ሁኔታ ማጠቃለያ እና ፓነል ጋር።"
+        },
+        "so": {
+          "displayName": "Hantidhawrka Xadka Sirta",
+          "description": "Baaritaan khadka ka baxsan oo akhris keliya ah oo eega jidadka shabakadda, firewall-ka, DNS, raadadka barnaamijyada maxalliga ah iyo buundooyinka MCP iyadoo leh kooban saddex-xaaladood iyo bog muuqaal ah."
+        },
+        "ti": {
+          "displayName": "ምርመራ ደረት ብሕትውና",
+          "description": "ብዘይ ኢንተርነት ንንባብ ጥራይ ዝሰርሕ ምርመራ መስመር መርበብ፣ ፋየርዎል፣ DNS፣ ኣሰር ከባብያዊ ክላየንትን ድልድላት MCPን ምስ ሰለስተ-ኩነታት ጽማቝን ፓነልን።"
+        },
+        "fr": {
+          "displayName": "Audit de confidentialité",
+          "description": "Audit local hors ligne en lecture seule des routes, du pare-feu, du DNS, des traces clientes locales, des options anti-télémétrie et des ponts MCP avec synthèse à trois états et panneau."
+        }
+      },
+      "displayName": "Privacy Boundary Audit",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "categories": [
+        "system",
+        "network"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "audit",
+            "command": [
+              "python3",
+              "-X",
+              "utf8",
+              "server.py"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "dashboard",
+            "title": "Privacy Audit",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "audit"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "source": {
+        "project": "cross-platform-privacy-environment-kit",
+        "version": "0.4.1",
+        "license": "MIT",
+        "url": "https://github.com/rumpelpalmour757-lgtm/cross-platform-privacy-environment-kit"
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/privacy-boundary-audit/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/privacy-boundary-audit-0.1.0.tar.gz",
+      "sha256": "00d7d6d90ba88dfc5f70d69d0a1c02e6b61cb7e5e28df5b61f20ae9e86cfb2bd",
+      "bytes": 49848
+    },
+    {
       "name": "sqlite",
       "version": "0.1.1",
       "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
