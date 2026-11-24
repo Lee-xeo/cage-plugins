@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN" data-scheme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Audit</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l7 3v5.5c0 4.5-3 7.8-7 9.5-4-1.7-7-5-7-9.5V6l7-3z"/>
+          <path d="M9 12.2l2 2 4.2-4.4"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-row">
+          <h1 id="ui-title">隐私边界体检</h1>
+          <span class="badge badge-neutral" id="ui-scope-pill">离线 · 只读脱敏</span>
+        </div>
+        <p class="subtitle" id="ui-subtitle">核查宿主机路由、防火墙、DNS、本地客户端痕迹与 MCP 桥接边界</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="btn-full-audit">运行完整体检</button>
+      <button type="button" class="btn btn-ghost" id="btn-quick-audit">快速边界检查</button>
+      <button type="button" class="btn btn-ghost" id="btn-copy-summary" disabled>复制脱敏摘要</button>
+    </div>
+  </header>
+
+  <section id="status-banner" class="banner banner-info" hidden></section>
+
+  <section class="kpi-grid" aria-label="Tri-state summary">
+    <article class="kpi-card tone-pass">
+      <span class="kpi-label" id="kpi-pass-label">已通过 (pass)</span>
+      <strong class="kpi-value" id="kpi-pass">—</strong>
+      <span class="kpi-meta" id="kpi-pass-sub">本机观测或配置满足预期</span>
+    </article>
+    <article class="kpi-card tone-gap">
+      <span class="kpi-label" id="kpi-gap-label">存在缺口 (gap)</span>
+      <strong class="kpi-value" id="kpi-gap">—</strong>
+      <span class="kpi-meta" id="kpi-gap-sub">建议优先核对或补齐</span>
+    </article>
+    <article class="kpi-card tone-unknown">
+      <span class="kpi-label" id="kpi-unknown-label">未知盲区 (unknown)</span>
+      <strong class="kpi-value" id="kpi-unknown">—</strong>
+      <span class="kpi-meta" id="kpi-unknown-sub">离线工具无法证实，不等于通过</span>
+    </article>
+    <article class="kpi-card tone-host">
+      <span class="kpi-label" id="kpi-host-label">宿主机语境</span>
+      <strong class="kpi-value kpi-value-sm" id="kpi-host">待体检</strong>
+      <span class="kpi-meta" id="kpi-host-sub">点击上方按钮运行只读检查</span>
+    </article>
+  </section>
+
+  <section class="callout" id="blindspot-callout">
+    <strong id="callout-title">证据边界提醒：</strong>
+    <span id="callout-body">本面板完全离线且只读，不会修改系统配置或发送任何网络请求。外部出口 IP 信誉、运行态图形/TPM 健康度及平台地区政策固定标为 unknown，切勿将其视为已通过。</span>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Audit views">
+    <button type="button" class="tab is-active" role="tab" aria-selected="true" data-tab="checks" id="tab-checks">十项三态体检</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="boundary" id="tab-boundary">客户端与 MCP 边界</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="triage" id="tab-triage">网页登录分步排查</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="json" id="tab-json">脱敏 JSON</button>
+  </nav>
+
+  <main class="panel-wrap">
+    <section class="panel" id="panel-checks" role="tabpanel">
+      <div class="filter-bar" id="filter-bar">
+        <button type="button" class="chip is-active" data-filter="all" id="filter-all">全部</button>
+        <button type="button" class="chip" data-filter="gap" id="filter-gap">存在缺口</button>
+        <button type="button" class="chip" data-filter="unknown" id="filter-unknown">未知盲区</button>
+        <button type="button" class="chip" data-filter="pass" id="filter-pass">已通过</button>
+        <button type="button" class="chip" data-filter="observed_local" id="filter-observed">本机观测</button>
+        <button type="button" class="chip" data-filter="static_config" id="filter-static">静态配置</button>
+        <button type="button" class="chip" data-filter="external_blind_spot" id="filter-external">外部盲区</button>
+      </div>
+      <div id="checks-empty" class="empty-card">
+        <h2 id="empty-title">尚未运行本机只读体检</h2>
+        <p id="empty-desc">点击“运行完整体检”一次采集宿主机路由、防火墙、DNS 与本地客户端边界；或点击“快速边界检查”在 1 秒内仅核查本机时区、客户端痕迹与 MCP 数量。</p>
+      </div>
+      <div id="checks-list" class="checks-list" hidden></div>
+    </section>
+
+    <section class="panel" id="panel-boundary" role="tabpanel" hidden>
+      <div id="boundary-empty" class="empty-card">
+        <h2 id="boundary-empty-title">暂无客户端边界数据</h2>
+        <p id="boundary-empty-desc">运行“完整体检”或“快速边界检查”后，这里将展示宿主机时区/语言、本地客户端痕迹、5 项 CLI 防后台外联开关与本地 MCP 桥接统计。</p>
+      </div>
+      <div id="boundary-content" class="boundary-grid" hidden>
+        <article class="card">
+          <h3 id="sec-host-env">宿主机环境与客户端痕迹</h3>
+          <dl class="kv-list" id="kv-host-env"></dl>
+        </article>
+        <article class="card">
+          <h3 id="sec-cli-switches">CLI 5 项防后台外联开关</h3>
+          <div class="switch-list" id="cli-switch-list"></div>
+        </article>
+        <article class="card">
+          <h3 id="sec-mcp-bridges">本地 MCP 桥接与环境变量标记</h3>
+          <dl class="kv-list" id="kv-mcp-env"></dl>
+        </article>
+        <article class="card">
+          <h3 id="sec-boundary-notes">脱敏边界提醒</h3>
+          <ul class="notes-list" id="boundary-notes"></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-triage" role="tabpanel" hidden>
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h3 id="triage-title">网页登录卡在哪一步？</h3>
+            <p class="muted" id="triage-lead">先记录首次出现提示的时间（含时区）、使用的客户端和提示原文；时间不详时明确记为“未知”。</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-triage">复制排查模板</button>
+        </div>
+        <div id="triage-stages" class="triage-list"></div>
+        <div class="redaction-grid" id="triage-redaction"></div>
+      </article>
+    </section>
+
+    <section class="panel" id="panel-json" role="tabpanel" hidden>
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h3 id="json-title">脱敏原始观测数据</h3>
+            <p class="muted" id="json-lead">已省略路径、用户名、密钥、节点凭据与具体 MCP 命令，仅保留布尔值、计数与状态摘要。</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-json" disabled>复制 JSON</button>
+        </div>
+        <pre class="json-view" id="json-output">{}</pre>
+      </article>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="foot-timestamp">尚未采集</span>
+    <span id="foot-meta">Privacy Boundary Audit v0.1.0 · MIT · 100% 离线只读</span>
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
