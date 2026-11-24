@@ -533,12 +533,16 @@ def running_apps():
 
 # Apps no tool here touches, whatever policy.json says: they show the
 # questions that approve these very tools, and the system's security prompts.
-PROTECTED_BUNDLES = {"io.github.lee-xeo.claude-cage", "com.apple.SecurityAgent",
-                     "com.apple.LocalAuthentication.UIAgent", "com.apple.UserNotificationCenter",
-                     "com.apple.coreservices.uiagent", "com.apple.accessibility.universalAccessAuthWarn",
-                     "com.apple.loginwindow", "com.apple.ScreenSaver.Engine"}
-PROTECTED_PROGRAMS = {"ClaudeOverlay", "osascript", "SecurityAgent", "coreautha", "universalAccessAuthWarn", "UserNotificationCenter",
-                      "loginwindow", "CoreServicesUIAgent", "CageUpdateInstaller"}
+PROTECTED_BUNDLES = {"io.github.lee-xeo.claude-cage", "com.apple.securityagent",
+                     "com.apple.localauthentication.uiagent", "com.apple.usernotificationcenter",
+                     "com.apple.coreservices.uiagent", "com.apple.accessibility.universalaccessauthwarn",
+                     "com.apple.loginwindow", "com.apple.screensaver.engine"}
+PROTECTED_PROGRAMS = {"claudeoverlay", "claudeoverlay-arm64", "claudeoverlay-x64", "osascript", "securityagent",
+                      "coreautha", "universalaccessauthwarn", "usernotificationcenter", "loginwindow",
+                      "coreservicesuiagent", "cageupdateinstaller"}
+HOST_HELPER_BUNDLES = {"com.apple.webkit.networking", "com.apple.webkit.gpu", "com.apple.webkit.webcontent",
+                       "com.apple.safariplatformsupport.helper"}
+HOST_NAME_WORD = re.compile(r"(?<![a-z0-9])cage(?![a-z0-9])", re.I)
 DEFAULT_POLICY = {
     "click_only": ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.*", "com.mitchellh.ghostty",
                    "net.kovidgoyal.kitty", "org.alacritty", "io.alacritty", "com.github.wez.wezterm", "co.zeit.hyper",
@@ -587,11 +591,18 @@ def listed_in(bundle, patterns):
 
 
 def protected(app):
-    if app["bundle_id"] in PROTECTED_BUNDLES or app["bundle_id"].startswith("io.github.lee-xeo."):
+    bundle = (app.get("bundle_id") or "").lower()
+    if bundle in PROTECTED_BUNDLES or bundle.startswith("io.github.lee-xeo."):
         return True
-    if os.path.basename(app["executable"]) in PROTECTED_PROGRAMS or app["name"] in PROTECTED_PROGRAMS:
+    name = app.get("name") or ""
+    if bundle in HOST_HELPER_BUNDLES and HOST_NAME_WORD.search(name):
         return True
-    return "/Cage.app/" in app["path"] + "/" or "/Cage.app/" in app["executable"]
+    exe_name = os.path.basename(app.get("executable") or "").lower()
+    if exe_name in PROTECTED_PROGRAMS or name.lower() in PROTECTED_PROGRAMS:
+        return True
+    path = (app.get("path") or "").lower()
+    executable = (app.get("executable") or "").lower()
+    return "/cage.app/" in path + "/" or "/cage.app/" in executable
 
 
 def access_of(app, rules=None):
@@ -631,8 +642,13 @@ def lookup_app(query, apps=None):
         if len(found) == 1:
             return found[0]
         if found:
+            visible = [app for app in found if not protected(app)]
+            if not visible:
+                return found[0]
+            if len(visible) == 1:
+                return visible[0]
             raise Refused("several running apps match %s: %s. Give the bundle identifier." % (quoted(wanted), "; ".join(
-                "%s (%s, pid %d)" % (a["name"], a["bundle_id"] or "no bundle identifier", a["pid"]) for a in found[:8])))
+                "%s (%s, pid %d)" % (a["name"], a["bundle_id"] or "no bundle identifier", a["pid"]) for a in visible[:8])))
     return None
 
 
@@ -727,10 +743,13 @@ def remember(key, answer):
 def consent_of(app, data=None):
     """allowed, refused or ask: what the user has said about Claude using this app."""
     key = app_key(app)
+    low = key.lower()
     data = data or grants()
-    if key in data["never"]:
+    if any(item.lower() == low for item in data["never"]):
         return "refused"
-    if key in data["always"] or _hour_grants.get(key, 0) > time.time():
+    now = time.time()
+    if any(item.lower() == low for item in data["always"]) or any(
+            k.lower() == low and until > now for k, until in _hour_grants.items()):
         return "allowed"
     return "ask"
 
@@ -800,8 +819,8 @@ def consent(app):
 def admit(app):
     app["access"] = access_of(app)
     if app["access"] == "protected":
-        raise Refused("%s cannot be used through these tools: it shows the user's permission questions and security "
-                      "prompts, which only the user may answer." % app["name"])
+        raise Refused("that app cannot be used through these tools: it shows permission questions or security "
+                      "prompts, which only the user may answer.")
     if app["access"] == "blocked":
         raise Refused("%s is blocked for these tools because it keeps passwords or other secrets (policy.json beside "
                       "the tools lists it). Ask the user to do this part themselves." % app["name"])
@@ -1288,6 +1307,10 @@ TABLES = {"AXTable", "AXOutline", "AXList", "AXGrid", "AXBrowser"}
 GATHER = {"AXRow", "AXLink", "AXButton", "AXMenuButton", "AXRadioButton", "AXMenuItem"}
 
 
+def is_secure(values):
+    return values.get("AXRole") == "AXSecureTextField" or values.get("AXSubrole") == "AXSecureTextField"
+
+
 class Walker(object):
     """Reads a window's elements for app_state, numbering those worth listing."""
 
@@ -1422,7 +1445,10 @@ class Walker(object):
         return " ".join(words)
 
     def matches(self, values, name):
+        secure = is_secure(values)
         for key in ("AXValue", "AXIdentifier", "AXPlaceholderValue", "AXHelp", "AXURL", "AXDescription", "AXTitle"):
+            if key == "AXValue" and secure:
+                continue
             if key == "AXURL" and values.get("AXRole") != "AXLink":
                 continue  # an item of a file list holds its whole path there
             found = values.get(key)
@@ -1609,18 +1635,18 @@ def tool_app_state(arguments):
             lines.append("(nothing in this window matches)")
     focused = ax_get(application, "AXFocusedUIElement")
     if isinstance(focused, Element):
+        focused_values, _ = ax_many(focused, BASE)
         number = view.find(focused)
         if number is None:
-            values, _ = ax_many(focused, BASE)
-            role = values.get("AXRole") or ""
-            line = Walker(view, 1).entry(values, role, clean(values.get("AXTitle")) or clean(
-                values.get("AXDescription")), "") or ROLE_NAMES.get(role, role[2:].lower() or "element")
+            role = focused_values.get("AXRole") or ""
+            line = Walker(view, 1).entry(focused_values, role, clean(focused_values.get("AXTitle")) or clean(
+                focused_values.get("AXDescription")), "") or ROLE_NAMES.get(role, role[2:].lower() or "element")
             number = view.add(focused, line)
         span = ax_get(focused, "AXSelectedTextRange")
         where = ""
         if isinstance(span, dict):
             if span.get("length"):
-                picked = ax_get(focused, "AXSelectedText")
+                picked = None if is_secure(focused_values) else ax_get(focused, "AXSelectedText")
                 where = "; selected: characters %d to %d%s" % (span["location"], span["location"] + span["length"],
                                                               " " + quoted(short(picked, 60)) if picked else "")
             else:
@@ -1848,6 +1874,7 @@ def bring_front(app, window=None):
 def covering(app, point):
     """The app whose window is on top at a point, when it is not this app."""
     process = _overlay["process"]
+    hidden_pids = None
     for window in screen_windows():
         if window["alpha"] is not None and window["alpha"] <= 0 or not 0 <= window["layer"] < 1000:
             continue
@@ -1857,7 +1884,13 @@ def covering(app, point):
                 abs(window["frame"][2] - d[2]) < 2 and abs(window["frame"][3] - d[3]) < 2 for d in displays()):
             continue  # the Dock's clear layer over the whole screen, which lets clicks through
         if inside(point, window["frame"]):
-            return None if window["pid"] == app["pid"] else (window["owner"] or "another app")
+            if window["pid"] == app["pid"]:
+                return None
+            if hidden_pids is None:
+                hidden_pids = {a["pid"] for a in running_apps() if protected(a)}
+            if window["pid"] in hidden_pids:
+                return "another app"
+            return window["owner"] or "another app"
     return None
 
 
@@ -3062,7 +3095,10 @@ def tool_app_select_text(arguments):
     view = need_view(app)
     number = arguments.get("element")
     element = element_at(view, number)
-    show(app, T("选择文字", "Selecting text"), center_of(fresh(element, number)), "type")
+    values = fresh(element, number)
+    if is_secure(values):
+        raise Refused("cannot read or select text inside a password field")
+    show(app, T("选择文字", "Selecting text"), center_of(values), "type")
     wanted = arguments.get("text")
     if not isinstance(wanted, str):
         raise Refused("text is the text to select, written as it is in the element")
@@ -3469,7 +3505,7 @@ def installed_apps():
     return apps
 
 
-BUNDLE_ID = re.compile(r"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+){2,}$")
+BUNDLE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9][A-Za-z0-9_-]*){2,}$")
 
 
 def resolve_installed(wanted):
@@ -3488,8 +3524,13 @@ def resolve_installed(wanted):
         if len(found) == 1:
             return found[0]
         if found:
+            visible = [a for a in found if not protected(a)]
+            if not visible:
+                return found[0]
+            if len(visible) == 1:
+                return visible[0]
             raise Refused("several installed apps match %s: %s. Give the bundle identifier." % (quoted(wanted), "; ".join(
-                "%s (%s)" % (a["name"], a["bundle_id"] or a["path"]) for a in found[:8])))
+                "%s (%s)" % (a["name"], a["bundle_id"] or a["path"]) for a in visible[:8])))
     raise Refused("no installed app matches %s. list_apps with installed true shows what is installed." % quoted(wanted))
 
 
@@ -3959,7 +4000,7 @@ def paste_attempts(app, view, in_front, arrived):
 
 
 def paste_as_text(app, element, words, kind, target):
-    plain = words if kind == "text" else plain_of_html(markdown_html(words) if kind == "md" else words)
+    plain = words if kind == "text" else plain_of_html(markdown_html(words) if kind == "md" else safe_html(words))
     if kind == "md":
         plain = "\n" * (len(words) - len(words.lstrip("\n"))) + plain + "\n" * (len(words) - len(words.rstrip("\n")))
     if element is not None and insert_text(element, plain):
@@ -4002,7 +4043,11 @@ def tool_app_batch(arguments):
             seconds = given.get("seconds", 1)
             if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or not 0 <= seconds <= 10:
                 raise Refused("wait takes seconds from 0 to 10")
-            time.sleep(seconds)
+            try:
+                pause(seconds)
+            except Refused as refusal:
+                report.append("%d. %s Stopped here." % (number, refusal))
+                return {"content": ([picture] if picture else []) + [text("\n".join(report))], "isError": True}
             report.append("%d. waited %g seconds" % (number, seconds))
             continue
         if name not in HANDLERS or name == "app_batch":

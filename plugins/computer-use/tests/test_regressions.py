@@ -350,5 +350,49 @@ class Clipboard(Patched):
         self.assertEqual(self.held(), "before")
 
 
+class ProtectedApps(Patched):
+    def _app(self, name, bundle_id, pid=100, policy=0, path="", executable="", file=""):
+        return {"pid": pid, "name": name, "bundle_id": bundle_id, "policy": policy,
+                "path": path, "executable": executable, "file": file or name}
+
+    def test_protected_matches_helpers_and_case_variants(self):
+        self.assertTrue(ac.protected(self._app("Cage", "IO.GITHUB.LEE-XEO.CLAUDE-CAGE")))
+        self.assertTrue(ac.protected(self._app("Security", "com.apple.securityagent")))
+        self.assertTrue(ac.protected(self._app("Overlay", "", executable="/x/ClaudeOverlay-arm64")))
+        self.assertTrue(ac.protected(self._app("Overlay", "", executable="/x/ClaudeOverlay-x64")))
+        self.assertTrue(ac.protected(self._app("Cage Networking", "com.apple.WebKit.Networking", policy=1)))
+        self.assertTrue(ac.protected(self._app("Cage Graphics and Media", "com.apple.WebKit.GPU", policy=1)))
+        self.assertTrue(ac.protected(self._app("Cage Web Content", "com.apple.WebKit.WebContent", policy=1)))
+        self.assertTrue(ac.protected(self._app("AutoFill (Cage)", "com.apple.SafariPlatformSupport.Helper", policy=2)))
+        self.assertFalse(ac.protected(self._app("Other Web Content", "com.apple.WebKit.WebContent", policy=1)))
+        self.assertFalse(ac.protected(self._app("Package Manager", "com.example.pkg")))
+
+    def test_lookup_and_resolve_do_not_leak_protected_apps(self):
+        cage = self._app("Cage", "io.github.lee-xeo.claude-cage", pid=10, path="/Applications/Cage.app")
+        calc = self._app("Calculator", "com.apple.calculator", pid=11, path="/System/Applications/Calculator.app")
+        cal = self._app("Calendar", "com.apple.iCal", pid=12, path="/System/Applications/Calendar.app")
+        with self.assertRaises(ac.Refused) as ctx:
+            ac.lookup_app("c", apps=[cage, calc, cal])
+        self.assertNotIn("cage", str(ctx.exception).lower())
+        self.assertNotIn("lee-xeo", str(ctx.exception).lower())
+        self.assertEqual(ac.lookup_app("ca", apps=[cage, calc])["bundle_id"], "com.apple.calculator")
+
+        self.patch("installed_apps", lambda: [cage, calc, cal])
+        with self.assertRaises(ac.Refused) as ctx:
+            ac.resolve_installed("c")
+        self.assertNotIn("cage", str(ctx.exception).lower())
+        self.assertNotIn("lee-xeo", str(ctx.exception).lower())
+
+        with self.assertRaises(ac.Refused) as ctx:
+            ac.admit(dict(cage))
+        self.assertNotIn("cage", str(ctx.exception).lower())
+
+    def test_batch_wait_stops_on_esc(self):
+        threading.Timer(0.1, stop_now).start()
+        result = ac.tool_app_batch({"steps": [{"tool": "wait", "arguments": {"seconds": 3}}]})
+        self.assertTrue(result["isError"])
+        self.assertIn("Esc", result["content"][0]["text"])
+
+
 if __name__ == "__main__":
     unittest.main()
