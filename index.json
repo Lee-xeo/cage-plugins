@@ -640,6 +640,107 @@
       "bytes": 14604
     },
     {
+      "name": "computer-use",
+      "version": "0.2.7",
+      "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "author": {
+        "name": "wudi341"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "电脑操作",
+          "description": "在后台查看并操作这台电脑上的应用，每个应用都会先征求用户同意，不会改变用户当前在前台的应用。"
+        },
+        "zh-TW": {
+          "displayName": "電腦操作",
+          "description": "在背景檢視並操作這台電腦上的應用程式，每個應用程式都會先徵求使用者同意，不會改變使用者目前在前景的應用程式。"
+        },
+        "ru": {
+          "displayName": "Работа с приложениями",
+          "description": "Видит приложения этого компьютера и работает в них в фоновом режиме, каждый раз спрашивая разрешение пользователя, не меняя приложение, которое находится на переднем плане."
+        },
+        "ar": {
+          "displayName": "التحكم بالتطبيقات",
+          "description": "يعرض تطبيقات هذا الكمبيوتر ويعمل عليها في الخلفية، ويطلب إذن المستخدم قبل كل تطبيق، دون تغيير التطبيق الظاهر في المقدمة."
+        },
+        "fa": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این رایانه را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "ko": {
+          "displayName": "앱 사용",
+          "description": "이 컴퓨터의 앱을 백그라운드에서 보고 조작하며, 각 앱마다 먼저 사용자에게 허락을 구하고 사용자가 앞에 두고 있는 앱은 바꾸지 않습니다."
+        },
+        "es": {
+          "displayName": "Uso de aplicaciones",
+          "description": "Ve y utiliza las aplicaciones de este ordenador en segundo plano, pidiendo permiso al usuario antes de cada aplicación y sin cambiar la aplicación que está en primer plano."
+        },
+        "my": {
+          "displayName": "အက်ပ်များ အသုံးပြုခြင်း",
+          "description": "ဤကွန်ပျူတာရှိ အက်ပ်များကို နောက်ကွယ်တွင် ကြည့်ရှုအသုံးပြုပြီး အက်ပ်တစ်ခုစီမတိုင်မီ အသုံးပြုသူ၏ ခွင့်ပြုချက်ကို တောင်းခံကာ ရှေ့ဆုံးရှိ အက်ပ်ကို မပြောင်းလဲပါ။"
+        },
+        "be": {
+          "displayName": "Праца з праграмамі",
+          "description": "Бачыць праграмы гэтага камп’ютара і працуе з імі ў фонавым рэжыме, кожны раз пытаючыся дазволу ў карыстальніка і не змяняючы праграму, якая знаходзіцца на пярэднім плане."
+        },
+        "ps": {
+          "displayName": "د اپلیکیشنونو کارول",
+          "description": "د دې کمپیوټر اپلیکیشنونه په شاليد کې ګوري او په کې کار کوي، د هر اپلیکیشن دمخه له کاروونکي اجازه غواړي، او هغه اپلیکیشن نه بدلوي چې مخکې دی."
+        },
+        "prs": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این کمپیوتر را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "am": {
+          "displayName": "መተግበሪያዎችን መጠቀም",
+          "description": "የዚህን ኮምፒውተር መተግበሪያዎች በጀርባ ያያል ይጠቀማልም፤ ከእያንዳንዱ መተግበሪያ በፊት ተጠቃሚውን ፈቃድ ይጠይቃል፤ ፊት ያለውንም መተግበሪያ አይቀይርም።"
+        },
+        "so": {
+          "displayName": "Isticmaalka codsiyada",
+          "description": "Wuxuu eegaa oo ka shaqeeyaa codsiyada kombuyuutarkan asalka dambe, isagoo isticmaalaha ka codsanaya ogolaansho codsi kasta ka hor, mana beddelo codsiga hore u taagan."
+        },
+        "ti": {
+          "displayName": "መተግበሪታት ምጥቃም",
+          "description": "ናይዚ ኮምፒተር መተግበሪታት ኣብ ድሕሪት የራኽብን ይጥቀምን፤ ቅድሚ ነፍሲ ወከፍ መተግበሪ ንተጠቃሚ ፍቓድ ይሓትት፤ ኣብ ቅድሚት ዘሎ መተግበሪ ድማ ኣይቐይርን።"
+        },
+        "fr": {
+          "displayName": "Utilisation des applications",
+          "description": "Voit et utilise les applications de cet ordinateur en arrière-plan, en demandant l’accord de l’utilisateur avant chaque application, sans changer l’application au premier plan."
+        }
+      },
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.7.tar.gz",
+      "sha256": "b39ed6de967031fa50bd53301ef92b779c6a153cb485bd28ddfcd1d981721387",
+      "bytes": 185826
+    },
+    {
       "name": "desktop-control",
       "version": "0.3.2",
       "description": "Sees the screen and uses the mouse and keyboard of this computer.",
@@ -1444,127 +1545,6 @@
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/powerpoint-slides-0.2.1.tar.gz",
       "sha256": "85ccbad43546f572b914e2d97a7ce4f5ed5672677b3d71810c1693c0a5dd927a",
       "bytes": 27747
-    },
-    {
-      "name": "privacy-boundary-audit",
-      "version": "0.1.0",
-      "description": "Offline read-only host network, firewall, DNS, local client footprint, and tri-state privacy boundary audit with a workbench view.",
-      "permissions": [
-        "files",
-        "commands"
-      ],
-      "author": {
-        "name": "rumpelpalmour757-lgtm"
-      },
-      "i18n": {
-        "zh-CN": {
-          "displayName": "隐私边界体检",
-          "description": "离线只读体检本机路由、防火墙、DNS、本地客户端痕迹、防后台外联开关与本地 MCP 桥接，输出三态核验摘要与侧栏工作台视图。"
-        },
-        "zh-TW": {
-          "displayName": "隱私邊界體檢",
-          "description": "離線唯讀體檢本機路由、防火牆、DNS、本地用戶端痕跡、防背景外聯開關與本地 MCP 橋接，輸出三態核驗摘要與側欄工作台檢視。"
-        },
-        "ru": {
-          "displayName": "Аудит границ приватности",
-          "description": "Автономный аудит хоста только для чтения: маршруты, брандмауэр, DNS, следы локальных клиентов, флаги телеметрии и мосты MCP с трёхсостоятельной сводкой и панелью."
-        },
-        "ar": {
-          "displayName": "تدقيق حدود الخصوصية",
-          "description": "فحص محلي غير متصل للقراءة فقط لمسارات الشبكة وجدار الحماية وDNS وآثار العملاء المحليين ومفاتيح منع القياس عن بُعد وجسور MCP مع ملخص ثلاثي الحالات."
-        },
-        "fa": {
-          "displayName": "ممیزی مرز حریم خصوصی",
-          "description": "بررسی آفلاین و فقط‌خواندنی مسیرهای شبکه، فایروال، DNS، ردپای کلاینت‌های محلی، کلیدهای منع تله‌متری و پل‌های MCP با خلاصه سه‌حالته و نمای کارگاه."
-        },
-        "ko": {
-          "displayName": "프라이버시 경계 점검",
-          "description": "호스트 경로, 방화벽, DNS, 로컬 클라이언트 흔적, 텔레메트리 차단 스위치 및 로컬 MCP 브리지를 오프라인 읽기 전용으로 점검하고 3상태 요약과 패널 뷰를 제공합니다."
-        },
-        "es": {
-          "displayName": "Auditoría de privacidad",
-          "description": "Auditoría local sin conexión y de solo lectura de rutas, cortafuegos, DNS, rastros de clientes locales, interruptores de telemetría y puentes MCP con resumen triestado y panel."
-        },
-        "my": {
-          "displayName": "ကိုယ်ရေးလုံခြုံမှု နယ်နိမိတ်စစ်ဆေးမှု",
-          "description": "အော့ဖ်လိုင်း ဖတ်ရန်သီးသန့်ဖြင့် စက်၏လမ်းကြောင်း၊ ဖိုင်းယားဝေါလ်၊ DNS၊ ဒေသခံကလိုင်းယင့်အမှတ်အသားနှင့် MCP ချိတ်ဆက်မှုများကို စစ်ဆေးပြီး အခြေအနေသုံးမျိုးအနှစ်ချုပ်ပြသသည်။"
-        },
-        "be": {
-          "displayName": "Аўдыт межаў прыватнасці",
-          "description": "Аўтаномны аўдыт хоста толькі для чытання: маршруты, брандмаўэр, DNS, сляды лакальных кліентаў, сцягі тэлеметрыі і масты MCP з трохстаннай зводкай і панэллю."
-        },
-        "ps": {
-          "displayName": "د محرمیت پولو پلټنه",
-          "description": "آفلاین او یوازې لوستلو محلي پلټنه د شبکې لارو، فایروال، DNS، محلي کلاینټ نښو، د ټیلیمیټري سویچونو او MCP پلونو لپاره د درې حالته لنډیز او پینل سره."
-        },
-        "prs": {
-          "displayName": "بررسی مرز حریم خصوصی",
-          "description": "بررسی آفلاین و فقط‌خواندنی مسیرهای شبکه، فایروال، DNS، آثار کلاینت‌های محلی، کلیدهای جلوگیری از تله‌متری و پل‌های MCP با خلاصه سه‌حالته و نمای پنل."
-        },
-        "am": {
-          "displayName": "የግላዊነት ወሰን ፍተሻ",
-          "description": "ከመስመር ውጭ ለንባብ ብቻ የሚሰራ የአውታረ መረብ መንገድ፣ ፋየርዎል፣ DNS፣ የአካባቢ ደንበኛ ዱካዎች እና የMCP ድልድይ ፍተሻ ከሶስት-ሁኔታ ማጠቃለያ እና ፓነል ጋር።"
-        },
-        "so": {
-          "displayName": "Hantidhawrka Xadka Sirta",
-          "description": "Baaritaan khadka ka baxsan oo akhris keliya ah oo eega jidadka shabakadda, firewall-ka, DNS, raadadka barnaamijyada maxalliga ah iyo buundooyinka MCP iyadoo leh kooban saddex-xaaladood iyo bog muuqaal ah."
-        },
-        "ti": {
-          "displayName": "ምርመራ ደረት ብሕትውና",
-          "description": "ብዘይ ኢንተርነት ንንባብ ጥራይ ዝሰርሕ ምርመራ መስመር መርበብ፣ ፋየርዎል፣ DNS፣ ኣሰር ከባብያዊ ክላየንትን ድልድላት MCPን ምስ ሰለስተ-ኩነታት ጽማቝን ፓነልን።"
-        },
-        "fr": {
-          "displayName": "Audit de confidentialité",
-          "description": "Audit local hors ligne en lecture seule des routes, du pare-feu, du DNS, des traces clientes locales, des options anti-télémétrie et des ponts MCP avec synthèse à trois états et panneau."
-        }
-      },
-      "displayName": "Privacy Boundary Audit",
-      "platforms": [
-        "windows",
-        "darwin",
-        "linux"
-      ],
-      "categories": [
-        "system",
-        "network"
-      ],
-      "kind": "host",
-      "engines": {
-        "cage": ">=0.2.0"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "audit",
-            "command": [
-              "python3",
-              "-X",
-              "utf8",
-              "server.py"
-            ]
-          }
-        ],
-        "views": [
-          {
-            "id": "dashboard",
-            "title": "Privacy Audit",
-            "icon": "icon.svg",
-            "entry": "view/index.html",
-            "server": "audit"
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "cross-platform-privacy-environment-kit",
-        "version": "0.4.1",
-        "license": "MIT",
-        "url": "https://github.com/rumpelpalmour757-lgtm/cross-platform-privacy-environment-kit"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/privacy-boundary-audit/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/privacy-boundary-audit-0.1.0.tar.gz",
-      "sha256": "e524413cb4ac7a7cb503ba3e12dee26ee6afb42106db71d0de6aef202048e23f",
-      "bytes": 55797
     },
     {
       "name": "sqlite",
