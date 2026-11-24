@@ -2,6 +2,124 @@
   "version": 1,
   "plugins": [
     {
+      "name": "agent-mesh",
+      "version": "1.0.0",
+      "description": "Background multi-AI orchestration hub. Bind custom reasoning APIs, local Codex projects, multi-instance desktop assistants, and optional Antigravity projects per workspace for parallel collaboration with paginated history.",
+      "permissions": [
+        "files",
+        "commands",
+        "network"
+      ],
+      "author": {
+        "name": "pomelopaw"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Agent Mesh",
+          "description": "多 AI 后台协作中心。支持按项目编组自定义推理 API 模型、本机 Codex、多账号桌面实例与可选的 Antigravity 项目，全程无鼠标干扰后台并行派单，并支持按日期分页回溯历史会话。"
+        },
+        "zh-TW": {
+          "displayName": "Agent Mesh",
+          "description": "多 AI 背景協作中心。支援依專案編組自訂推理 API 模型、本機 Codex、多帳號桌面實例與可選的 Antigravity 專案，全程無滑鼠干擾背景平行派單，並支援依日期分頁回溯歷史會話。"
+        },
+        "ru": {
+          "displayName": "Agent Mesh",
+          "description": "Фоновый центр совместной работы нескольких ИИ. Привязывайте к проектам собственные API-модели, локальный Codex, дополнительные настольные экземпляры и Antigravity с параллельным запуском и постраничной историей."
+        },
+        "ar": {
+          "displayName": "Agent Mesh",
+          "description": "مركز تنسيق خلفي لتعاون عدة نماذج ذكاء اصطناعي لكل مشروع، يدعم واجهات API المخصصة وCodex المحلي والنسخ المكتبية المتعددة وAntigravity مع سجل محادثات مقسم إلى صفحات."
+        },
+        "fa": {
+          "displayName": "Agent Mesh",
+          "description": "مرکز هماهنگی پس‌زمینه برای همکاری هم‌زمان چند هوش مصنوعی در هر پروژه؛ با پشتیبانی از مدل‌های API سفارشی، Codex محلی، نمونه‌های دسکتاپ متعدد و Antigravity همراه با تاریخچه صفحه‌بندی‌شده."
+        },
+        "ko": {
+          "displayName": "Agent Mesh",
+          "description": "백그라운드 멀티 AI 협업 허브입니다. 프로젝트별로 커스텀 추론 API 모델, 로컬 Codex, 다중 데스크톱 인스턴스, Antigravity를 묶어 병렬 작업을 실행하고 날짜별 페이지로 기록을 조회합니다."
+        },
+        "es": {
+          "displayName": "Agent Mesh",
+          "description": "Centro de orquestación multi-IA en segundo plano. Vincula APIs de razonamiento, Codex local, varias instancias de escritorio y Antigravity por proyecto con ejecución paralela e historial paginado."
+        },
+        "my": {
+          "displayName": "Agent Mesh",
+          "description": "နောက်ကွယ်တွင် AI မျိုးစုံပူးပေါင်းလုပ်ဆောင်နိုင်သော စင်တာဖြစ်ပြီး ပရောဂျက်အလိုက် API မော်ဒယ်များ၊ စက်တွင်း Codex၊ ဒက်စ်တော့အကောင့်များနှင့် Antigravity တို့ကို ချိတ်ဆက်ကာ မှတ်တမ်းများကို စာမျက်နှာခွဲ ကြည့်ရှုနိုင်သည်။"
+        },
+        "be": {
+          "displayName": "Agent Mesh",
+          "description": "Фонавы цэнтр супрацоўніцтва некалькіх ШІ. Прывязвайце да праектаў уласныя API-мадэлі, лакальны Codex, некалькі настольных экзэмпляраў і Antigravity з паралельным выкананнем і пастаронкавай гісторыяй."
+        },
+        "ps": {
+          "displayName": "Agent Mesh",
+          "description": "د څو مصنوعي ځیرکتیاوو شالید همغږۍ مرکز چې د هرې پروژې لپاره API ماډلونه، محلي Codex، څو ډیسکټاپ بېلګې او Antigravity نښلوي او د تاریخچې مخ‌پاڼې ښيي."
+        },
+        "prs": {
+          "displayName": "Agent Mesh",
+          "description": "مرکز هماهنگی پس‌زمینه برای همکاری چندین هوش مصنوعی در هر پروژه با پشتیبانی از مدل‌های API، Codex محلی، چندین نمونه دسکتاپ و Antigravity همراه با تاریخچه صفحه‌بندی‌شده."
+        },
+        "am": {
+          "displayName": "Agent Mesh",
+          "description": "ለእያንዳንዱ ፕሮጀክት ብጁ የAPI ሞዴሎችን፣ የአካባቢ Codex፣ በርካታ የዴስክቶፕ መገለጫዎችን እና Antigravityን በጀርባ በትይዩ የሚያስተባብር ባለብዙ AI ማዕከል ነው።"
+        },
+        "so": {
+          "displayName": "Agent Mesh",
+          "description": "Xarun isku-dubbarid AI badan oo gadaal ka shaqeysa. Ku xir mashruuc kasta moodallo API, Codex maxalli ah, iyo Antigravity iyadoo leh taariikh bogag u qaybsan."
+        },
+        "ti": {
+          "displayName": "Agent Mesh",
+          "description": "ንነፍሲ ወከፍ ፕሮጀክት API ሞዴላት፣ ከባብያዊ Codex፣ ብዙሓት ዴስክቶፕ መገለጺታትን Antigravityን ብድሕረ ባይታ ብሓባር ዘተሓባብር ማእከል ብዙሓት AI እዩ።"
+        },
+        "fr": {
+          "displayName": "Agent Mesh",
+          "description": "Hub d'orchestration multi-IA en arrière-plan. Associez par projet des modèles API personnalisés, Codex local, plusieurs instances de bureau et Antigravity avec exécution parallèle et historique paginé."
+        }
+      },
+      "displayName": "Agent Mesh",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "categories": [
+        "developer",
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "mesh",
+            "command": [
+              "python3",
+              "-X",
+              "utf8",
+              "server.py",
+              "--project-dir",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "panel",
+            "title": "Agent Mesh",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "mesh"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/agent-mesh/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/agent-mesh-1.0.0.tar.gz",
+      "sha256": "65778d551b50bafb7f45d3f5650d062f8368f689539218a3819af6c7b4660e45",
+      "bytes": 62499
+    },
+    {
       "name": "blender",
       "version": "0.1.1",
       "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
@@ -1533,8 +1651,8 @@
     },
     {
       "name": "system-status",
-      "version": "0.1.1",
-      "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
+      "version": "0.2.0",
+      "description": "Shows real-time CPU, memory, disk and network telemetry of the environment in a draggable translucent floating overlay and as a tool for Claude.",
       "permissions": [],
       "author": {
         "name": "Lee-xeo",
@@ -1543,63 +1661,63 @@
       "i18n": {
         "zh-CN": {
           "displayName": "系统状态",
-          "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+          "description": "以可拖动的半透明浮窗和 Claude 工具实时展示当前环境的 CPU、内存、磁盘与网络状态。"
         },
         "zh-TW": {
           "displayName": "系統狀態",
-          "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+          "description": "以可拖動的半透明浮窗與 Claude 工具即時顯示目前環境的 CPU、記憶體、磁碟與網路狀態。"
         },
         "ru": {
           "displayName": "Состояние системы",
-          "description": "Показывает нагрузку процессора, использование памяти и диска среды — для вас на отдельной странице и для Claude в виде инструмента."
+          "description": "Показывает в реальном времени загрузку процессора, памяти, диска и сети среды в перетаскиваемом полупрозрачном плавающем окне и как инструмент для Claude."
         },
         "ar": {
           "displayName": "حالة النظام",
-          "description": "يعرض حمل المعالج واستخدام الذاكرة والقرص في البيئة، لك في صفحة مستقلة ولـ Claude كأداة."
+          "description": "يعرض في الوقت الفعلي استخدام المعالج والذاكرة والقرص والشبكة في البيئة ضمن نافذة عائمة شبه شفافة قابلة للسحب وكأداة لـ Claude."
         },
         "fa": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و فضای دیسک محیط را هم در یک صفحه به شما و هم به صورت ابزار به Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل جابه‌جایی و همچنین به صورت ابزار به Claude نشان می‌دهد."
         },
         "ko": {
           "displayName": "시스템 상태",
-          "description": "환경의 프로세서 부하, 메모리 및 디스크 사용량을 전용 페이지와 Claude 도구로 보여줍니다."
+          "description": "환경의 실시간 CPU, 메모리, 디스크 및 네트워크 상태를 드래그 가능한 반투명 플로팅 창과 Claude 도구로 보여줍니다."
         },
         "es": {
           "displayName": "Estado del sistema",
-          "description": "Muestra la carga del procesador y el uso de memoria y disco del entorno, tanto en una página para ti como en una herramienta para Claude."
+          "description": "Muestra en tiempo real el uso de CPU, memoria, disco y red del entorno en una ventana flotante semitransparente arrastrable y como herramienta para Claude."
         },
         "my": {
           "displayName": "စနစ်အခြေအနေ",
-          "description": "ပတ်ဝန်းကျင်၏ ပရိုဆက်ဆာဝန်အား၊ မန်မိုရီနှင့် ဒစ်ခ်အသုံးပြုမှုကို သင့်အတွက် စာမျက်နှာတစ်ခုတွင်လည်းကောင်း Claude အတွက် ကိရိယာတစ်ခုအဖြစ်လည်းကောင်း ပြသသည်။"
+          "description": "ပတ်ဝန်းကျင်၏ CPU၊ မန်မိုရီ၊ ဒစ်ခ်နှင့် ကွန်ရက်အခြေအနေကို ဆွဲရွှေ့နိုင်သော တစ်ဝက်ဖောက်ထွင်းဝင်းဒိုးငယ်နှင့် Claude ကိရိယာအဖြစ် အချိန်နှင့်တစ်ပြေးညီ ပြသသည်။"
         },
         "be": {
           "displayName": "Стан сістэмы",
-          "description": "Паказвае нагрузку працэсара, выкарыстанне памяці і дыска асяроддзя — для вас на старонцы і для Claude як інструмент."
+          "description": "Паказвае ў рэальным часе загрузку працэсара, памяці, дыска і сеткі асяроддзя ў паўпразрыстым плавальным акне і як інструмент для Claude."
         },
         "ps": {
           "displayName": "د سیسټم حالت",
-          "description": "د چاپېریال د پروسېسر بار، حافظې او ډیسک کارونه ستاسو لپاره پر پاڼه او د Claude لپاره د وسیلې په توګه ښيي."
+          "description": "د چاپېریال د CPU، حافظې، ډیسک او شبکې ژوندۍ شمېرې په یوه د کش کولو وړ نیمه روڼه لامبو وهونکې کړکۍ کې او د Claude لپاره د وسیلې په توګه ښيي."
         },
         "prs": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و دیسک محیط را هم در یک صفحه برای شما و هم به شکل ابزار برای Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل انتقال و همچنان به شکل ابزار برای Claude نشان می‌دهد."
         },
         "am": {
           "displayName": "የስርዓት ሁኔታ",
-          "description": "የአካባቢውን የፕሮሰሰር ጫና፣ የማህደረ ትውስታ እና የዲስክ አጠቃቀም ለእርስዎ በገጽ ላይ እና ለClaude እንደ መሳሪያ ያሳያል።"
+          "description": "የአካባቢውን የቀጥታ CPU፣ ማህደረ ትውስታ፣ ዲስክ እና አውታረ መረብ ሁኔታ በሚጎተት ከፊል-ግልጽ ተንሳፋፊ መስኮት እና ለClaude እንደ መሳሪያ ያሳያል።"
         },
         "so": {
           "displayName": "Xaaladda Nidaamka",
-          "description": "Waxay muujisaa culayska processor-ka, isticmaalka xusuusta iyo diska ee deegaanka, adiga oo bog gaar ah ku arka iyo Claude oo qalab ahaan u adeegsada."
+          "description": "Waxay si toos ah u muujisaa isticmaalka CPU, xusuusta, diska iyo shabakadda ee deegaanka iyadoo ku jirta daaqad sabbeysa oo nus-muuqata oo la jiidi karo iyo qalab u ah Claude."
         },
         "ti": {
           "displayName": "ኩነታት ስርዓት",
-          "description": "ናይቲ ከባቢ ጽዕነት ፕሮሰሰር፡ ኣጠቓቕማ ዝኽርን ዲስክን ንዓኻ ኣብ ገጽ ንClaude ድማ ከም መሳርሒ የርኢ።"
+          "description": "ናይቲ ከባቢ ቀጥታዊ ኣጠቓቕማ CPU፡ ዝኽሪ፡ ዲስክን መርበብን ኣብ ዝጎተት ፍርቂ-ብሩህ ተንሳፋፊ መስኮትን ንClaude ከም መሳርሕን የርኢ።"
         },
         "fr": {
           "displayName": "État du système",
-          "description": "Affiche la charge du processeur ainsi que l'utilisation mémoire et disque de l'environnement, sur une page pour vous et comme outil pour Claude."
+          "description": "Affiche en temps réel la charge CPU, la mémoire, le disque et le réseau de l'environnement dans une fenêtre flottante translucide déplaçable et comme outil pour Claude."
         }
       },
       "displayName": "System Status",
@@ -1609,7 +1727,7 @@
       ],
       "kind": "guest",
       "engines": {
-        "cage": ">=0.1.8"
+        "cage": ">=0.2.0"
       },
       "contributes": {
         "mcpServers": [
@@ -1627,15 +1745,18 @@
             "title": "System Status",
             "icon": "icon.svg",
             "entry": "view/index.html",
-            "server": "status"
+            "server": "status",
+            "presentation": "floating",
+            "width": 316,
+            "height": 286
           }
         ]
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.1.tar.gz",
-      "sha256": "7f089038309d0a84ba7e29a462a5bd4ef695d541974e2f2cd75b311348d6c669",
-      "bytes": 5582
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.2.0.tar.gz",
+      "sha256": "87c72f7ee16b3691fd3eaf36cd08601e9a42393bdb1e3d7194ea6db25d6ceec0",
+      "bytes": 12914
     },
     {
       "name": "web-fetch",
