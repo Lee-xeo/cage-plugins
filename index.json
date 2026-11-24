@@ -116,8 +116,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/agent-mesh/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/agent-mesh-1.0.0.tar.gz",
-      "sha256": "4fd808d1f74272e4ead5c4cbf217b05dcf247e394d8b3f6ffa861e46719e1404",
-      "bytes": 61872
+      "sha256": "65778d551b50bafb7f45d3f5650d062f8368f689539218a3819af6c7b4660e45",
+      "bytes": 62499
     },
     {
       "name": "blender",
