@@ -3,7 +3,7 @@
   "plugins": [
     {
       "name": "agent-mesh",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Background multi-AI orchestration hub. Bind custom reasoning APIs, local Codex projects, multi-instance desktop assistants, and optional Antigravity projects per workspace for parallel collaboration with paginated history.",
       "permissions": [
         "files",
@@ -115,9 +115,9 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/agent-mesh/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/agent-mesh-1.0.0.tar.gz",
-      "sha256": "65778d551b50bafb7f45d3f5650d062f8368f689539218a3819af6c7b4660e45",
-      "bytes": 62499
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/agent-mesh-1.0.1.tar.gz",
+      "sha256": "637dde0fed441b22eeac480b8a7fa91a1dc8040fc7a446f20acebb1ad42b5be8",
+      "bytes": 62711
     },
     {
       "name": "blender",
