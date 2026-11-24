@@ -349,7 +349,7 @@ def contributes(folder, data):
                  "(npx --yes pkg@1.2.3, or uv with --from/--with pkg==1.2.3 and --exclude-newer)")
         servers.append(server["id"])
     for view in c.get("views", []):
-        only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls"})
+        only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls", "presentation", "width", "height"})
         if not NAME.match(str(view.get("id", ""))) or view["id"] in views:
             fail(f"{name}: views needs a unique id")
         if not isinstance(view.get("title"), str) or not 0 < len(view["title"]) <= 80:
@@ -360,6 +360,19 @@ def contributes(folder, data):
             fail(f"{name}: view {view['id']}: icon must be a PNG or SVG file inside the plugin")
         if "server" in view and view["server"] not in servers:
             fail(f"{name}: view {view['id']}: server is not one of mcpServers")
+        presentation = view.get("presentation")
+        if presentation is not None and presentation not in ("page", "floating"):
+            fail(f"{name}: view {view['id']}: presentation must be 'page' or 'floating'")
+        for dim, lo, hi in (("width", 220, 720), ("height", 100, 720)):
+            if dim in view:
+                if presentation != "floating":
+                    fail(f"{name}: view {view['id']}: {dim} is only allowed when presentation is 'floating'")
+                if not isinstance(view[dim], int) or isinstance(view[dim], bool) or not (lo <= view[dim] <= hi):
+                    fail(f"{name}: view {view['id']}: {dim} must be an integer between {lo} and {hi}")
+        if any(k in view for k in ("presentation", "width", "height")):
+            m = re.match(r"^(?:>=|\^)(\d+)\.(\d+)\.(\d+)$", str(engines["cage"]))
+            if not m or tuple(int(p) for p in m.groups()) < (0, 2, 0):
+                fail(f"{name}: view {view['id']}: presentation needs engines.cage >= 0.2.0")
         for pattern in view.get("openUrls", []):
             if not open_url_ok(pattern):
                 fail(f"{name}: view {view['id']}: openUrls {pattern!r} must be https to a named host, or http to "

@@ -1432,8 +1432,8 @@
     },
     {
       "name": "system-status",
-      "version": "0.1.1",
-      "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
+      "version": "0.2.0",
+      "description": "Shows real-time CPU, memory, disk and network telemetry of the environment in a draggable translucent floating overlay and as a tool for Claude.",
       "permissions": [],
       "author": {
         "name": "Lee-xeo",
@@ -1442,63 +1442,63 @@
       "i18n": {
         "zh-CN": {
           "displayName": "系统状态",
-          "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+          "description": "以可拖动的半透明浮窗和 Claude 工具实时展示当前环境的 CPU、内存、磁盘与网络状态。"
         },
         "zh-TW": {
           "displayName": "系統狀態",
-          "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+          "description": "以可拖動的半透明浮窗與 Claude 工具即時顯示目前環境的 CPU、記憶體、磁碟與網路狀態。"
         },
         "ru": {
           "displayName": "Состояние системы",
-          "description": "Показывает нагрузку процессора, использование памяти и диска среды — для вас на отдельной странице и для Claude в виде инструмента."
+          "description": "Показывает в реальном времени загрузку процессора, памяти, диска и сети среды в перетаскиваемом полупрозрачном плавающем окне и как инструмент для Claude."
         },
         "ar": {
           "displayName": "حالة النظام",
-          "description": "يعرض حمل المعالج واستخدام الذاكرة والقرص في البيئة، لك في صفحة مستقلة ولـ Claude كأداة."
+          "description": "يعرض في الوقت الفعلي استخدام المعالج والذاكرة والقرص والشبكة في البيئة ضمن نافذة عائمة شبه شفافة قابلة للسحب وكأداة لـ Claude."
         },
         "fa": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و فضای دیسک محیط را هم در یک صفحه به شما و هم به صورت ابزار به Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل جابه‌جایی و همچنین به صورت ابزار به Claude نشان می‌دهد."
         },
         "ko": {
           "displayName": "시스템 상태",
-          "description": "환경의 프로세서 부하, 메모리 및 디스크 사용량을 전용 페이지와 Claude 도구로 보여줍니다."
+          "description": "환경의 실시간 CPU, 메모리, 디스크 및 네트워크 상태를 드래그 가능한 반투명 플로팅 창과 Claude 도구로 보여줍니다."
         },
         "es": {
           "displayName": "Estado del sistema",
-          "description": "Muestra la carga del procesador y el uso de memoria y disco del entorno, tanto en una página para ti como en una herramienta para Claude."
+          "description": "Muestra en tiempo real el uso de CPU, memoria, disco y red del entorno en una ventana flotante semitransparente arrastrable y como herramienta para Claude."
         },
         "my": {
           "displayName": "စနစ်အခြေအနေ",
-          "description": "ပတ်ဝန်းကျင်၏ ပရိုဆက်ဆာဝန်အား၊ မန်မိုရီနှင့် ဒစ်ခ်အသုံးပြုမှုကို သင့်အတွက် စာမျက်နှာတစ်ခုတွင်လည်းကောင်း Claude အတွက် ကိရိယာတစ်ခုအဖြစ်လည်းကောင်း ပြသသည်။"
+          "description": "ပတ်ဝန်းကျင်၏ CPU၊ မန်မိုရီ၊ ဒစ်ခ်နှင့် ကွန်ရက်အခြေအနေကို ဆွဲရွှေ့နိုင်သော တစ်ဝက်ဖောက်ထွင်းဝင်းဒိုးငယ်နှင့် Claude ကိရိယာအဖြစ် အချိန်နှင့်တစ်ပြေးညီ ပြသသည်။"
         },
         "be": {
           "displayName": "Стан сістэмы",
-          "description": "Паказвае нагрузку працэсара, выкарыстанне памяці і дыска асяроддзя — для вас на старонцы і для Claude як інструмент."
+          "description": "Паказвае ў рэальным часе загрузку працэсара, памяці, дыска і сеткі асяроддзя ў паўпразрыстым плавальным акне і як інструмент для Claude."
         },
         "ps": {
           "displayName": "د سیسټم حالت",
-          "description": "د چاپېریال د پروسېسر بار، حافظې او ډیسک کارونه ستاسو لپاره پر پاڼه او د Claude لپاره د وسیلې په توګه ښيي."
+          "description": "د چاپېریال د CPU، حافظې، ډیسک او شبکې ژوندۍ شمېرې په یوه د کش کولو وړ نیمه روڼه لامبو وهونکې کړکۍ کې او د Claude لپاره د وسیلې په توګه ښيي."
         },
         "prs": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و دیسک محیط را هم در یک صفحه برای شما و هم به شکل ابزار برای Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل انتقال و همچنان به شکل ابزار برای Claude نشان می‌دهد."
         },
         "am": {
           "displayName": "የስርዓት ሁኔታ",
-          "description": "የአካባቢውን የፕሮሰሰር ጫና፣ የማህደረ ትውስታ እና የዲስክ አጠቃቀም ለእርስዎ በገጽ ላይ እና ለClaude እንደ መሳሪያ ያሳያል።"
+          "description": "የአካባቢውን የቀጥታ CPU፣ ማህደረ ትውስታ፣ ዲስክ እና አውታረ መረብ ሁኔታ በሚጎተት ከፊል-ግልጽ ተንሳፋፊ መስኮት እና ለClaude እንደ መሳሪያ ያሳያል።"
         },
         "so": {
           "displayName": "Xaaladda Nidaamka",
-          "description": "Waxay muujisaa culayska processor-ka, isticmaalka xusuusta iyo diska ee deegaanka, adiga oo bog gaar ah ku arka iyo Claude oo qalab ahaan u adeegsada."
+          "description": "Waxay si toos ah u muujisaa isticmaalka CPU, xusuusta, diska iyo shabakadda ee deegaanka iyadoo ku jirta daaqad sabbeysa oo nus-muuqata oo la jiidi karo iyo qalab u ah Claude."
         },
         "ti": {
           "displayName": "ኩነታት ስርዓት",
-          "description": "ናይቲ ከባቢ ጽዕነት ፕሮሰሰር፡ ኣጠቓቕማ ዝኽርን ዲስክን ንዓኻ ኣብ ገጽ ንClaude ድማ ከም መሳርሒ የርኢ።"
+          "description": "ናይቲ ከባቢ ቀጥታዊ ኣጠቓቕማ CPU፡ ዝኽሪ፡ ዲስክን መርበብን ኣብ ዝጎተት ፍርቂ-ብሩህ ተንሳፋፊ መስኮትን ንClaude ከም መሳርሕን የርኢ።"
         },
         "fr": {
           "displayName": "État du système",
-          "description": "Affiche la charge du processeur ainsi que l'utilisation mémoire et disque de l'environnement, sur une page pour vous et comme outil pour Claude."
+          "description": "Affiche en temps réel la charge CPU, la mémoire, le disque et le réseau de l'environnement dans une fenêtre flottante translucide déplaçable et comme outil pour Claude."
         }
       },
       "displayName": "System Status",
@@ -1508,7 +1508,7 @@
       ],
       "kind": "guest",
       "engines": {
-        "cage": ">=0.1.8"
+        "cage": ">=0.2.0"
       },
       "contributes": {
         "mcpServers": [
@@ -1526,15 +1526,18 @@
             "title": "System Status",
             "icon": "icon.svg",
             "entry": "view/index.html",
-            "server": "status"
+            "server": "status",
+            "presentation": "floating",
+            "width": 316,
+            "height": 286
           }
         ]
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.1.tar.gz",
-      "sha256": "7f089038309d0a84ba7e29a462a5bd4ef695d541974e2f2cd75b311348d6c669",
-      "bytes": 5582
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.2.0.tar.gz",
+      "sha256": "87c72f7ee16b3691fd3eaf36cd08601e9a42393bdb1e3d7194ea6db25d6ceec0",
+      "bytes": 12914
     },
     {
       "name": "web-fetch",
