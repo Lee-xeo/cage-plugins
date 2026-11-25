@@ -381,8 +381,8 @@ def contributes(folder, data):
                     fail(f"{name}: view {view['id']}: {dim} must be an integer between {lo} and {hi}")
         if any(k in view for k in ("presentation", "width", "height")):
             m = re.match(r"^(?:>=|\^)(\d+)\.(\d+)\.(\d+)$", str(engines["cage"]))
-            if not m or tuple(int(p) for p in m.groups()) < (0, 2, 0):
-                fail(f"{name}: view {view['id']}: presentation needs engines.cage >= 0.2.0")
+            if not m or tuple(int(p) for p in m.groups()) < (0, 2, 1):
+                fail(f"{name}: view {view['id']}: presentation needs engines.cage >= 0.2.1")
         for pattern in view.get("openUrls", []):
             if not open_url_ok(pattern):
                 fail(f"{name}: view {view['id']}: openUrls {pattern!r} must be https to a named host, or http to "
