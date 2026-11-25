@@ -87,12 +87,13 @@ class ProtocolAdapterTests(unittest.TestCase):
             calls.append({"url": url, "headers": headers, "body": json.loads(body.decode("utf-8"))})
             return 200, {"content-type": "application/json"}, ndjson
 
-        # 1) Single X-Api-Key auth + WAV wrapping from PCM
+        # 1) Single X-Api-Key auth + bare base URL normalization + WAV wrapping from PCM
         res = synthesize(
-            {"protocol": "volcengine-v3", "api_key": "volc-secret-key", "resource_id": "seed-tts-2.0", "voice": "zh_female_vv_uranus_bigtts"},
+            {"protocol": "volcengine-v3", "endpoint": "https://openspeech.bytedance.com", "api_key": "volc-secret-key", "resource_id": "seed-tts-2.0", "voice": "zh_female_vv_uranus_bigtts"},
             SynthesisRequest(text="火山引擎测试", format="wav", sample_rate=24000, speed=1.2, emotion="happy", emotion_scale=4),
             transport=fake_transport,
         )
+        self.assertEqual(calls[0]["url"], "https://openspeech.bytedance.com/api/v3/tts/unidirectional")
         self.assertEqual(calls[0]["headers"]["X-Api-Key"], "volc-secret-key")
         self.assertNotIn("X-Api-App-Id", calls[0]["headers"])
         self.assertEqual(calls[0]["headers"]["X-Api-Resource-Id"], "seed-tts-2.0")

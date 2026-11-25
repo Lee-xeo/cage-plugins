@@ -363,6 +363,22 @@ def _normalize_openai_endpoint(endpoint: str) -> str:
     return url
 
 
+def _normalize_endpoint_path(endpoint: str, default_url: str, default_path: str) -> str:
+    """Append default_path when the user supplies only a scheme+host base URL."""
+    if not endpoint:
+        return default_url
+    url = endpoint.rstrip("/")
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path.rstrip("/")
+    if path == "":
+        return url + default_path
+    if path == "/v1" and default_path.startswith("/v1/"):
+        return url + default_path[len("/v1"):]
+    if path == "/api/v1" and default_path.startswith("/api/v1/"):
+        return url + default_path[len("/api/v1"):]
+    return url
+
+
 def _synthesize_openai(
     profile: Dict[str, Any],
     req: SynthesisRequest,
@@ -424,7 +440,11 @@ def _synthesize_volcengine_v3(
     req: SynthesisRequest,
     transport: HttpTransport,
 ) -> SynthesisResult:
-    url = str(profile.get("endpoint", "")).strip() or "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+    url = _normalize_endpoint_path(
+        str(profile.get("endpoint", "")).strip(),
+        "https://openspeech.bytedance.com/api/v3/tts/unidirectional",
+        "/api/v3/tts/unidirectional",
+    )
     api_key = str(profile.get("api_key", "")).strip()
     app_id = str(profile.get("app_id", "")).strip()
     resource_id = str(req.model or profile.get("resource_id") or profile.get("model") or "seed-tts-2.0").strip()
@@ -541,7 +561,11 @@ def _synthesize_volcengine_v1(
     req: SynthesisRequest,
     transport: HttpTransport,
 ) -> SynthesisResult:
-    url = str(profile.get("endpoint", "")).strip() or "https://openspeech.bytedance.com/api/v1/tts"
+    url = _normalize_endpoint_path(
+        str(profile.get("endpoint", "")).strip(),
+        "https://openspeech.bytedance.com/api/v1/tts",
+        "/api/v1/tts",
+    )
     api_key = str(profile.get("api_key", "")).strip()
     app_id = str(profile.get("app_id", "")).strip()
     cluster = str(req.model or profile.get("resource_id") or profile.get("model") or "volcano_tts").strip()
@@ -636,7 +660,11 @@ def _synthesize_minimax(
     req: SynthesisRequest,
     transport: HttpTransport,
 ) -> SynthesisResult:
-    url = str(profile.get("endpoint", "")).strip() or "https://api.minimaxi.com/v1/t2a_v2"
+    url = _normalize_endpoint_path(
+        str(profile.get("endpoint", "")).strip(),
+        "https://api.minimaxi.com/v1/t2a_v2",
+        "/v1/t2a_v2",
+    )
     api_key = str(profile.get("api_key", "")).strip()
     group_id = str(profile.get("app_id", "")).strip()
     model = str(req.model or profile.get("model") or profile.get("resource_id") or "speech-02-hd").strip()
@@ -908,7 +936,11 @@ def _synthesize_dashscope(
     req: SynthesisRequest,
     transport: HttpTransport,
 ) -> SynthesisResult:
-    url = str(profile.get("endpoint", "")).strip() or "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    url = _normalize_endpoint_path(
+        str(profile.get("endpoint", "")).strip(),
+        "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+        "/api/v1/services/aigc/multimodal-generation/generation",
+    )
     api_key = str(profile.get("api_key", "")).strip()
     model = str(req.model or profile.get("model") or profile.get("resource_id") or "qwen-tts").strip()
     voice = str(req.voice or profile.get("voice") or "Cherry").strip()
