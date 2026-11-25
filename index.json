@@ -121,7 +121,7 @@
     },
     {
       "name": "antigravity-app",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Runs Google's official Antigravity desktop app in the environment. Each update fetches Google's latest Linux release, because the app cannot update itself there.",
       "permissions": [],
       "author": {
@@ -203,7 +203,7 @@
           {
             "id": "antigravity",
             "title": "Antigravity",
-            "icon": "icon.svg",
+            "icon": "icon.png",
             "source": {
               "type": "archive",
               "resolve": [
@@ -238,10 +238,10 @@
           }
         ]
       },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/antigravity-app/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/antigravity-app-0.1.0.tar.gz",
-      "sha256": "31126d8756b3596cbb1b3ddca8768fd3aec4d5e7b176d23b01001ef2b6a85098",
-      "bytes": 3524
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/antigravity-app/icon.png",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/antigravity-app-0.1.1.tar.gz",
+      "sha256": "ca4841ab4a268b2191b0abca6ede13fad4e191b0bf52505ace5c3c13b9aecb5b",
+      "bytes": 23000
     },
     {
       "name": "blender",
@@ -661,7 +661,7 @@
     },
     {
       "name": "codex-app",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Runs OpenAI's official Codex desktop app (the ChatGPT app for Linux) in the environment, installed from OpenAI's signed repository at its latest release.",
       "permissions": [],
       "author": {
@@ -743,7 +743,7 @@
           {
             "id": "codex",
             "title": "Codex",
-            "icon": "icon.svg",
+            "icon": "icon.png",
             "source": {
               "type": "apt",
               "repository": "https://persistent.oaistatic.com/codex-app-prod/linux/deb",
@@ -767,10 +767,10 @@
           }
         ]
       },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/codex-app/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-app-0.1.0.tar.gz",
-      "sha256": "bfa4b1b3c0018855327ac1b8dd1698b9e9bd4c0a757ce9d8698cebac0309bb19",
-      "bytes": 2601
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/codex-app/icon.png",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-app-0.1.1.tar.gz",
+      "sha256": "142a995059cb9f8ab0589f9c54a22ca881cd9bc7dcc31c8c782208440008a5f2",
+      "bytes": 31564
     },
     {
       "name": "codex-dispatch",
