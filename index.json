@@ -1956,8 +1956,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/text-to-speech/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/text-to-speech-0.1.0.tar.gz",
-      "sha256": "87266b2ae55aefd5ec9be93e259a479f17148935f57444571013872f3aaf69f6",
-      "bytes": 30469
+      "sha256": "91c9575c5a9c3c28cf91ea5e9ad29c68c226f84b56d9aec8a9406d02df7dca57",
+      "bytes": 30887
     },
     {
       "name": "web-fetch",
