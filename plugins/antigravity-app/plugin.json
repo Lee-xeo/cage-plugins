@@ -1,7 +1,7 @@
 {
   "name": "antigravity-app",
   "displayName": "Antigravity",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Runs Google's official Antigravity desktop app in the environment. Each update fetches Google's latest Linux release, because the app cannot update itself there.",
   "icon": "icon.png",
   "engines": { "cage": ">=0.2.1" },
@@ -16,7 +16,7 @@
         "icon": "icon.png",
         "source": {
           "type": "archive",
-          "resolve": ["resolve.py"],
+          "resolve": ["resolve.py", "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases"],
           "hosts": ["storage.googleapis.com"]
         },
         "command": ["antigravity"],

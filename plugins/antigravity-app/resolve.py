@@ -7,7 +7,6 @@ import re
 import sys
 import urllib.request
 
-RELEASES = "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases"
 FOLDERS = {"amd64": "linux-x64", "arm64": "linux-arm"}
 
 
@@ -17,7 +16,7 @@ def key(release):
 
 def main():
     folder = FOLDERS[sys.argv[1]]
-    with urllib.request.urlopen(RELEASES, timeout=30) as response:
+    with urllib.request.urlopen(sys.argv[2], timeout=30) as response:
         releases = json.load(response)
     valid = [r for r in releases if isinstance(r, dict)
              and re.fullmatch(r"\d+(\.\d+){1,3}", str(r.get("version", "")))
