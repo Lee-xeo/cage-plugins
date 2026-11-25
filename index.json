@@ -1759,6 +1759,207 @@
       "bytes": 12914
     },
     {
+      "name": "text-to-speech",
+      "version": "0.1.0",
+      "description": "Synthesize speech audio and batch video voiceovers using configurable TTS protocols including OpenAI-compatible APIs, Volcengine, MiniMax, ElevenLabs, Azure, DashScope, and custom HTTP endpoints.",
+      "permissions": [
+        "files",
+        "network"
+      ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "语音合成（TTS）",
+          "description": "通过可配置的多协议 TTS 接口生成配音音频与批量视频分镜/字幕配音，支持 OpenAI 兼容协议、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里云百炼及自定义 HTTP 模板。"
+        },
+        "zh-TW": {
+          "displayName": "語音合成（TTS）",
+          "description": "透過可設定的多協定 TTS 介面產生配音音訊與批次影片分鏡／字幕配音，支援 OpenAI 相容協定、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里雲百煉及自訂 HTTP 範本。"
+        },
+        "ru": {
+          "displayName": "Синтез речи (TTS)",
+          "description": "Синтезируйте озвучку и пакетные дорожки для видео через настраиваемые протоколы TTS: совместимые с OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope и пользовательские HTTP-шаблоны."
+        },
+        "ar": {
+          "displayName": "تحويل النص إلى كلام (TTS)",
+          "description": "توليد مقاطع صوتية ودبلجة فيديو مجمّعة عبر بروتوكولات TTS قابلة للتخصيص تشمل واجهات متوافقة مع OpenAI وVolcengine وMiniMax وElevenLabs وAzure وDashScope ونقاط HTTP مخصصة."
+        },
+        "fa": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو از طریق پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "ko": {
+          "displayName": "음성 합성 (TTS)",
+          "description": "OpenAI 호환 API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope 및 사용자 지정 HTTP 엔드포인트 등 설정 가능한 TTS 프로토콜로 음성과 동영상 더빙 오디오를 일괄 생성합니다."
+        },
+        "es": {
+          "displayName": "Texto a voz (TTS)",
+          "description": "Sintetiza audio de voz y doblajes de video por lotes mediante protocolos TTS configurables, incluidos API compatibles con OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope y endpoints HTTP personalizados."
+        },
+        "my": {
+          "displayName": "စာသားမှ အသံပြောင်းခြင်း (TTS)",
+          "description": "OpenAI နှင့် ကိုက်ညီသော API များ၊ Volcengine၊ MiniMax၊ ElevenLabs၊ Azure၊ DashScope နှင့် စိတ်ကြိုက် HTTP လိပ်စာများအပါအဝင် ပြင်ဆင်နိုင်သော TTS ပရိုတိုကောများဖြင့် အသံဖိုင်နှင့် ဗီဒီယို အသံသွင်းခြင်းများကို ဖန်တီးပါ။"
+        },
+        "be": {
+          "displayName": "Сінтэз маўлення (TTS)",
+          "description": "Сінтэзуйце агучку і пакетныя аўдыядарожкі для відэа праз наладжвальныя пратаколы TTS: сумяшчальныя з OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope і карыстальніцкія HTTP-шаблоны."
+        },
+        "ps": {
+          "displayName": "متن په غږ بدلول (TTS)",
+          "description": "د تنظیم وړ TTS پروتوکولونو له لارې غږیز فایلونه او د ویډیو ډله‌ییزه ډوبلنګ جوړ کړئ، لکه OpenAI-compatible APIs،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope او دودیز HTTP پای‌ټکي."
+        },
+        "prs": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو با پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "am": {
+          "displayName": "ጽሑፍ ወደ ንግግር (TTS)",
+          "description": "OpenAI ተኳሃኝ APIዎችን፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope እና ብጁ HTTP አድራሻዎችን ጨምሮ ሊዋቀሩ በሚችሉ የTTS ፕሮቶኮሎች ድምፅና የቪዲዮ ድምፅ ቅጂዎችን በቡድን ይፍጠሩ።"
+        },
+        "so": {
+          "displayName": "Qoraal-u-Cod (TTS)",
+          "description": "Soo saar codad iyo cod-gelin fiidiyow oo kooxeed adigoo adeegsanaya borotokoollo TTS oo la habeyn karo sida API-yada la jaanqaada OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope iyo HTTP gaar ah."
+        },
+        "ti": {
+          "displayName": "ጽሑፍ ናብ ድምጺ (TTS)",
+          "description": "ምስ OpenAI ዝሳነዩ APIታት፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope ከምኡውን ብሕታዊ HTTP መስመራት ሓዊሱ ብዝስተኻኸሉ TTS ፕሮቶኮላት ድምጽን ናይ ቪድዮ ድምጺ ምቕዳሕን ብእኩብ ኣፍሪ።"
+        },
+        "fr": {
+          "displayName": "Synthèse vocale (TTS)",
+          "description": "Synthétisez des voix off et doublages vidéo par lots via des protocoles TTS configurables, dont les API compatibles OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope et des points de terminaison HTTP personnalisés."
+        }
+      },
+      "displayName": "Text to Speech",
+      "categories": [
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "tts",
+            "command": [
+              "python3",
+              "server.py",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "settings": [
+          {
+            "id": "protocol",
+            "title": "TTS Protocol",
+            "description": "Speech synthesis API protocol to use for the default profile (openai covers OpenAI and compatible gateways or local engines).",
+            "type": "choice",
+            "env": "TTS_PROTOCOL",
+            "choices": [
+              "openai",
+              "volcengine-v3",
+              "volcengine-v1",
+              "minimax",
+              "elevenlabs",
+              "azure",
+              "dashscope",
+              "http-generic"
+            ],
+            "default": "volcengine-v3"
+          },
+          {
+            "id": "api-key",
+            "title": "API Key / Access Token",
+            "description": "API key, access key, or subscription key for the selected protocol (stored encrypted; optional for unauthenticated local servers).",
+            "type": "secret",
+            "env": "TTS_API_KEY"
+          },
+          {
+            "id": "endpoint",
+            "title": "API Endpoint or Base URL",
+            "description": "Optional custom URL, base URL, or Azure region. Leave blank to use the protocol default endpoint.",
+            "type": "string",
+            "env": "TTS_ENDPOINT"
+          },
+          {
+            "id": "app-id",
+            "title": "App ID / Group ID",
+            "description": "Optional application or group identifier (for example Volcengine App ID, MiniMax Group ID, or Azure region).",
+            "type": "string",
+            "env": "TTS_APP_ID"
+          },
+          {
+            "id": "resource-id",
+            "title": "Model / Resource ID / Cluster",
+            "description": "Model name, resource ID, or cluster (for example seed-tts-2.0, volc.service_type.10029, volcano_tts, gpt-4o-mini-tts, speech-02-hd).",
+            "type": "string",
+            "env": "TTS_RESOURCE_ID"
+          },
+          {
+            "id": "voice",
+            "title": "Default Voice / Speaker",
+            "description": "Default voice or speaker identifier used when a tool call omits the voice parameter.",
+            "type": "string",
+            "env": "TTS_VOICE"
+          },
+          {
+            "id": "format",
+            "title": "Default Audio Format",
+            "description": "Default output audio encoding.",
+            "type": "choice",
+            "env": "TTS_FORMAT",
+            "choices": [
+              "mp3",
+              "wav",
+              "ogg_opus",
+              "pcm",
+              "flac"
+            ],
+            "default": "mp3"
+          },
+          {
+            "id": "sample-rate",
+            "title": "Default Sample Rate (Hz)",
+            "description": "Default audio sample rate when supported by the protocol.",
+            "type": "choice",
+            "env": "TTS_SAMPLE_RATE",
+            "choices": [
+              "16000",
+              "22050",
+              "24000",
+              "32000",
+              "44100",
+              "48000"
+            ],
+            "default": "24000"
+          },
+          {
+            "id": "profiles-path",
+            "title": "Profiles Config File",
+            "description": "Optional path to a JSON file defining multiple named TTS profiles, voice presets, or http-generic templates.",
+            "type": "string",
+            "env": "TTS_PROFILES_PATH"
+          },
+          {
+            "id": "timeout",
+            "title": "Request Timeout (seconds)",
+            "description": "HTTP timeout in seconds per synthesis request (5 to 120).",
+            "type": "string",
+            "env": "TTS_TIMEOUT",
+            "default": "45"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/text-to-speech/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/text-to-speech-0.1.0.tar.gz",
+      "sha256": "91c9575c5a9c3c28cf91ea5e9ad29c68c226f84b56d9aec8a9406d02df7dca57",
+      "bytes": 30887
+    },
+    {
       "name": "web-fetch",
       "version": "0.1.2",
       "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
