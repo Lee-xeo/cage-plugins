@@ -326,10 +326,20 @@ def open_url_ok(pattern):
     return "*" not in route.removesuffix("*")
 
 
+SETTING_TYPES = {"string", "secret", "boolean", "choice"}
+SETTING_ENV = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
+RESERVED_ENV = {"HOME", "USER", "LOGNAME", "SHELL", "PATH", "LANG", "LC_ALL", "TZ"}
+SETTING_VALUE_LIMIT = 8192
+
+
+def valid_setting_value(value):
+    return isinstance(value, str) and len(value.encode("utf-8")) <= SETTING_VALUE_LIMIT and not re.search(r"[\x00\r\n]", value)
+
+
 def contributes(folder, data):
     """Check the second manifest format: what the plugin adds."""
     name, c = folder.name, data["contributes"]
-    only(f"{name}: contributes", c, {"mcpServers", "views", "uriHandlers"})
+    only(f"{name}: contributes", c, {"mcpServers", "views", "uriHandlers", "settings"})
     if "command" in data:
         fail(f"{name}: command belongs in contributes.mcpServers")
     engines = data.get("engines")
@@ -349,7 +359,7 @@ def contributes(folder, data):
                  "(npx --yes pkg@1.2.3, or uv with --from/--with pkg==1.2.3 and --exclude-newer)")
         servers.append(server["id"])
     for view in c.get("views", []):
-        only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls"})
+        only(f"{name}: views", view, {"id", "title", "icon", "entry", "server", "openUrls", "presentation", "width", "height"})
         if not NAME.match(str(view.get("id", ""))) or view["id"] in views:
             fail(f"{name}: views needs a unique id")
         if not isinstance(view.get("title"), str) or not 0 < len(view["title"]) <= 80:
@@ -360,6 +370,19 @@ def contributes(folder, data):
             fail(f"{name}: view {view['id']}: icon must be a PNG or SVG file inside the plugin")
         if "server" in view and view["server"] not in servers:
             fail(f"{name}: view {view['id']}: server is not one of mcpServers")
+        presentation = view.get("presentation")
+        if presentation is not None and presentation not in ("page", "floating"):
+            fail(f"{name}: view {view['id']}: presentation must be 'page' or 'floating'")
+        for dim, lo, hi in (("width", 220, 720), ("height", 100, 720)):
+            if dim in view:
+                if presentation != "floating":
+                    fail(f"{name}: view {view['id']}: {dim} is only allowed when presentation is 'floating'")
+                if not isinstance(view[dim], int) or isinstance(view[dim], bool) or not (lo <= view[dim] <= hi):
+                    fail(f"{name}: view {view['id']}: {dim} must be an integer between {lo} and {hi}")
+        if any(k in view for k in ("presentation", "width", "height")):
+            m = re.match(r"^(?:>=|\^)(\d+)\.(\d+)\.(\d+)$", str(engines["cage"]))
+            if not m or tuple(int(p) for p in m.groups()) < (0, 2, 1):
+                fail(f"{name}: view {view['id']}: presentation needs engines.cage >= 0.2.1")
         for pattern in view.get("openUrls", []):
             if not open_url_ok(pattern):
                 fail(f"{name}: view {view['id']}: openUrls {pattern!r} must be https to a named host, or http to "
@@ -375,6 +398,56 @@ def contributes(folder, data):
         if "reveal" in handler and handler["reveal"] not in views:
             fail(f"{name}: uriHandlers {scheme}: reveal is not one of views")
         schemes.append(scheme)
+    settings_list = c.get("settings", [])
+    if not isinstance(settings_list, list):
+        fail(f"{name}: contributes.settings must be a list")
+    if settings_list:
+        m = re.match(r"^(?:>=|\^)(\d+)\.(\d+)\.(\d+)$", str(engines["cage"]))
+        if not m or tuple(int(p) for p in m.groups()) < (0, 2, 0):
+            fail(f"{name}: settings need engines.cage >= 0.2.0")
+        if len(settings_list) > 20:
+            fail(f"{name}: at most twenty settings")
+    seen_setting_ids, seen_setting_envs = [], []
+    for st in settings_list:
+        only(f"{name}: settings", st, {"id", "title", "description", "type", "env", "required", "default", "choices"})
+        sid = str(st.get("id", ""))
+        if not NAME.match(sid) or len(sid) > 40 or sid in seen_setting_ids:
+            fail(f"{name}: settings id {sid!r} is not valid or is repeated")
+        title = st.get("title")
+        if not isinstance(title, str) or not 0 < len(title) <= 80:
+            fail(f"{name}: settings {sid}: title is missing or too long")
+        desc = st.get("description", "")
+        if not isinstance(desc, str) or len(desc) > 500:
+            fail(f"{name}: settings {sid}: description is too long")
+        stype = st.get("type")
+        if stype not in SETTING_TYPES:
+            fail(f"{name}: settings {sid}: type must be string, secret, boolean or choice")
+        env_name = str(st.get("env", ""))
+        if (not SETTING_ENV.match(env_name) or env_name in RESERVED_ENV or env_name.startswith(("LD_", "DYLD_"))
+                or env_name in seen_setting_envs):
+            fail(f"{name}: settings {sid}: env {env_name!r} is invalid, reserved or repeated")
+        if "required" in st and not isinstance(st["required"], bool):
+            fail(f"{name}: settings {sid}: required must be a boolean")
+        default_val = st.get("default", "")
+        if not valid_setting_value(default_val):
+            fail(f"{name}: settings {sid}: default is too long or has a line break")
+        if stype == "secret" and default_val != "":
+            fail(f"{name}: settings {sid}: a secret has no default")
+        if stype == "boolean" and default_val not in ("", "true", "false"):
+            fail(f"{name}: settings {sid}: the default of a boolean is true or false")
+        choices = st.get("choices")
+        if stype != "choice" and choices is not None:
+            fail(f"{name}: settings {sid}: choices are for type choice")
+        if stype == "choice":
+            if not isinstance(choices, list) or not 0 < len(choices) <= 20:
+                fail(f"{name}: settings {sid}: a choice needs one to twenty choices")
+            for idx, choice in enumerate(choices):
+                if not valid_setting_value(choice) or not 0 < len(choice) <= 80 or choice in choices[:idx]:
+                    fail(f"{name}: settings {sid}: choice {choice!r} is empty, too long or repeated")
+            if default_val != "" and default_val not in choices:
+                fail(f"{name}: settings {sid}: default is not one of choices")
+        seen_setting_ids.append(sid)
+        seen_setting_envs.append(env_name)
     for event in data.get("activationEvents", []):
         kind, _, target = str(event).partition(":")
         if not (event == "onStartupFinished" or kind == "onView" and target in views or kind == "onUri" and target in schemes):
@@ -422,6 +495,8 @@ def manifest(folder):
     # Only what is shown to people and models; kind and engines are structure.
     shown = [data["name"], data.get("displayName", ""), data["description"]]
     shown += [view["title"] for view in data.get("contributes", {}).get("views", [])]
+    for st in data.get("contributes", {}).get("settings", []):
+        shown.extend([st.get("title", ""), st.get("description", "")])
     check_wording(f"{folder.name}: the manifest", json.dumps(shown, ensure_ascii=False))
     check_tools_file(folder)
     return data

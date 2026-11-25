@@ -1,9 +1,11 @@
 {
+  "agent-mesh": "pomelopaw",
   "blender": "Lee-xeo",
   "browser": "Lee-xeo",
   "chrome-devtools": "caihao373-star",
   "clock": "Lee-xeo",
   "codex-dispatch": "SLEEPYBQ",
+  "computer-use": "wudi341",
   "desktop-control": "Lee-xeo",
   "documents-to-markdown": "Lee-xeo",
   "excel-workbooks": "Lee-xeo",
@@ -15,6 +17,7 @@
   "powerpoint-slides": "Lee-xeo",
   "sqlite": "Lee-xeo",
   "system-status": "Lee-xeo",
+  "text-to-speech": "Lee-xeo",
   "web-fetch": "Lee-xeo",
   "word-documents": "Lee-xeo"
 }

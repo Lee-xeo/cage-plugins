@@ -2,6 +2,124 @@
   "version": 1,
   "plugins": [
     {
+      "name": "agent-mesh",
+      "version": "1.0.1",
+      "description": "Background multi-AI orchestration hub. Bind custom reasoning APIs, local Codex projects, multi-instance desktop assistants, and optional Antigravity projects per workspace for parallel collaboration with paginated history.",
+      "permissions": [
+        "files",
+        "commands",
+        "network"
+      ],
+      "author": {
+        "name": "pomelopaw"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Agent Mesh",
+          "description": "多 AI 后台协作中心。支持按项目编组自定义推理 API 模型、本机 Codex、多账号桌面实例与可选的 Antigravity 项目，全程无鼠标干扰后台并行派单，并支持按日期分页回溯历史会话。"
+        },
+        "zh-TW": {
+          "displayName": "Agent Mesh",
+          "description": "多 AI 背景協作中心。支援依專案編組自訂推理 API 模型、本機 Codex、多帳號桌面實例與可選的 Antigravity 專案，全程無滑鼠干擾背景平行派單，並支援依日期分頁回溯歷史會話。"
+        },
+        "ru": {
+          "displayName": "Agent Mesh",
+          "description": "Фоновый центр совместной работы нескольких ИИ. Привязывайте к проектам собственные API-модели, локальный Codex, дополнительные настольные экземпляры и Antigravity с параллельным запуском и постраничной историей."
+        },
+        "ar": {
+          "displayName": "Agent Mesh",
+          "description": "مركز تنسيق خلفي لتعاون عدة نماذج ذكاء اصطناعي لكل مشروع، يدعم واجهات API المخصصة وCodex المحلي والنسخ المكتبية المتعددة وAntigravity مع سجل محادثات مقسم إلى صفحات."
+        },
+        "fa": {
+          "displayName": "Agent Mesh",
+          "description": "مرکز هماهنگی پس‌زمینه برای همکاری هم‌زمان چند هوش مصنوعی در هر پروژه؛ با پشتیبانی از مدل‌های API سفارشی، Codex محلی، نمونه‌های دسکتاپ متعدد و Antigravity همراه با تاریخچه صفحه‌بندی‌شده."
+        },
+        "ko": {
+          "displayName": "Agent Mesh",
+          "description": "백그라운드 멀티 AI 협업 허브입니다. 프로젝트별로 커스텀 추론 API 모델, 로컬 Codex, 다중 데스크톱 인스턴스, Antigravity를 묶어 병렬 작업을 실행하고 날짜별 페이지로 기록을 조회합니다."
+        },
+        "es": {
+          "displayName": "Agent Mesh",
+          "description": "Centro de orquestación multi-IA en segundo plano. Vincula APIs de razonamiento, Codex local, varias instancias de escritorio y Antigravity por proyecto con ejecución paralela e historial paginado."
+        },
+        "my": {
+          "displayName": "Agent Mesh",
+          "description": "နောက်ကွယ်တွင် AI မျိုးစုံပူးပေါင်းလုပ်ဆောင်နိုင်သော စင်တာဖြစ်ပြီး ပရောဂျက်အလိုက် API မော်ဒယ်များ၊ စက်တွင်း Codex၊ ဒက်စ်တော့အကောင့်များနှင့် Antigravity တို့ကို ချိတ်ဆက်ကာ မှတ်တမ်းများကို စာမျက်နှာခွဲ ကြည့်ရှုနိုင်သည်။"
+        },
+        "be": {
+          "displayName": "Agent Mesh",
+          "description": "Фонавы цэнтр супрацоўніцтва некалькіх ШІ. Прывязвайце да праектаў уласныя API-мадэлі, лакальны Codex, некалькі настольных экзэмпляраў і Antigravity з паралельным выкананнем і пастаронкавай гісторыяй."
+        },
+        "ps": {
+          "displayName": "Agent Mesh",
+          "description": "د څو مصنوعي ځیرکتیاوو شالید همغږۍ مرکز چې د هرې پروژې لپاره API ماډلونه، محلي Codex، څو ډیسکټاپ بېلګې او Antigravity نښلوي او د تاریخچې مخ‌پاڼې ښيي."
+        },
+        "prs": {
+          "displayName": "Agent Mesh",
+          "description": "مرکز هماهنگی پس‌زمینه برای همکاری چندین هوش مصنوعی در هر پروژه با پشتیبانی از مدل‌های API، Codex محلی، چندین نمونه دسکتاپ و Antigravity همراه با تاریخچه صفحه‌بندی‌شده."
+        },
+        "am": {
+          "displayName": "Agent Mesh",
+          "description": "ለእያንዳንዱ ፕሮጀክት ብጁ የAPI ሞዴሎችን፣ የአካባቢ Codex፣ በርካታ የዴስክቶፕ መገለጫዎችን እና Antigravityን በጀርባ በትይዩ የሚያስተባብር ባለብዙ AI ማዕከል ነው።"
+        },
+        "so": {
+          "displayName": "Agent Mesh",
+          "description": "Xarun isku-dubbarid AI badan oo gadaal ka shaqeysa. Ku xir mashruuc kasta moodallo API, Codex maxalli ah, iyo Antigravity iyadoo leh taariikh bogag u qaybsan."
+        },
+        "ti": {
+          "displayName": "Agent Mesh",
+          "description": "ንነፍሲ ወከፍ ፕሮጀክት API ሞዴላት፣ ከባብያዊ Codex፣ ብዙሓት ዴስክቶፕ መገለጺታትን Antigravityን ብድሕረ ባይታ ብሓባር ዘተሓባብር ማእከል ብዙሓት AI እዩ።"
+        },
+        "fr": {
+          "displayName": "Agent Mesh",
+          "description": "Hub d'orchestration multi-IA en arrière-plan. Associez par projet des modèles API personnalisés, Codex local, plusieurs instances de bureau et Antigravity avec exécution parallèle et historique paginé."
+        }
+      },
+      "displayName": "Agent Mesh",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "categories": [
+        "developer",
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "mesh",
+            "command": [
+              "python3",
+              "-X",
+              "utf8",
+              "server.py",
+              "--project-dir",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "panel",
+            "title": "Agent Mesh",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "mesh"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/agent-mesh/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/agent-mesh-1.0.1.tar.gz",
+      "sha256": "637dde0fed441b22eeac480b8a7fa91a1dc8040fc7a446f20acebb1ad42b5be8",
+      "bytes": 62711
+    },
+    {
       "name": "blender",
       "version": "0.1.1",
       "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
@@ -520,6 +638,107 @@
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-dispatch-0.1.2.tar.gz",
       "sha256": "912668555d9f701206531f8a9124e4cecb671c49af47b143d66784a5af4bd728",
       "bytes": 14604
+    },
+    {
+      "name": "computer-use",
+      "version": "0.2.7",
+      "description": "Sees and works the apps of this computer in the background, asking the user before each app, without changing the app in front.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "author": {
+        "name": "wudi341"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "电脑操作",
+          "description": "在后台查看并操作这台电脑上的应用，每个应用都会先征求用户同意，不会改变用户当前在前台的应用。"
+        },
+        "zh-TW": {
+          "displayName": "電腦操作",
+          "description": "在背景檢視並操作這台電腦上的應用程式，每個應用程式都會先徵求使用者同意，不會改變使用者目前在前景的應用程式。"
+        },
+        "ru": {
+          "displayName": "Работа с приложениями",
+          "description": "Видит приложения этого компьютера и работает в них в фоновом режиме, каждый раз спрашивая разрешение пользователя, не меняя приложение, которое находится на переднем плане."
+        },
+        "ar": {
+          "displayName": "التحكم بالتطبيقات",
+          "description": "يعرض تطبيقات هذا الكمبيوتر ويعمل عليها في الخلفية، ويطلب إذن المستخدم قبل كل تطبيق، دون تغيير التطبيق الظاهر في المقدمة."
+        },
+        "fa": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این رایانه را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "ko": {
+          "displayName": "앱 사용",
+          "description": "이 컴퓨터의 앱을 백그라운드에서 보고 조작하며, 각 앱마다 먼저 사용자에게 허락을 구하고 사용자가 앞에 두고 있는 앱은 바꾸지 않습니다."
+        },
+        "es": {
+          "displayName": "Uso de aplicaciones",
+          "description": "Ve y utiliza las aplicaciones de este ordenador en segundo plano, pidiendo permiso al usuario antes de cada aplicación y sin cambiar la aplicación que está en primer plano."
+        },
+        "my": {
+          "displayName": "အက်ပ်များ အသုံးပြုခြင်း",
+          "description": "ဤကွန်ပျူတာရှိ အက်ပ်များကို နောက်ကွယ်တွင် ကြည့်ရှုအသုံးပြုပြီး အက်ပ်တစ်ခုစီမတိုင်မီ အသုံးပြုသူ၏ ခွင့်ပြုချက်ကို တောင်းခံကာ ရှေ့ဆုံးရှိ အက်ပ်ကို မပြောင်းလဲပါ။"
+        },
+        "be": {
+          "displayName": "Праца з праграмамі",
+          "description": "Бачыць праграмы гэтага камп’ютара і працуе з імі ў фонавым рэжыме, кожны раз пытаючыся дазволу ў карыстальніка і не змяняючы праграму, якая знаходзіцца на пярэднім плане."
+        },
+        "ps": {
+          "displayName": "د اپلیکیشنونو کارول",
+          "description": "د دې کمپیوټر اپلیکیشنونه په شاليد کې ګوري او په کې کار کوي، د هر اپلیکیشن دمخه له کاروونکي اجازه غواړي، او هغه اپلیکیشن نه بدلوي چې مخکې دی."
+        },
+        "prs": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این کمپیوتر را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "am": {
+          "displayName": "መተግበሪያዎችን መጠቀም",
+          "description": "የዚህን ኮምፒውተር መተግበሪያዎች በጀርባ ያያል ይጠቀማልም፤ ከእያንዳንዱ መተግበሪያ በፊት ተጠቃሚውን ፈቃድ ይጠይቃል፤ ፊት ያለውንም መተግበሪያ አይቀይርም።"
+        },
+        "so": {
+          "displayName": "Isticmaalka codsiyada",
+          "description": "Wuxuu eegaa oo ka shaqeeyaa codsiyada kombuyuutarkan asalka dambe, isagoo isticmaalaha ka codsanaya ogolaansho codsi kasta ka hor, mana beddelo codsiga hore u taagan."
+        },
+        "ti": {
+          "displayName": "መተግበሪታት ምጥቃም",
+          "description": "ናይዚ ኮምፒተር መተግበሪታት ኣብ ድሕሪት የራኽብን ይጥቀምን፤ ቅድሚ ነፍሲ ወከፍ መተግበሪ ንተጠቃሚ ፍቓድ ይሓትት፤ ኣብ ቅድሚት ዘሎ መተግበሪ ድማ ኣይቐይርን።"
+        },
+        "fr": {
+          "displayName": "Utilisation des applications",
+          "description": "Voit et utilise les applications de cet ordinateur en arrière-plan, en demandant l’accord de l’utilisateur avant chaque application, sans changer l’application au premier plan."
+        }
+      },
+      "displayName": "Computer Use",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/computer-use-0.2.7.tar.gz",
+      "sha256": "b39ed6de967031fa50bd53301ef92b779c6a153cb485bd28ddfcd1d981721387",
+      "bytes": 185826
     },
     {
       "name": "desktop-control",
@@ -1538,8 +1757,8 @@
     },
     {
       "name": "system-status",
-      "version": "0.1.1",
-      "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
+      "version": "0.2.1",
+      "description": "Shows real-time CPU, memory, disk and network telemetry of the environment in a draggable translucent floating overlay and as a tool for Claude.",
       "permissions": [],
       "author": {
         "name": "Lee-xeo",
@@ -1548,63 +1767,63 @@
       "i18n": {
         "zh-CN": {
           "displayName": "系统状态",
-          "description": "在独立页面和 Claude 工具中展示当前环境的处理器负载、内存与磁盘使用情况。"
+          "description": "以可拖动的半透明浮窗和 Claude 工具实时展示当前环境的 CPU、内存、磁盘与网络状态。"
         },
         "zh-TW": {
           "displayName": "系統狀態",
-          "description": "在獨立頁面與 Claude 工具中顯示目前環境的處理器負載、記憶體與磁碟使用情況。"
+          "description": "以可拖動的半透明浮窗與 Claude 工具即時顯示目前環境的 CPU、記憶體、磁碟與網路狀態。"
         },
         "ru": {
           "displayName": "Состояние системы",
-          "description": "Показывает нагрузку процессора, использование памяти и диска среды — для вас на отдельной странице и для Claude в виде инструмента."
+          "description": "Показывает в реальном времени загрузку процессора, памяти, диска и сети среды в перетаскиваемом полупрозрачном плавающем окне и как инструмент для Claude."
         },
         "ar": {
           "displayName": "حالة النظام",
-          "description": "يعرض حمل المعالج واستخدام الذاكرة والقرص في البيئة، لك في صفحة مستقلة ولـ Claude كأداة."
+          "description": "يعرض في الوقت الفعلي استخدام المعالج والذاكرة والقرص والشبكة في البيئة ضمن نافذة عائمة شبه شفافة قابلة للسحب وكأداة لـ Claude."
         },
         "fa": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و فضای دیسک محیط را هم در یک صفحه به شما و هم به صورت ابزار به Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل جابه‌جایی و همچنین به صورت ابزار به Claude نشان می‌دهد."
         },
         "ko": {
           "displayName": "시스템 상태",
-          "description": "환경의 프로세서 부하, 메모리 및 디스크 사용량을 전용 페이지와 Claude 도구로 보여줍니다."
+          "description": "환경의 실시간 CPU, 메모리, 디스크 및 네트워크 상태를 드래그 가능한 반투명 플로팅 창과 Claude 도구로 보여줍니다."
         },
         "es": {
           "displayName": "Estado del sistema",
-          "description": "Muestra la carga del procesador y el uso de memoria y disco del entorno, tanto en una página para ti como en una herramienta para Claude."
+          "description": "Muestra en tiempo real el uso de CPU, memoria, disco y red del entorno en una ventana flotante semitransparente arrastrable y como herramienta para Claude."
         },
         "my": {
           "displayName": "စနစ်အခြေအနေ",
-          "description": "ပတ်ဝန်းကျင်၏ ပရိုဆက်ဆာဝန်အား၊ မန်မိုရီနှင့် ဒစ်ခ်အသုံးပြုမှုကို သင့်အတွက် စာမျက်နှာတစ်ခုတွင်လည်းကောင်း Claude အတွက် ကိရိယာတစ်ခုအဖြစ်လည်းကောင်း ပြသသည်။"
+          "description": "ပတ်ဝန်းကျင်၏ CPU၊ မန်မိုရီ၊ ဒစ်ခ်နှင့် ကွန်ရက်အခြေအနေကို ဆွဲရွှေ့နိုင်သော တစ်ဝက်ဖောက်ထွင်းဝင်းဒိုးငယ်နှင့် Claude ကိရိယာအဖြစ် အချိန်နှင့်တစ်ပြေးညီ ပြသသည်။"
         },
         "be": {
           "displayName": "Стан сістэмы",
-          "description": "Паказвае нагрузку працэсара, выкарыстанне памяці і дыска асяроддзя — для вас на старонцы і для Claude як інструмент."
+          "description": "Паказвае ў рэальным часе загрузку працэсара, памяці, дыска і сеткі асяроддзя ў паўпразрыстым плавальным акне і як інструмент для Claude."
         },
         "ps": {
           "displayName": "د سیسټم حالت",
-          "description": "د چاپېریال د پروسېسر بار، حافظې او ډیسک کارونه ستاسو لپاره پر پاڼه او د Claude لپاره د وسیلې په توګه ښيي."
+          "description": "د چاپېریال د CPU، حافظې، ډیسک او شبکې ژوندۍ شمېرې په یوه د کش کولو وړ نیمه روڼه لامبو وهونکې کړکۍ کې او د Claude لپاره د وسیلې په توګه ښيي."
         },
         "prs": {
           "displayName": "وضعیت سیستم",
-          "description": "بار پردازنده، مصرف حافظه و دیسک محیط را هم در یک صفحه برای شما و هم به شکل ابزار برای Claude نشان می‌دهد."
+          "description": "مصرف لحظه‌ای پردازنده، حافظه، دیسک و شبکه محیط را در یک پنجره شناور نیمه‌شفاف و قابل انتقال و همچنان به شکل ابزار برای Claude نشان می‌دهد."
         },
         "am": {
           "displayName": "የስርዓት ሁኔታ",
-          "description": "የአካባቢውን የፕሮሰሰር ጫና፣ የማህደረ ትውስታ እና የዲስክ አጠቃቀም ለእርስዎ በገጽ ላይ እና ለClaude እንደ መሳሪያ ያሳያል።"
+          "description": "የአካባቢውን የቀጥታ CPU፣ ማህደረ ትውስታ፣ ዲስክ እና አውታረ መረብ ሁኔታ በሚጎተት ከፊል-ግልጽ ተንሳፋፊ መስኮት እና ለClaude እንደ መሳሪያ ያሳያል።"
         },
         "so": {
           "displayName": "Xaaladda Nidaamka",
-          "description": "Waxay muujisaa culayska processor-ka, isticmaalka xusuusta iyo diska ee deegaanka, adiga oo bog gaar ah ku arka iyo Claude oo qalab ahaan u adeegsada."
+          "description": "Waxay si toos ah u muujisaa isticmaalka CPU, xusuusta, diska iyo shabakadda ee deegaanka iyadoo ku jirta daaqad sabbeysa oo nus-muuqata oo la jiidi karo iyo qalab u ah Claude."
         },
         "ti": {
           "displayName": "ኩነታት ስርዓት",
-          "description": "ናይቲ ከባቢ ጽዕነት ፕሮሰሰር፡ ኣጠቓቕማ ዝኽርን ዲስክን ንዓኻ ኣብ ገጽ ንClaude ድማ ከም መሳርሒ የርኢ።"
+          "description": "ናይቲ ከባቢ ቀጥታዊ ኣጠቓቕማ CPU፡ ዝኽሪ፡ ዲስክን መርበብን ኣብ ዝጎተት ፍርቂ-ብሩህ ተንሳፋፊ መስኮትን ንClaude ከም መሳርሕን የርኢ።"
         },
         "fr": {
           "displayName": "État du système",
-          "description": "Affiche la charge du processeur ainsi que l'utilisation mémoire et disque de l'environnement, sur une page pour vous et comme outil pour Claude."
+          "description": "Affiche en temps réel la charge CPU, la mémoire, le disque et le réseau de l'environnement dans une fenêtre flottante translucide déplaçable et comme outil pour Claude."
         }
       },
       "displayName": "System Status",
@@ -1614,7 +1833,7 @@
       ],
       "kind": "guest",
       "engines": {
-        "cage": ">=0.1.8"
+        "cage": ">=0.2.1"
       },
       "contributes": {
         "mcpServers": [
@@ -1632,15 +1851,219 @@
             "title": "System Status",
             "icon": "icon.svg",
             "entry": "view/index.html",
-            "server": "status"
+            "server": "status",
+            "presentation": "floating",
+            "width": 316,
+            "height": 286
           }
         ]
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.1.tar.gz",
-      "sha256": "7f089038309d0a84ba7e29a462a5bd4ef695d541974e2f2cd75b311348d6c669",
-      "bytes": 5582
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.2.1.tar.gz",
+      "sha256": "51f3545bdf0101ffe4ae9d3575dbb2ea80d602e5e8ab2fadc5cd035f8fba06ce",
+      "bytes": 12916
+    },
+    {
+      "name": "text-to-speech",
+      "version": "0.1.0",
+      "description": "Synthesize speech audio and batch video voiceovers using configurable TTS protocols including OpenAI-compatible APIs, Volcengine, MiniMax, ElevenLabs, Azure, DashScope, and custom HTTP endpoints.",
+      "permissions": [
+        "files",
+        "network"
+      ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "语音合成（TTS）",
+          "description": "通过可配置的多协议 TTS 接口生成配音音频与批量视频分镜/字幕配音，支持 OpenAI 兼容协议、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里云百炼及自定义 HTTP 模板。"
+        },
+        "zh-TW": {
+          "displayName": "語音合成（TTS）",
+          "description": "透過可設定的多協定 TTS 介面產生配音音訊與批次影片分鏡／字幕配音，支援 OpenAI 相容協定、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里雲百煉及自訂 HTTP 範本。"
+        },
+        "ru": {
+          "displayName": "Синтез речи (TTS)",
+          "description": "Синтезируйте озвучку и пакетные дорожки для видео через настраиваемые протоколы TTS: совместимые с OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope и пользовательские HTTP-шаблоны."
+        },
+        "ar": {
+          "displayName": "تحويل النص إلى كلام (TTS)",
+          "description": "توليد مقاطع صوتية ودبلجة فيديو مجمّعة عبر بروتوكولات TTS قابلة للتخصيص تشمل واجهات متوافقة مع OpenAI وVolcengine وMiniMax وElevenLabs وAzure وDashScope ونقاط HTTP مخصصة."
+        },
+        "fa": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو از طریق پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "ko": {
+          "displayName": "음성 합성 (TTS)",
+          "description": "OpenAI 호환 API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope 및 사용자 지정 HTTP 엔드포인트 등 설정 가능한 TTS 프로토콜로 음성과 동영상 더빙 오디오를 일괄 생성합니다."
+        },
+        "es": {
+          "displayName": "Texto a voz (TTS)",
+          "description": "Sintetiza audio de voz y doblajes de video por lotes mediante protocolos TTS configurables, incluidos API compatibles con OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope y endpoints HTTP personalizados."
+        },
+        "my": {
+          "displayName": "စာသားမှ အသံပြောင်းခြင်း (TTS)",
+          "description": "OpenAI နှင့် ကိုက်ညီသော API များ၊ Volcengine၊ MiniMax၊ ElevenLabs၊ Azure၊ DashScope နှင့် စိတ်ကြိုက် HTTP လိပ်စာများအပါအဝင် ပြင်ဆင်နိုင်သော TTS ပရိုတိုကောများဖြင့် အသံဖိုင်နှင့် ဗီဒီယို အသံသွင်းခြင်းများကို ဖန်တီးပါ။"
+        },
+        "be": {
+          "displayName": "Сінтэз маўлення (TTS)",
+          "description": "Сінтэзуйце агучку і пакетныя аўдыядарожкі для відэа праз наладжвальныя пратаколы TTS: сумяшчальныя з OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope і карыстальніцкія HTTP-шаблоны."
+        },
+        "ps": {
+          "displayName": "متن په غږ بدلول (TTS)",
+          "description": "د تنظیم وړ TTS پروتوکولونو له لارې غږیز فایلونه او د ویډیو ډله‌ییزه ډوبلنګ جوړ کړئ، لکه OpenAI-compatible APIs،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope او دودیز HTTP پای‌ټکي."
+        },
+        "prs": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو با پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "am": {
+          "displayName": "ጽሑፍ ወደ ንግግር (TTS)",
+          "description": "OpenAI ተኳሃኝ APIዎችን፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope እና ብጁ HTTP አድራሻዎችን ጨምሮ ሊዋቀሩ በሚችሉ የTTS ፕሮቶኮሎች ድምፅና የቪዲዮ ድምፅ ቅጂዎችን በቡድን ይፍጠሩ።"
+        },
+        "so": {
+          "displayName": "Qoraal-u-Cod (TTS)",
+          "description": "Soo saar codad iyo cod-gelin fiidiyow oo kooxeed adigoo adeegsanaya borotokoollo TTS oo la habeyn karo sida API-yada la jaanqaada OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope iyo HTTP gaar ah."
+        },
+        "ti": {
+          "displayName": "ጽሑፍ ናብ ድምጺ (TTS)",
+          "description": "ምስ OpenAI ዝሳነዩ APIታት፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope ከምኡውን ብሕታዊ HTTP መስመራት ሓዊሱ ብዝስተኻኸሉ TTS ፕሮቶኮላት ድምጽን ናይ ቪድዮ ድምጺ ምቕዳሕን ብእኩብ ኣፍሪ።"
+        },
+        "fr": {
+          "displayName": "Synthèse vocale (TTS)",
+          "description": "Synthétisez des voix off et doublages vidéo par lots via des protocoles TTS configurables, dont les API compatibles OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope et des points de terminaison HTTP personnalisés."
+        }
+      },
+      "displayName": "Text to Speech",
+      "categories": [
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "tts",
+            "command": [
+              "python3",
+              "server.py",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "settings": [
+          {
+            "id": "protocol",
+            "title": "TTS Protocol",
+            "description": "Speech synthesis API protocol to use for the default profile (openai covers OpenAI and compatible gateways or local engines).",
+            "type": "choice",
+            "env": "TTS_PROTOCOL",
+            "choices": [
+              "openai",
+              "volcengine-v3",
+              "volcengine-v1",
+              "minimax",
+              "elevenlabs",
+              "azure",
+              "dashscope",
+              "http-generic"
+            ],
+            "default": "volcengine-v3"
+          },
+          {
+            "id": "api-key",
+            "title": "API Key / Access Token",
+            "description": "API key, access key, or subscription key for the selected protocol (stored encrypted; optional for unauthenticated local servers).",
+            "type": "secret",
+            "env": "TTS_API_KEY"
+          },
+          {
+            "id": "endpoint",
+            "title": "API Endpoint or Base URL",
+            "description": "Optional custom URL, base URL, or Azure region. Leave blank to use the protocol default endpoint.",
+            "type": "string",
+            "env": "TTS_ENDPOINT"
+          },
+          {
+            "id": "app-id",
+            "title": "App ID / Group ID",
+            "description": "Optional application or group identifier (for example Volcengine App ID, MiniMax Group ID, or Azure region).",
+            "type": "string",
+            "env": "TTS_APP_ID"
+          },
+          {
+            "id": "resource-id",
+            "title": "Model / Resource ID / Cluster",
+            "description": "Model name, resource ID, or cluster (for example seed-tts-2.0, volc.service_type.10029, volcano_tts, gpt-4o-mini-tts, speech-02-hd).",
+            "type": "string",
+            "env": "TTS_RESOURCE_ID"
+          },
+          {
+            "id": "voice",
+            "title": "Default Voice / Speaker",
+            "description": "Default voice or speaker identifier used when a tool call omits the voice parameter.",
+            "type": "string",
+            "env": "TTS_VOICE"
+          },
+          {
+            "id": "format",
+            "title": "Default Audio Format",
+            "description": "Default output audio encoding.",
+            "type": "choice",
+            "env": "TTS_FORMAT",
+            "choices": [
+              "mp3",
+              "wav",
+              "ogg_opus",
+              "pcm",
+              "flac"
+            ],
+            "default": "mp3"
+          },
+          {
+            "id": "sample-rate",
+            "title": "Default Sample Rate (Hz)",
+            "description": "Default audio sample rate when supported by the protocol.",
+            "type": "choice",
+            "env": "TTS_SAMPLE_RATE",
+            "choices": [
+              "16000",
+              "22050",
+              "24000",
+              "32000",
+              "44100",
+              "48000"
+            ],
+            "default": "24000"
+          },
+          {
+            "id": "profiles-path",
+            "title": "Profiles Config File",
+            "description": "Optional path to a JSON file defining multiple named TTS profiles, voice presets, or http-generic templates.",
+            "type": "string",
+            "env": "TTS_PROFILES_PATH"
+          },
+          {
+            "id": "timeout",
+            "title": "Request Timeout (seconds)",
+            "description": "HTTP timeout in seconds per synthesis request (5 to 120).",
+            "type": "string",
+            "env": "TTS_TIMEOUT",
+            "default": "45"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/text-to-speech/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/text-to-speech-0.1.0.tar.gz",
+      "sha256": "91c9575c5a9c3c28cf91ea5e9ad29c68c226f84b56d9aec8a9406d02df7dca57",
+      "bytes": 30887
     },
     {
       "name": "web-fetch",
