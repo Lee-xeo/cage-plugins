@@ -1477,9 +1477,10 @@
         ]
       },
       "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/host-latex/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/host-latex-0.1.0.tar.gz",
-      "sha256": "7ff63c8ec6762d06268eded9b9150935b811aad8ececb9a63714526285933f0e",
-      "bytes": 8905
+      "sha256": "f59dfd7694a119d3e47e5c919e26b927b0fdedca544c1081131bea93a7d71f8a",
+      "bytes": 21201
     },
     {
       "name": "knowledge-memory",
