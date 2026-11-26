@@ -1,0 +1,16 @@
+{
+  "name": "film-studio",
+  "displayName": "Film Studio",
+  "version": "0.1.0",
+  "description": "Makes, checks and renders videos written as web pages, and opens the editor to change them by hand. Works with OpenFilm.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.0" },
+  "kind": "host",
+  "platforms": ["darwin", "linux", "windows"],
+  "permissions": ["files", "commands", "network"],
+  "categories": ["productivity", "developer"],
+  "contributes": {
+    "mcpServers": [{ "id": "film", "command": ["node", "server.mjs", "${PROJECT_DIR}"] }],
+    "views": [{ "id": "films", "title": "Film Studio", "icon": "icon.svg", "entry": "view/index.html", "server": "film" }]
+  }
+}

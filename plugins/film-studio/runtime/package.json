@@ -1,0 +1,10 @@
+{
+  "name": "film-studio-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The OpenFilm release this plugin runs; every package it needs is locked in package-lock.json.",
+  "license": "MIT",
+  "dependencies": {
+    "openfilm": "0.4.1"
+  }
+}
