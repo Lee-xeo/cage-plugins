@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "本机 LaTeX 编译",
+    "description": "用已安装的 TeX Live 编译当前项目中的 LaTeX 文件，并将 PDF 保存到项目内。"
+  },
+  "zh-TW": {
+    "displayName": "本機 LaTeX 編譯",
+    "description": "使用已安裝的 TeX Live 編譯目前專案中的 LaTeX 檔案，並將 PDF 儲存至專案內。"
+  },
+  "es": {
+    "displayName": "LaTeX local",
+    "description": "Compila archivos LaTeX del proyecto abierto con la instalación existente de TeX Live y guarda el PDF en el proyecto."
+  },
+  "fr": {
+    "displayName": "LaTeX local",
+    "description": "Compile les fichiers LaTeX du projet ouvert avec l’installation existante de TeX Live et enregistre le PDF dans le projet."
+  },
+  "ru": {
+    "displayName": "Локальный LaTeX",
+    "description": "Компилирует файлы LaTeX открытого проекта с помощью установленного TeX Live и сохраняет PDF в проекте."
+  },
+  "be": {
+    "displayName": "Лакальны LaTeX",
+    "description": "Кампілюе файлы LaTeX адкрытага праекта з дапамогай усталяванага TeX Live і захоўвае PDF у праекце."
+  },
+  "ko": {
+    "displayName": "로컬 LaTeX 컴파일",
+    "description": "설치된 TeX Live로 열린 프로젝트의 LaTeX 파일을 컴파일하고 PDF를 프로젝트에 저장합니다."
+  },
+  "ar": {
+    "displayName": "مصرّف LaTeX المحلي",
+    "description": "يصرّف ملفات LaTeX في المشروع المفتوح باستخدام TeX Live المثبّت ويحفظ ملف PDF داخل المشروع."
+  },
+  "fa": {
+    "displayName": "کامپایل محلی LaTeX",
+    "description": "فایل‌های LaTeX پروژهٔ باز را با TeX Live نصب‌شده کامپایل می‌کند و PDF را در همان پروژه ذخیره می‌کند."
+  },
+  "prs": {
+    "displayName": "کامپایل محلی LaTeX",
+    "description": "فایل‌های LaTeX پروژهٔ باز را با TeX Live نصب‌شده کامپایل می‌کند و PDF را در همان پروژه ذخیره می‌کند."
+  },
+  "ps": {
+    "displayName": "ځايي LaTeX کمپایل",
+    "description": "د پرانیستې پروژې LaTeX دوتنې په نصب شوي TeX Live کمپایلوي او PDF په پروژه کې خوندي کوي."
+  },
+  "my": {
+    "displayName": "စက်တွင်း LaTeX ပြုစုခြင်း",
+    "description": "ဖွင့်ထားသော ပရောဂျက်ရှိ LaTeX ဖိုင်များကို ထည့်သွင်းထားပြီးသား TeX Live ဖြင့် ပြုစုပြီး PDF ကို ပရောဂျက်အတွင်း သိမ်းဆည်းသည်။"
+  },
+  "am": {
+    "displayName": "የአካባቢ LaTeX ማቀናበሪያ",
+    "description": "በተጫነው TeX Live የተከፈተውን ፕሮጀክት LaTeX ፋይሎች ያቀናብራል፣ PDFውንም በፕሮጀክቱ ውስጥ ያስቀምጣል።"
+  },
+  "ti": {
+    "displayName": "ናይ ከባቢ LaTeX መዳለዊ",
+    "description": "ብዝተተኽለ TeX Live ፋይላት LaTeX ናይቲ ክፉት ፕሮጀክት የዳሉ፣ ነቲ PDF ድማ ኣብቲ ፕሮጀክት ይዕቅብ።"
+  },
+  "so": {
+    "displayName": "LaTeX maxalli ah",
+    "description": "Wuxuu faylasha LaTeX ee mashruuca furan ku ururiyaa TeX Live ee hore u rakiban, PDF-kana wuxuu ku kaydiyaa mashruuca."
+  }
+}

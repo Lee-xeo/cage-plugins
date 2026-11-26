@@ -1,0 +1,16 @@
+{
+  "name": "host-latex",
+  "displayName": "Local LaTeX",
+  "version": "0.1.0",
+  "description": "Compiles LaTeX files in the open project with an existing TeX Live installation and saves the PDF in the project.",
+  "engines": { "cage": ">=0.2.1" },
+  "kind": "host",
+  "platforms": ["windows", "darwin", "linux"],
+  "permissions": ["files", "commands"],
+  "categories": ["developer", "productivity"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "latex", "command": ["python3", "-I", "-B", "server.py", "${PROJECT_DIR}"] }
+    ]
+  }
+}
