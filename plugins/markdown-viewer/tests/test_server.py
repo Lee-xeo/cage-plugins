@@ -231,6 +231,10 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(ok["resolvedPath"], "docs/assets/arch.svg")
         self.assertEqual(ok["mimeType"], "image/svg+xml")
         self.assertEqual(ok["encoding"], "base64")
+        self.assertTrue(isinstance(ok.get("data"), str) and len(ok["data"]) > 0)
+        ok_text = replies[0]["result"]["content"][0]["text"]
+        self.assertNotIn(ok["data"], ok_text)
+        self.assertNotIn('"data"', ok_text)
 
         for idx in (1, 2, 3):
             self.assertTrue(replies[idx]["result"].get("isError"))

@@ -42,6 +42,9 @@ export function createAssetLoader(requestFn, getScopeFn = null) {
       throw new Error(result.content?.[0]?.text || "无法加载图片");
     }
     const data = result.structuredContent || JSON.parse(result.content[0].text);
+    if (!data || typeof data.data !== "string") {
+      throw new Error("图片数据缺失");
+    }
     const dataUrl = `data:${data.mimeType || "application/octet-stream"};base64,${data.data}`;
     const entry = { dataUrl, resolvedPath: data.resolvedPath, bytes: data.bytes };
     touchCache(key, entry);

@@ -400,6 +400,12 @@ function showToast(message) {
   }, 2400);
 }
 
+async function copyWithToast(text, hostNotice, okToast, failToast = "复制失败") {
+  const ok = await copyText(text, hostNotice);
+  showToast(ok ? okToast : failToast);
+  return ok;
+}
+
 function showBanner(message, isError = false) {
   if (!message) {
     statusBanner.hidden = true;
@@ -1301,10 +1307,7 @@ async function hydrateTransclusions(container, token, depth = 0, visited = new S
       bodyEl.classList.remove("muted");
       renderMarkdown(slice, bodyEl, {
         document,
-        onCopy: (code) => {
-          copyText(code, "已复制代码块");
-          showToast("已复制代码块");
-        },
+        onCopy: (code) => copyWithToast(code, "已复制代码块", "已复制代码块"),
         onAssetMount: (figureEl, assetHref, alt) => {
           assetLoader.mountProjectImage(figureEl, targetPath, assetHref, alt, openLightbox);
         },
@@ -1392,10 +1395,7 @@ function updateEditorStatusbar() {
 function renderDocContent(markdown) {
   const token = ++renderHydrateToken;
   const meta = renderMarkdown(markdown, docContent, {
-    onCopy: (code) => {
-      copyText(code, "已复制代码块");
-      showToast("已复制代码块");
-    },
+    onCopy: (code) => copyWithToast(code, "已复制代码块", "已复制代码块"),
     onAssetMount: (figureEl, assetHref, alt) => {
       assetLoader.mountProjectImage(figureEl, currentFilePath, assetHref, alt, openLightbox);
     },
@@ -1711,8 +1711,7 @@ function attachInteractiveHandlers(container) {
       }
     }
 
-    copyText(href, `已复制链接: ${href}`);
-    showToast("已复制外部链接");
+    copyWithToast(href, `已复制链接: ${href}`, "已复制外部链接");
   });
 }
 
@@ -3439,10 +3438,7 @@ function updateSnippetPreview() {
   snippetBytes.textContent = `${formatBytes(byteLen)} / 24 KiB`;
   snippetBytes.parentElement.classList.toggle("over", byteLen > MAX_SNIPPET_BYTES);
   renderMarkdown(text, snippetPreview, {
-    onCopy: (code) => {
-      copyText(code, "已复制代码块");
-      showToast("已复制代码块");
-    },
+    onCopy: (code) => copyWithToast(code, "已复制代码块", "已复制代码块"),
   });
   recomputeHeadingFolding(snippetPreview, collapsedSnippetHeadings);
   schedulePersistState();
@@ -3683,15 +3679,13 @@ docEditor.addEventListener("input", () => {
 });
 copySourceBtn.addEventListener("click", () => {
   if (docEditor.value) {
-    copyText(docEditor.value, "已复制 Markdown 原文");
-    showToast("已复制 Markdown 源码");
+    copyWithToast(docEditor.value, "已复制 Markdown 原文", "已复制 Markdown 源码");
   }
 });
 snippetInput.addEventListener("input", () => updateSnippetPreview());
 snippetCopyBtn.addEventListener("click", () => {
   if (snippetInput.value) {
-    copyText(snippetInput.value, "已复制短文 Markdown 原文");
-    showToast("已复制短文源码");
+    copyWithToast(snippetInput.value, "已复制短文 Markdown 原文", "已复制短文源码");
   }
 });
 
@@ -4570,8 +4564,7 @@ if (kanbanCopyReportBtn) kanbanCopyReportBtn.addEventListener("click", () => {
     columnBy: kp.columnBy || "status",
     today: getTodayIso(),
   });
-  copyText(report, "已复制 Markdown 任务看板周报汇总");
-  showToast("已复制 Markdown 任务看板周报汇总");
+  copyWithToast(report, "已复制 Markdown 任务看板周报汇总", "已复制 Markdown 任务看板周报汇总");
 });
 if (kanbanAddTaskBtn) kanbanAddTaskBtn.addEventListener("click", openNewTaskModal);
 if (ntColorPicker) ntColorPicker.addEventListener("click", (event) => {
@@ -5182,10 +5175,7 @@ function openSlidesModal() {
   slidesModal.hidden = false;
   activeSlidesHandle = renderSlidesDeck(slidesModal, src, {
     document,
-    onCopy: (code) => {
-      copyText(code, "已复制代码块");
-      showToast("已复制代码块");
-    },
+    onCopy: (code) => copyWithToast(code, "已复制代码块", "已复制代码块"),
     onAssetMount: (figureEl, assetHref, alt) => {
       assetLoader.mountProjectImage(figureEl, currentFilePath, assetHref, alt, openLightbox);
     },
@@ -5242,7 +5232,12 @@ if (randomNoteBtn) randomNoteBtn.addEventListener("click", openRandomNote);
 
 if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener("beforeunload", (event) => {
-    if (isDirty && currentFilePath && !currentFileReadOnly && activeDraftExceedsQuota) {
+    if (
+      isDirty &&
+      currentFilePath &&
+      !currentFileReadOnly &&
+      (activeDraftExceedsQuota || !canPersistDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag))
+    ) {
       event.preventDefault();
       event.returnValue = "";
     }

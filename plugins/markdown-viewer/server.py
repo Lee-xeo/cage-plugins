@@ -1272,8 +1272,9 @@ def handle_request(message: dict, root_dir: str | None) -> dict | None:
                 result = read_markdown_asset(
                     root_dir, args.get("docPath", ""), args.get("assetHref", ""), scope=scope
                 )
+                asset_meta = {k: v for k, v in result.items() if k != "data"}
                 return {
-                    "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
+                    "content": [{"type": "text", "text": json.dumps(asset_meta, ensure_ascii=False)}],
                     "structuredContent": result,
                 }
             if name == "list_project_tags":
