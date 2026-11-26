@@ -1,8 +1,8 @@
 {
   "name": "host-latex",
-  "displayName": "Local LaTeX",
+  "displayName": "Host LaTeX",
   "version": "0.1.0",
-  "description": "Compiles LaTeX files in the open project with an existing TeX Live installation and saves the PDF in the project.",
+  "description": "Uses TeX Live already installed on this computer to turn your project's LaTeX files into PDFs and saves them in the project.",
   "engines": { "cage": ">=0.2.1" },
   "kind": "host",
   "platforms": ["windows", "darwin", "linux"],
