@@ -547,6 +547,17 @@
           },
           "description": "Relative POSIX paths to update."
         },
+        "pathPrefix": {
+          "type": "string",
+          "description": "Optional relative path prefix filter matching search_markdown_files."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional tag filter list (AND) matching search_markdown_files."
+        },
         "caseSensitive": {
           "type": "boolean",
           "description": "Case-sensitive matching."

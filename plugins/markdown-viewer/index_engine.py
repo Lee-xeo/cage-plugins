@@ -740,6 +740,36 @@ def _center_snippet(line: str, ranges: list[list[int]], max_len: int = 152) -> t
     return snippet, remapped
 
 
+def filter_entries_by_scope(
+    entries: dict[str, dict],
+    path_prefix: str = "",
+    tags: list[str] | None = None,
+    include_paths: list[str] | None = None,
+    exclude_paths: list[str] | None = None,
+) -> dict[str, dict]:
+    """Filter indexed Markdown entries by shared search/replace path prefix, path tokens, and tags."""
+    norm_prefix = (path_prefix or "").strip().lstrip("./").lower()
+    required_tags = {t.strip().lstrip("#").lower() for t in (tags or []) if isinstance(t, str) and t.strip()}
+    inc_paths = [p.strip().lower() for p in (include_paths or []) if isinstance(p, str) and p.strip()]
+    exc_paths = [p.strip().lower() for p in (exclude_paths or []) if isinstance(p, str) and p.strip()]
+
+    filtered: dict[str, dict] = {}
+    for rel_path, entry in entries.items():
+        low_path = rel_path.lower()
+        if norm_prefix and not low_path.startswith(norm_prefix):
+            continue
+        if inc_paths and not all(inc in low_path for inc in inc_paths):
+            continue
+        if exc_paths and any(exc in low_path for exc in exc_paths):
+            continue
+        if required_tags:
+            entry_tags = {t.lower() for t in entry.get("tags", [])}
+            if not required_tags.issubset(entry_tags):
+                continue
+        filtered[rel_path] = entry
+    return filtered
+
+
 def search_entries(
     entries: dict[str, dict],
     query: str,
@@ -771,25 +801,21 @@ def search_entries(
     required_tags = {t.strip().lstrip("#").lower() for t in (tags or []) if isinstance(t, str) and t.strip()}
     required_tags.update(parsed["tags"])
 
-    norm_prefix = (path_prefix or "").strip().lstrip("./").lower()
     if sort_by not in {"relevance", "matches", "path", "mtime"}:
         sort_by = "relevance"
+
+    scoped_entries = filter_entries_by_scope(
+        entries,
+        path_prefix=path_prefix,
+        tags=list(required_tags),
+        include_paths=parsed["includePaths"],
+        exclude_paths=parsed["excludePaths"],
+    )
 
     matched_files = []
     total_matches_all = 0
 
-    for rel_path, entry in entries.items():
-        low_path = rel_path.lower()
-        if norm_prefix and not low_path.startswith(norm_prefix):
-            continue
-        if parsed["includePaths"] and not all(inc in low_path for inc in parsed["includePaths"]):
-            continue
-        if parsed["excludePaths"] and any(exc in low_path for exc in parsed["excludePaths"]):
-            continue
-        if required_tags:
-            entry_tags = {t.lower() for t in entry.get("tags", [])}
-            if not required_tags.issubset(entry_tags):
-                continue
+    for rel_path, entry in scoped_entries.items():
 
         lines = entry.get("lines", [])
         line_headings = entry.get("lineHeadings", [])

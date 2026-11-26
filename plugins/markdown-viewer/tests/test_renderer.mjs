@@ -15,7 +15,16 @@ import { evaluateDataviewQuery, renderDataviewBlock } from "../view/render/datav
 import { computeLineDiff, renderDiffView } from "../view/render/diff-view.mjs";
 import { computeAutocompleteCandidates, convertTsvToMarkdownTable, extractHeadingsFromMarkdown } from "../view/editor-assist.mjs";
 import { applyI18n, resolveEffectiveLocale, translate } from "../view/i18n.mjs";
-import { fitStateWithinQuota, getDraft, hydrateStore, setDraft } from "../view/store.mjs";
+import { buildBatchReplaceArgs, buildSearchScopeArgs } from "../view/search-scope.mjs";
+import {
+  canPersistDraft,
+  fitStateWithinQuota,
+  fitStateWithinQuotaWithMeta,
+  getDraft,
+  hydrateStore,
+  isRecoverableDraft,
+  setDraft,
+} from "../view/store.mjs";
 
 function createMockDocument() {
   class MockNode {
@@ -1161,4 +1170,80 @@ test("uses data: URLs in asset-loader and reads host theme tokens + copyText ret
     globalThis.window = origWindow;
     globalThis.URL = origURL;
   }
+});
+
+test("PR #10 [P1] regressions: shared search/replace scope args and no silent draft truncation over quota", () => {
+  // 1. Search and batch replace share identical directory/tag/match-mode scope parameters
+  const shared = {
+    caseSensitive: true,
+    wholeWord: true,
+    regex: false,
+    pathPrefix: "docs/",
+    tags: ["alpha", "alpha", "beta"],
+  };
+  const searchArgs = buildSearchScopeArgs(shared);
+  const replaceArgs = buildBatchReplaceArgs({
+    query: "old_token",
+    replacement: "new_token",
+    ...shared,
+  });
+  assert.equal(replaceArgs.pathPrefix, searchArgs.pathPrefix);
+  assert.deepEqual(replaceArgs.tags, ["alpha", "beta"]);
+  assert.equal(replaceArgs.caseSensitive, searchArgs.caseSensitive);
+  assert.equal(replaceArgs.wholeWord, searchArgs.wholeWord);
+  assert.equal(replaceArgs.regex, searchArgs.regex);
+
+  // 2. Oversized draft (102,403 chars > 56 KiB quota) must NEVER be truncated & restored cleanly
+  const store = hydrateStore(null);
+  const diskContent = "X".repeat(102400);
+  const longDraft = diskContent + "123"; // 102,403 chars
+  const baseEtag = "etag-100k-orig";
+
+  assert.equal(canPersistDraft(store, "PR10-Test", "docs/long.md", longDraft, baseEtag), false);
+
+  // Even if setDraft is called directly before quota enforcement, fitStateWithinQuotaWithMeta drops rather than truncates
+  setDraft(store, "PR10-Test", "docs/long.md", longDraft, baseEtag);
+  const { state: persisted, droppedActiveDraft, droppedKeys } = fitStateWithinQuotaWithMeta(
+    store,
+    "PR10-Test",
+    "docs/long.md",
+  );
+  assert.equal(droppedActiveDraft, true);
+  assert.ok(droppedKeys.includes("PR10-Test::docs/long.md"));
+  assert.equal(getDraft(persisted, "PR10-Test", "docs/long.md"), null);
+  assert.ok(new TextEncoder().encode(JSON.stringify(persisted)).length <= 56 * 1024);
+
+  // Simulate reopening page from persisted state: must NOT restore truncated draft; file saves full 102,400 chars
+  const reopened = hydrateStore(JSON.parse(JSON.stringify(persisted)));
+  assert.equal(getDraft(reopened, "PR10-Test", "docs/long.md"), null);
+  const activeAfterReopen = getDraft(reopened, "PR10-Test", "docs/long.md")?.content ?? diskContent;
+  assert.equal(activeAfterReopen.length, 102400);
+
+  // 3. Legacy or tampered truncated drafts without complete+length integrity are also rejected
+  const tamperedStore = hydrateStore({
+    version: 2,
+    drafts: {
+      "proj::legacy.md": { content: "truncated...", baseEtag: "etag1", updatedAt: 1 },
+      "proj::mismatch.md": {
+        content: "abc",
+        baseEtag: "etag2",
+        updatedAt: 2,
+        complete: true,
+        contentLength: 999,
+      },
+      "proj::ok.md": {
+        content: "D".repeat(12000),
+        baseEtag: "etag-ok",
+        updatedAt: 3,
+        complete: true,
+        contentLength: 12000,
+        contentBytes: 12000,
+      },
+    },
+  });
+  assert.equal(isRecoverableDraft(tamperedStore.drafts["proj::ok.md"]), true);
+  assert.equal(getDraft(tamperedStore, "proj", "legacy.md"), null);
+  assert.equal(getDraft(tamperedStore, "proj", "mismatch.md"), null);
+  assert.equal(getDraft(tamperedStore, "proj", "ok.md").content.length, 12000);
+  assert.equal(canPersistDraft(tamperedStore, "proj", "normal.md", "D".repeat(12000), "etag-n"), true);
 });

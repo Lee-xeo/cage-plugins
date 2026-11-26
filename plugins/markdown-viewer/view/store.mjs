@@ -130,7 +130,11 @@ export function hydrateStore(raw) {
       base.projects = { ...raw.projects };
     }
     if (raw.drafts && typeof raw.drafts === "object") {
-      base.drafts = { ...raw.drafts };
+      for (const [key, entry] of Object.entries(raw.drafts)) {
+        if (isRecoverableDraft(entry)) {
+          base.drafts[key] = entry;
+        }
+      }
     }
     if (typeof raw.snippet === "string") {
       base.snippet = raw.snippet;
@@ -154,18 +158,31 @@ export function draftKey(projectName, filePath) {
   return `${projectName || "__default__"}::${filePath}`;
 }
 
+export function isRecoverableDraft(entry) {
+  if (!entry || typeof entry !== "object" || typeof entry.content !== "string") return false;
+  if (entry.complete !== true || entry.truncated === true) return false;
+  if (typeof entry.contentLength !== "number" || entry.contentLength !== entry.content.length) return false;
+  if (typeof entry.contentBytes === "number" && entry.contentBytes !== encoder.encode(entry.content).length) {
+    return false;
+  }
+  return true;
+}
+
 export function getDraft(store, projectName, filePath) {
-  if (!filePath) return null;
+  if (!filePath || !store || typeof store !== "object" || !store.drafts) return null;
   const entry = store.drafts[draftKey(projectName, filePath)];
-  return entry && typeof entry.content === "string" ? entry : null;
+  return isRecoverableDraft(entry) ? entry : null;
 }
 
 export function setDraft(store, projectName, filePath, content, baseEtag) {
-  if (!filePath) return;
+  if (!filePath || typeof content !== "string") return;
   store.drafts[draftKey(projectName, filePath)] = {
     content,
     baseEtag: baseEtag || "",
     updatedAt: Date.now(),
+    complete: true,
+    contentLength: content.length,
+    contentBytes: encoder.encode(content).length,
   };
 }
 
@@ -186,14 +203,31 @@ export function getProjectState(store, projectName) {
   return store.projects[key];
 }
 
-export function fitStateWithinQuota(store, activeProjectName, activeFilePath) {
+/**
+ * Shrink serialized state to fit within the 56 KiB host state budget.
+ * Never truncates draft content in place: if even evicting all other drafts
+ * leaves the active draft over quota, drop it so incomplete content is never
+ * restored and saved over a full file on disk.
+ */
+export function fitStateWithinQuotaWithMeta(store, activeProjectName, activeFilePath) {
   const clone = JSON.parse(JSON.stringify(store));
+  if (!clone.drafts || typeof clone.drafts !== "object") {
+    clone.drafts = {};
+  }
+  for (const [key, entry] of Object.entries(clone.drafts)) {
+    if (!isRecoverableDraft(entry)) {
+      delete clone.drafts[key];
+    }
+  }
+
   while (encoder.encode(clone.snippet || "").length > MAX_SNIPPET_BYTES) {
     clone.snippet = clone.snippet.slice(0, Math.floor(clone.snippet.length * 0.85));
   }
 
   const activeKey = activeFilePath ? draftKey(activeProjectName, activeFilePath) : "";
   const byteSize = () => encoder.encode(JSON.stringify(clone)).length;
+  const droppedKeys = [];
+  let droppedActiveDraft = false;
 
   if (byteSize() > MAX_STATE_BYTES) {
     const evictable = Object.entries(clone.drafts)
@@ -201,16 +235,31 @@ export function fitStateWithinQuota(store, activeProjectName, activeFilePath) {
       .sort((a, b) => (a[1]?.updatedAt || 0) - (b[1]?.updatedAt || 0));
     for (const [key] of evictable) {
       delete clone.drafts[key];
+      droppedKeys.push(key);
       if (byteSize() <= MAX_STATE_BYTES) break;
     }
   }
 
   if (byteSize() > MAX_STATE_BYTES && activeKey && clone.drafts[activeKey]) {
-    const entry = clone.drafts[activeKey];
-    while (byteSize() > MAX_STATE_BYTES && entry.content.length > 0) {
-      entry.content = entry.content.slice(0, Math.floor(entry.content.length * 0.8));
-    }
+    delete clone.drafts[activeKey];
+    droppedKeys.push(activeKey);
+    droppedActiveDraft = true;
   }
 
-  return clone;
+  return { state: clone, droppedActiveDraft, droppedKeys };
+}
+
+export function fitStateWithinQuota(store, activeProjectName, activeFilePath) {
+  return fitStateWithinQuotaWithMeta(store, activeProjectName, activeFilePath).state;
+}
+
+export function canPersistDraft(store, projectName, filePath, content, baseEtag = "") {
+  if (!filePath || typeof content !== "string") return false;
+  const probe = JSON.parse(JSON.stringify(store));
+  if (!probe.drafts || typeof probe.drafts !== "object") {
+    probe.drafts = {};
+  }
+  setDraft(probe, projectName, filePath, content, baseEtag);
+  const { state, droppedActiveDraft } = fitStateWithinQuotaWithMeta(probe, projectName, filePath);
+  return !droppedActiveDraft && Boolean(getDraft(state, projectName, filePath));
 }

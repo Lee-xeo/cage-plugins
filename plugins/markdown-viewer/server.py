@@ -15,6 +15,7 @@ import zlib
 from index_engine import (
     ProjectIndex,
     build_project_graph,
+    filter_entries_by_scope,
     format_task_metadata,
     inspect_links,
     parse_task_metadata,
@@ -1051,6 +1052,8 @@ def replace_in_markdown_files(
     regex: bool = False,
     expected_etags: dict[str, str] | None = None,
     scope: str = "project",
+    path_prefix: str = "",
+    tags: list[str] | None = None,
 ) -> dict:
     if not isinstance(query, str) or not query:
         raise ValueError("Parameter 'query' must be a non-empty string.")
@@ -1058,6 +1061,12 @@ def replace_in_markdown_files(
         raise ValueError("Parameter 'query' is too long (max 240 characters).")
     if not isinstance(replacement, str):
         raise ValueError("Parameter 'replacement' must be a string.")
+    if paths is not None and not isinstance(paths, list):
+        raise ValueError("Parameter 'paths' must be a list of relative paths.")
+    if path_prefix is not None and not isinstance(path_prefix, str):
+        raise ValueError("Parameter 'pathPrefix' must be a string.")
+    if tags is not None and not isinstance(tags, list):
+        raise ValueError("Parameter 'tags' must be a list of tag strings.")
 
     flags = 0 if case_sensitive else re.IGNORECASE
     if regex:
@@ -1070,8 +1079,35 @@ def replace_in_markdown_files(
     else:
         pattern = re.compile(re.escape(query), flags)
 
-    target_paths = paths if isinstance(paths, list) and paths else []
-    if not target_paths:
+    norm_prefix = (path_prefix or "").strip().lstrip("./")
+    clean_tags = [t for t in (tags or []) if isinstance(t, str) and t.strip()]
+
+    target_paths: list[str] = []
+    if paths is not None:
+        candidate_paths = [p for p in paths if isinstance(p, str) and p.strip()]
+        if not candidate_paths:
+            return {"replacedFiles": [], "totalReplacements": 0, "conflicts": []}
+        if norm_prefix or clean_tags:
+            entries = _refresh_scoped_entries(root_dir, scope=scope)
+            allowed = set(filter_entries_by_scope(entries, path_prefix=norm_prefix, tags=clean_tags).keys())
+            for rel_path in candidate_paths:
+                try:
+                    _, _, normalized = _resolve_scoped_markdown_path(root_dir, rel_path, scope=scope, must_exist=True)
+                except ValueError:
+                    continue
+                if normalized in allowed:
+                    target_paths.append(normalized)
+            if not target_paths:
+                return {"replacedFiles": [], "totalReplacements": 0, "conflicts": []}
+        else:
+            target_paths = candidate_paths
+    elif norm_prefix or clean_tags:
+        entries = _refresh_scoped_entries(root_dir, scope=scope)
+        filtered = filter_entries_by_scope(entries, path_prefix=norm_prefix, tags=clean_tags)
+        target_paths = sorted(filtered.keys())
+        if not target_paths:
+            return {"replacedFiles": [], "totalReplacements": 0, "conflicts": []}
+    else:
         listed = list_markdown_files(root_dir, scope=scope)
         target_paths = [item["path"] for item in listed["files"]]
 
@@ -1349,6 +1385,8 @@ def handle_request(message: dict, root_dir: str | None) -> dict | None:
                     regex=bool(args.get("regex", False)),
                     expected_etags=args.get("expectedEtags"),
                     scope=scope,
+                    path_prefix=args.get("pathPrefix", ""),
+                    tags=args.get("tags"),
                 )
                 return {
                     "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],

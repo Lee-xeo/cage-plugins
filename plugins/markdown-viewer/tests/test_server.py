@@ -1086,6 +1086,129 @@ class ServerTests(unittest.TestCase):
                 self.assertFalse((ws_a / "docs" / "roadmap.md").exists())
                 self.assertEqual((ws_a / "index.md").read_text(encoding="utf-8"), "See [[beta/notes/roadmap]] and [[beta/notes/roadmap]].\n")
 
+    def test_scoped_batch_replace_regression(self):
+        """PR #10 [P1] regression: batch replace shares search path/tag scope and handles empty matches."""
+        with tempfile.TemporaryDirectory() as scoped_dir:
+            scoped_root = pathlib.Path(scoped_dir)
+            (scoped_root / "docs").mkdir()
+            (scoped_root / "notes").mkdir()
+            (scoped_root / "docs" / "example.md").write_text(
+                "# Doc Example\n\n#alpha\n\nreplace_me in docs.\n",
+                encoding="utf-8",
+            )
+            (scoped_root / "notes" / "example.md").write_text(
+                "# Notes Example\n\n#beta\n\nreplace_me in notes.\n",
+                encoding="utf-8",
+            )
+
+            import sys as _sys
+            _sys.path.insert(0, str(PLUGIN_DIR))
+            try:
+                import server as md_server
+            finally:
+                _sys.path.pop(0)
+
+            # 1. Directory prefix filter limits replace to docs/ only (notes/example.md stays intact)
+            res_docs = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 201,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {"query": "replace_me", "replacement": "done_docs", "pathPrefix": "docs/"},
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertFalse(res_docs.get("isError", False))
+            self.assertEqual([f["path"] for f in res_docs["structuredContent"]["replacedFiles"]], ["docs/example.md"])
+            self.assertIn("done_docs", (scoped_root / "docs" / "example.md").read_text(encoding="utf-8"))
+            self.assertIn("replace_me", (scoped_root / "notes" / "example.md").read_text(encoding="utf-8"))
+
+            # 2. Empty filtered prefix must NOT fall back to replacing all project files
+            res_empty_dir = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 202,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {"query": "replace_me", "replacement": "SHOULD_NOT_HAPPEN", "pathPrefix": "empty_dir/"},
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertFalse(res_empty_dir.get("isError", False))
+            self.assertEqual(res_empty_dir["structuredContent"]["totalReplacements"], 0)
+            self.assertIn("replace_me", (scoped_root / "notes" / "example.md").read_text(encoding="utf-8"))
+
+            # 3. Explicit empty paths=[] must NOT fall back to all files
+            res_empty_paths = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 203,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {"query": "replace_me", "replacement": "SHOULD_NOT_HAPPEN", "paths": []},
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertEqual(res_empty_paths["structuredContent"]["totalReplacements"], 0)
+            self.assertIn("replace_me", (scoped_root / "notes" / "example.md").read_text(encoding="utf-8"))
+
+            # 4. Tag filter limits replacement (and nonexistent tag yields 0 without fallback)
+            res_no_tag = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 204,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {"query": "replace_me", "replacement": "SHOULD_NOT_HAPPEN", "tags": ["missing_tag"]},
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertEqual(res_no_tag["structuredContent"]["totalReplacements"], 0)
+
+            res_beta = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 205,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {"query": "done_docs", "replacement": "both_ok", "tags": ["alpha"]},
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertEqual([f["path"] for f in res_beta["structuredContent"]["replacedFiles"]], ["docs/example.md"])
+
+            # 5. Combining explicit paths + pathPrefix narrows down properly
+            res_combo = md_server.handle_request(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 206,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "replace_in_markdown_files",
+                        "arguments": {
+                            "query": "both_ok",
+                            "replacement": "combo_ok",
+                            "paths": ["docs/example.md", "notes/example.md"],
+                            "pathPrefix": "docs/",
+                        },
+                    },
+                },
+                str(scoped_root),
+            )
+            self.assertEqual([f["path"] for f in res_combo["structuredContent"]["replacedFiles"]], ["docs/example.md"])
+            self.assertIn("replace_me", (scoped_root / "notes" / "example.md").read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,10 +17,12 @@ import {
 import { renderOfficeDocument } from "./render/office-viewer.mjs";
 import { renderSlidesDeck } from "./render/slides-view.mjs";
 import { isRelativeMarkdownHref, renderMarkdown, slugify } from "./renderer.mjs";
+import { buildBatchReplaceArgs, buildSearchScopeArgs } from "./search-scope.mjs";
 import {
+  canPersistDraft,
   createInitialGraphSettings,
   deleteDraft,
-  fitStateWithinQuota,
+  fitStateWithinQuotaWithMeta,
   getDraft,
   getProjectState,
   hasDraftForFile,
@@ -302,6 +304,8 @@ let currentFileBytes = 0;
 let currentFileTruncated = false;
 let currentFileReadOnly = false;
 let isDirty = false;
+let activeDraftExceedsQuota = false;
+let restoredFromDraft = false;
 let conflictInfo = null; // { path, diskEtag, diskBytes }
 let knownDirs = new Set();
 let stateTimer = null;
@@ -427,7 +431,15 @@ function schedulePersistState(immediate = false) {
     store.snippet = snippetInput.value || "";
     const proj = getProjectState(store, currentProjectName);
     proj.currentFilePath = currentFilePath;
-    const fitted = fitStateWithinQuota(store, currentProjectName, currentFilePath);
+    const { state: fitted, droppedActiveDraft } = fitStateWithinQuotaWithMeta(
+      store,
+      currentProjectName,
+      currentFilePath,
+    );
+    if (droppedActiveDraft && isDirty && currentFilePath && !currentFileReadOnly && !activeDraftExceedsQuota) {
+      activeDraftExceedsQuota = true;
+      updateDirtyState();
+    }
     request("ui/setState", { state: fitted }).catch(() => {});
   };
   if (immediate) {
@@ -1450,8 +1462,27 @@ function updateReadOnlyControls() {
 
 function updateDirtyState() {
   isDirty = !currentFileReadOnly && docEditor.value !== savedFileContent;
+  if (!isDirty) {
+    activeDraftExceedsQuota = false;
+    restoredFromDraft = false;
+  }
   saveBtn.hidden = !isDirty;
-  draftBanner.hidden = hasCurrentConflict() || (!isDirty && !hasDraftForFile(store, currentProjectName, currentFilePath));
+  const hasStoredDraft = hasDraftForFile(store, currentProjectName, currentFilePath);
+  const showQuotaBanner = isDirty && activeDraftExceedsQuota && !hasCurrentConflict();
+  draftBanner.hidden = hasCurrentConflict() || (!showQuotaBanner && !hasStoredDraft);
+  if (draftBanner) {
+    draftBanner.classList.toggle("danger", showQuotaBanner);
+    draftBanner.classList.toggle("warn", !showQuotaBanner);
+  }
+  if (draftBannerText && !draftBanner.hidden) {
+    if (showQuotaBanner) {
+      draftBannerText.textContent = "当前未保存修改超出本地草稿缓存上限（56 KiB），无法自动暂存；离开或重开前请先保存（⌘S）。";
+    } else if (restoredFromDraft) {
+      draftBannerText.textContent = "已恢复未保存的本地草稿（按项目与文件路径隔离）。";
+    } else {
+      draftBannerText.textContent = "当前文档有未保存修改，已暂存为完整本地草稿。";
+    }
+  }
   updateStatusPills();
 }
 
@@ -1460,10 +1491,20 @@ function scheduleDraftSave() {
   draftTimer = setTimeout(() => {
     if (!currentFilePath || currentFileReadOnly) return;
     if (docEditor.value !== savedFileContent) {
-      setDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
+      restoredFromDraft = false;
+      if (canPersistDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag)) {
+        activeDraftExceedsQuota = false;
+        setDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
+      } else {
+        activeDraftExceedsQuota = true;
+        deleteDraft(store, currentProjectName, currentFilePath);
+      }
     } else {
+      activeDraftExceedsQuota = false;
+      restoredFromDraft = false;
       deleteDraft(store, currentProjectName, currentFilePath);
     }
+    updateDirtyState();
     renderFileList();
     schedulePersistState(true);
   }, 300);
@@ -1538,8 +1579,16 @@ function guardUnsavedAction(action) {
     action();
     return;
   }
+  const fitsQuota = canPersistDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
+  activeDraftExceedsQuota = !fitsQuota;
+  updateDirtyState();
   pendingLeaveAction = action;
-  leaveModalDesc.textContent = `「${currentFilePath}」有未保存的编辑内容，切换前请选择处理方式：`;
+  if (leaveDraftBtn) {
+    leaveDraftBtn.hidden = !fitsQuota;
+  }
+  leaveModalDesc.textContent = fitsQuota
+    ? `「${currentFilePath}」有未保存的编辑内容，切换前请选择处理方式：`
+    : `「${currentFilePath}」未保存内容超出本地草稿缓存上限（56 KiB），无法暂存为可恢复草稿。继续离开将丢失修改，请先「保存并继续」或选择「放弃修改」：`;
   leaveModal.hidden = false;
 }
 
@@ -1552,9 +1601,19 @@ leaveSaveBtn.addEventListener("click", async () => {
 });
 
 leaveDraftBtn.addEventListener("click", () => {
+  if (!canPersistDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag)) {
+    activeDraftExceedsQuota = true;
+    deleteDraft(store, currentProjectName, currentFilePath);
+    if (leaveDraftBtn) leaveDraftBtn.hidden = true;
+    leaveModalDesc.textContent = `「${currentFilePath}」未保存内容超出本地草稿缓存上限（56 KiB），无法暂存为可恢复草稿。请先「保存并继续」或选择「放弃修改」：`;
+    updateDirtyState();
+    showBanner("当前修改超出 56 KiB 草稿上限，无法暂存为完整草稿，请先保存后再离开。", true);
+    return;
+  }
   const action = pendingLeaveAction;
   leaveModal.hidden = true;
   pendingLeaveAction = null;
+  activeDraftExceedsQuota = false;
   setDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
   schedulePersistState(true);
   showToast(`已将 ${currentFilePath} 保留为本地草稿`);
@@ -1567,6 +1626,8 @@ leaveDiscardBtn.addEventListener("click", () => {
   pendingLeaveAction = null;
   deleteDraft(store, currentProjectName, currentFilePath);
   isDirty = false;
+  activeDraftExceedsQuota = false;
+  restoredFromDraft = false;
   if (hasCurrentConflict()) conflictInfo = null;
   schedulePersistState(true);
   showToast("已放弃未保存修改");
@@ -2200,16 +2261,16 @@ async function runFulltextSearch(explicitQuery, opts = {}) {
     const richArgs = {
       query,
       limit: 150,
-      caseSensitive: searchCaseSensitive,
-      wholeWord: searchWholeWord,
-      regex: searchRegex,
-      pathPrefix: searchPathPrefix,
+      ...buildSearchScopeArgs({
+        caseSensitive: searchCaseSensitive,
+        wholeWord: searchWholeWord,
+        regex: searchRegex,
+        pathPrefix: searchPathPrefix,
+        tags: [...selectedTags],
+      }),
       sortBy: sp.sortBy || "relevance",
       includeContext: Boolean(sp.context),
     };
-    if (selectedTags.size > 0) {
-      richArgs.tags = [...selectedTags];
-    }
 
     let result = await callScopedTool("search_markdown_files", richArgs);
     if (
@@ -2330,6 +2391,8 @@ async function loadFiles() {
       docEmpty.hidden = false;
       currentFilePath = "";
       isDirty = false;
+      activeDraftExceedsQuota = false;
+      restoredFromDraft = false;
       conflictInfo = null;
       schedulePersistState();
     }
@@ -2503,6 +2566,8 @@ async function openProjectFile(path, options = {}) {
       : null;
 
     const activeContent = savedDraft ? savedDraft.content : savedFileContent;
+    activeDraftExceedsQuota = false;
+    restoredFromDraft = Boolean(savedDraft);
     docPath.textContent = currentFilePath;
     updateDocWorkspacePill(currentFilePath);
     docEditor.value = activeContent;
@@ -2515,12 +2580,6 @@ async function openProjectFile(path, options = {}) {
 
     updateReadOnlyControls();
     updateDirtyState();
-    if (savedDraft && !hasCurrentConflict()) {
-      draftBanner.hidden = false;
-      draftBannerText.textContent = "已恢复未保存的本地草稿（按项目与文件路径隔离）。";
-    } else {
-      draftBanner.hidden = true;
-    }
 
     renderDocContent(activeContent);
     if (!preserveView || (!kanbanOpen && !graphOpen)) {
@@ -2587,7 +2646,13 @@ async function saveCurrentFile(force = false) {
         diskEtag: data.diskEtag || "",
         diskBytes: data.diskBytes || 0,
       };
-      setDraft(store, currentProjectName, currentFilePath, content, currentBaseEtag);
+      if (canPersistDraft(store, currentProjectName, currentFilePath, content, currentBaseEtag)) {
+        activeDraftExceedsQuota = false;
+        setDraft(store, currentProjectName, currentFilePath, content, currentBaseEtag);
+      } else {
+        activeDraftExceedsQuota = true;
+        deleteDraft(store, currentProjectName, currentFilePath);
+      }
       schedulePersistState(true);
       updateDirtyState();
       openConflictDialog();
@@ -2598,6 +2663,8 @@ async function saveCurrentFile(force = false) {
     currentBaseEtag = data.etag || "";
     currentFileBytes = data.bytes || encoder.encode(content).length;
     currentFileTruncated = false;
+    activeDraftExceedsQuota = false;
+    restoredFromDraft = false;
     conflictInfo = null;
     deleteDraft(store, currentProjectName, currentFilePath);
     updateDirtyState();
@@ -2621,15 +2688,26 @@ openConflictBtn.addEventListener("click", openConflictDialog);
 
 conflictKeepBtn.addEventListener("click", () => {
   conflictModal.hidden = true;
-  setDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
-  schedulePersistState(true);
-  updateDirtyState();
-  showToast("已保留本地草稿，磁盘文件未被覆盖");
+  if (canPersistDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag)) {
+    activeDraftExceedsQuota = false;
+    setDraft(store, currentProjectName, currentFilePath, docEditor.value, currentBaseEtag);
+    schedulePersistState(true);
+    updateDirtyState();
+    showToast("已保留本地草稿，磁盘文件未被覆盖");
+  } else {
+    activeDraftExceedsQuota = true;
+    deleteDraft(store, currentProjectName, currentFilePath);
+    schedulePersistState(true);
+    updateDirtyState();
+    showBanner("当前修改超出 56 KiB 本地草稿缓存上限，无法跨重开保留；磁盘文件未被覆盖，请手动保存或备份。", true);
+  }
 });
 
 conflictReloadBtn.addEventListener("click", () => {
   conflictModal.hidden = true;
   conflictInfo = null;
+  activeDraftExceedsQuota = false;
+  restoredFromDraft = false;
   deleteDraft(store, currentProjectName, currentFilePath);
   openProjectFile(currentFilePath, { ignoreDraft: true });
   showToast("已重新加载磁盘最新版本");
@@ -2642,6 +2720,8 @@ conflictForceBtn.addEventListener("click", async () => {
 
 restoreDiskBtn.addEventListener("click", () => {
   conflictInfo = null;
+  activeDraftExceedsQuota = false;
+  restoredFromDraft = false;
   deleteDraft(store, currentProjectName, currentFilePath);
   openProjectFile(currentFilePath, { ignoreDraft: true });
   showToast("已恢复磁盘版本");
@@ -3548,6 +3628,8 @@ backBtn.addEventListener("click", () => {
     setSidebarOpen(true);
     currentFilePath = "";
     isDirty = false;
+    activeDraftExceedsQuota = false;
+    restoredFromDraft = false;
     conflictInfo = null;
     findBar.close();
     renderFileList();
@@ -4923,16 +5005,23 @@ if (batchReplaceBtn) {
       return;
     }
     try {
-      const res = await callScopedTool("replace_in_markdown_files", {
+      const args = buildBatchReplaceArgs({
         query,
         replacement,
-        caseSensitive: Boolean(searchCaseBtn && searchCaseBtn.classList.contains("active")),
-        wholeWord: Boolean(searchWordBtn && searchWordBtn.classList.contains("active")),
-        regex: Boolean(searchRegexBtn && searchRegexBtn.classList.contains("active")),
+        caseSensitive: searchCaseSensitive,
+        wholeWord: searchWholeWord,
+        regex: searchRegex,
+        pathPrefix: searchPathPrefix,
+        tags: [...selectedTags],
       });
+      const res = await callScopedTool("replace_in_markdown_files", args);
       if (res.isError) throw new Error(res.content?.[0]?.text || "批量替换失败");
       const out = res.structuredContent || JSON.parse(res.content[0].text);
-      showToast(`已替换 ${out.replacedFiles.length} 个文件，共 ${out.totalReplacements} 处`);
+      showToast(
+        out.totalReplacements > 0
+          ? `已替换 ${out.replacedFiles.length} 个文件，共 ${out.totalReplacements} 处`
+          : "当前搜索范围内未找到可替换内容",
+      );
       await runFulltextSearch(query);
       if (currentFilePath && out.replacedFiles.some((f) => f.path === currentFilePath)) {
         await openProjectFile(currentFilePath, { ignoreDraft: true, preserveView: true });
@@ -5150,3 +5239,12 @@ function openRandomNote() {
 
 if (dailyNoteBtn) dailyNoteBtn.addEventListener("click", openDailyNote);
 if (randomNoteBtn) randomNoteBtn.addEventListener("click", openRandomNote);
+
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("beforeunload", (event) => {
+    if (isDirty && currentFilePath && !currentFileReadOnly && activeDraftExceedsQuota) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
+}
