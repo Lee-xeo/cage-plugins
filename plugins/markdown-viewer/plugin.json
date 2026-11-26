@@ -15,7 +15,7 @@
     "views": [
       {
         "id": "reader",
-        "title": "Markdown Viewer v1.10.0",
+        "title": "Markdown Viewer",
         "icon": "icon.svg",
         "entry": "view/index.html",
         "server": "markdown"

@@ -1,16 +1,7 @@
 const MAX_CACHE_ENTRIES = 40;
 
-function base64ToUint8Array(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) {
-    bytes[i] = bin.charCodeAt(i);
-  }
-  return bytes;
-}
-
 /**
- * Offline project image loader with LRU Blob URL cache.
+ * Offline project image loader with LRU data URL cache.
  * SVG assets are always mounted inside <img> so scripts inside SVGs never execute.
  */
 export function createAssetLoader(requestFn, getScopeFn = null) {
@@ -21,11 +12,7 @@ export function createAssetLoader(requestFn, getScopeFn = null) {
     cache.set(key, entry);
     while (cache.size > MAX_CACHE_ENTRIES) {
       const oldestKey = cache.keys().next().value;
-      const oldest = cache.get(oldestKey);
       cache.delete(oldestKey);
-      if (oldest && oldest.blobUrl) {
-        URL.revokeObjectURL(oldest.blobUrl);
-      }
     }
   }
 
@@ -55,10 +42,8 @@ export function createAssetLoader(requestFn, getScopeFn = null) {
       throw new Error(result.content?.[0]?.text || "无法加载图片");
     }
     const data = result.structuredContent || JSON.parse(result.content[0].text);
-    const bytes = base64ToUint8Array(data.data);
-    const blob = new Blob([bytes], { type: data.mimeType || "application/octet-stream" });
-    const blobUrl = URL.createObjectURL(blob);
-    const entry = { blobUrl, resolvedPath: data.resolvedPath, bytes: data.bytes };
+    const dataUrl = `data:${data.mimeType || "application/octet-stream"};base64,${data.data}`;
+    const entry = { dataUrl, resolvedPath: data.resolvedPath, bytes: data.bytes };
     touchCache(key, entry);
     return entry;
   }
@@ -73,12 +58,12 @@ export function createAssetLoader(requestFn, getScopeFn = null) {
       while (figureEl.firstChild) figureEl.removeChild(figureEl.firstChild);
       const img = document.createElement("img");
       img.className = "md-img";
-      img.src = entry.blobUrl;
+      img.src = entry.dataUrl;
       img.alt = altText || "";
       img.title = entry.resolvedPath ? `${entry.resolvedPath}（点击放大）` : assetHref;
       if (typeof onZoom === "function") {
         img.classList.add("zoomable");
-        img.addEventListener("click", () => onZoom(entry.blobUrl, altText || entry.resolvedPath || assetHref, entry.resolvedPath || assetHref));
+        img.addEventListener("click", () => onZoom(entry.dataUrl, altText || entry.resolvedPath || assetHref, entry.resolvedPath || assetHref));
       }
       figureEl.appendChild(img);
       const cap = document.createElement("figcaption");
@@ -117,9 +102,6 @@ export function createAssetLoader(requestFn, getScopeFn = null) {
   }
 
   function clear() {
-    for (const entry of cache.values()) {
-      if (entry && entry.blobUrl) URL.revokeObjectURL(entry.blobUrl);
-    }
     cache.clear();
   }
 

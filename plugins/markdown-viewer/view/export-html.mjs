@@ -19,33 +19,10 @@ function collectInlineStyles() {
   return `:root { ${vars} }\n` + chunks.join("\n");
 }
 
-function inlineBlobImages(rootClone) {
-  const imgs = rootClone.querySelectorAll("img");
-  for (const img of imgs) {
-    const src = img.getAttribute("src") || "";
-    if (!src.startsWith("blob:")) continue;
-    try {
-      const orig = [...document.querySelectorAll("#doc-content img")].find((el) => el.getAttribute("src") === src);
-      if (orig && orig.complete && orig.naturalWidth > 0) {
-        const canvas = document.createElement("canvas");
-        canvas.width = orig.naturalWidth;
-        canvas.height = orig.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(orig, 0, 0);
-          img.setAttribute("src", canvas.toDataURL("image/png"));
-        }
-      }
-    } catch {
-      // Keep original src if conversion fails
-    }
-  }
-}
-
 /**
- * Export the rendered Markdown article as a self-contained offline HTML file.
+ * Build a self-contained offline HTML document string from the rendered Markdown article.
  */
-export function exportStandaloneHtml(filePath, contentEl) {
+export function buildStandaloneHtml(filePath, contentEl) {
   const doc = document.implementation.createHTMLDocument(filePath || "Markdown Export");
   const metaCharset = doc.createElement("meta");
   metaCharset.setAttribute("charset", "utf-8");
@@ -60,19 +37,12 @@ export function exportStandaloneHtml(filePath, contentEl) {
     if (btn.classList.contains("md-tag")) continue;
     btn.remove();
   }
-  inlineBlobImages(clone);
   doc.body.appendChild(clone);
 
   const serialized = "<!doctype html>\n" + new XMLSerializer().serializeToString(doc.documentElement);
-  const blob = new Blob([serialized], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
   const baseName = (filePath || "document").split("/").pop().replace(/\.(md|markdown|mdx)$/i, "") || "document";
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${baseName}.html`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return {
+    filename: `${baseName}.html`,
+    html: serialized,
+  };
 }

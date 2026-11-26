@@ -1,6 +1,6 @@
 import { copyText, initializeHost, isVisible, onVisibilityChanged, request, setThemeMode } from "./bridge.mjs";
 import { attachEditorAssist, extractHeadingsFromMarkdown } from "./editor-assist.mjs";
-import { exportStandaloneHtml } from "./export-html.mjs";
+import { buildStandaloneHtml } from "./export-html.mjs";
 import { createFindBar, locateSourceLine } from "./findbar.mjs";
 import { applyI18n, resolveEffectiveLocale, translate } from "./i18n.mjs";
 import { createAssetLoader } from "./render/asset-loader.mjs";
@@ -30,6 +30,7 @@ import {
 
 const MAX_SNIPPET_BYTES = 24 * 1024;
 const MAX_READ_BYTES = 512 * 1024;
+const MAX_ASSET_UPLOAD_BYTES = 512 * 1024;
 const encoder = new TextEncoder();
 
 const el = (id) => document.getElementById(id);
@@ -46,7 +47,6 @@ const themeLightBtn = el("theme-light-btn");
 const themeDarkBtn = el("theme-dark-btn");
 const themeSystemBtn = el("theme-system-btn");
 const quickOpenBtn = el("quick-open-btn");
-const printBtn = el("print-btn");
 const refreshBtn = el("refresh-btn");
 const langToggleBtn = el("lang-toggle-btn");
 const statusBanner = el("status-banner");
@@ -2211,13 +2211,14 @@ async function runFulltextSearch(explicitQuery, opts = {}) {
       richArgs.tags = [...selectedTags];
     }
 
-    let result;
-    try {
-      result = await callScopedTool("search_markdown_files", richArgs);
-      if (result && result.isError && /additionalProperties|Unexpected|invalid/i.test(result.content?.[0]?.text || "")) {
-        throw new Error("LEGACY_SCHEMA");
-      }
-    } catch {
+    let result = await callScopedTool("search_markdown_files", richArgs);
+    if (
+      result &&
+      result.isError &&
+      /additionalProperties|Unexpected (?:property|parameter|field)|unknown (?:property|parameter|field)/i.test(
+        result.content?.[0]?.text || "",
+      )
+    ) {
       const legacyArgs = { query, limit: 100 };
       if (selectedTags.size > 0) legacyArgs.tags = [...selectedTags];
       result = await request("tools/call", {
@@ -2234,6 +2235,8 @@ async function runFulltextSearch(explicitQuery, opts = {}) {
     if (opts.saveHistory) pushSearchHistory(query);
     showBanner("");
   } catch (err) {
+    lastSearchData = null;
+    renderSearchResults(null, "");
     searchSummary.textContent = "检索出错";
     showBanner(`检索失败: ${err.message}`, true);
   }
@@ -2602,7 +2605,7 @@ async function saveCurrentFile(force = false) {
     renderFileList();
     schedulePersistState(true);
     showToast(`已安全保存 ${currentFilePath}`);
-    await request("ui/notify", { level: "info", message: `已保存 ${currentFilePath}` }).catch(() => {});
+    await request("ui/notify", { tone: "info", message: `已保存 ${currentFilePath}` }).catch(() => {});
     loadBacklinks(currentFilePath);
     refreshRailBadges();
     return true;
@@ -3380,7 +3383,6 @@ emptySearchBtn.addEventListener("click", () => {
   fulltextInput.focus();
   schedulePersistState();
 });
-if (printBtn) printBtn.addEventListener("click", () => window.print());
 refreshBtn.addEventListener("click", () => loadFiles());
 
 function activateDrawerRail(tab, onOpen) {
@@ -4067,23 +4069,31 @@ if (graphZoomOutBtn) graphZoomOutBtn.addEventListener("click", () => { if (graph
 if (graphZoomInBtn) graphZoomInBtn.addEventListener("click", () => { if (graphHandle) graphHandle.zoomBy(1.18); });
 if (graphFitBtn) graphFitBtn.addEventListener("click", () => { if (graphHandle) graphHandle.fit(); });
 if (graphRefreshBtn) graphRefreshBtn.addEventListener("click", () => openGraphView(true));
-if (graphExportSvgBtn) graphExportSvgBtn.addEventListener("click", () => {
+if (graphExportSvgBtn) graphExportSvgBtn.addEventListener("click", async () => {
   if (!graphHandle) return;
   const svgXml = graphHandle.serializeSvg();
   if (!svgXml) {
     showBanner("当前环境无法导出 SVG。", true);
     return;
   }
-  const blob = new Blob([svgXml], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${(currentProjectName || "markdown").replace(/[^A-Za-z0-9_-]/g, "_")}-graph.svg`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToast("已导出离线 SVG 图谱");
+  if (encoder.encode(svgXml).length > MAX_READ_BYTES) {
+    showBanner("导出的 SVG 文件超过 512 KiB 上限，无法保存。", true);
+    return;
+  }
+  const svgName = `${(currentProjectName || "markdown").replace(/[^A-Za-z0-9_-]/g, "_")}-graph.svg`;
+  const targetWs = discoveredWorkspaces[0] || currentProjectName;
+  const targetPath = getActiveScope() === "all" && targetWs ? `${targetWs}/exports/${svgName}` : `exports/${svgName}`;
+  try {
+    const res = await callScopedTool("save_exported_file", { path: targetPath, content: svgXml });
+    if (res.isError) throw new Error(res.content?.[0]?.text || "导出 SVG 失败");
+    const out = res.structuredContent || JSON.parse(res.content[0].text);
+    if (!out || out.saved !== true) {
+      throw new Error("导出 SVG 未确认保存成功");
+    }
+    showToast(`已导出 SVG 图谱至 ${out.path}`);
+  } catch (err) {
+    showBanner(`导出 SVG 失败: ${err.message}`, true);
+  }
 });
 if (graphNodeCenterBtn) graphNodeCenterBtn.addEventListener("click", () => {
   if (!selectedGraphNode) return;
@@ -4934,13 +4944,31 @@ if (batchReplaceBtn) {
 }
 
 if (exportHtmlBtn) {
-  exportHtmlBtn.addEventListener("click", () => {
+  exportHtmlBtn.addEventListener("click", async () => {
     if (!currentFilePath && docViewer.hidden) {
       showToast("请先打开一篇文档再导出 HTML");
       return;
     }
-    exportStandaloneHtml(currentFilePath || "markdown-export", docContent);
-    showToast("已导出独立单文件 HTML");
+    const { filename, html } = buildStandaloneHtml(currentFilePath || "markdown-export", docContent);
+    if (encoder.encode(html).length > MAX_READ_BYTES) {
+      showBanner("导出的 HTML 文件超过 512 KiB 上限，无法保存。", true);
+      return;
+    }
+    const targetWs = currentFilePath && currentFilePath.includes("/")
+      ? splitWorkspaceRelPath(currentFilePath).workspace
+      : (discoveredWorkspaces[0] || currentProjectName);
+    const targetPath = getActiveScope() === "all" && targetWs ? `${targetWs}/exports/${filename}` : `exports/${filename}`;
+    try {
+      const res = await callScopedTool("save_exported_file", { path: targetPath, content: html });
+      if (res.isError) throw new Error(res.content?.[0]?.text || "导出 HTML 失败");
+      const out = res.structuredContent || JSON.parse(res.content[0].text);
+      if (!out || out.saved !== true) {
+        throw new Error("导出 HTML 未确认保存成功");
+      }
+      showToast(`已导出 HTML 至 ${out.path}`);
+    } catch (err) {
+      showBanner(`导出 HTML 失败: ${err.message}`, true);
+    }
   });
 }
 
@@ -4988,11 +5016,20 @@ attachEditorAssist({
   },
   onImageFile: (file) => {
     if (!currentFilePath) return;
+    if (typeof file.size === "number" && file.size > MAX_ASSET_UPLOAD_BYTES) {
+      showBanner("图片超过 512 KiB 上传限制，无法内联保存。", true);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = String(reader.result || "");
       const b64 = dataUrl.includes(",") ? dataUrl.split(",", 2)[1] : "";
       if (!b64) return;
+      const estimatedBytes = Math.floor((b64.length * 3) / 4);
+      if (estimatedBytes > MAX_ASSET_UPLOAD_BYTES) {
+        showBanner("图片超过 512 KiB 上传限制，无法内联保存。", true);
+        return;
+      }
       try {
         const res = await callScopedTool("save_markdown_asset", {
           docPath: currentFilePath,

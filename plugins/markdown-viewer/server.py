@@ -1,13 +1,16 @@
 """Stdio JSON-RPC 2.0 MCP server for discovering, searching, reading, and saving Markdown files."""
 
 import base64
+import errno
 import hashlib
 import json
 import os
 import pathlib
+import posixpath
 import re
 import sys
 import tempfile
+import zlib
 
 from index_engine import (
     ProjectIndex,
@@ -38,7 +41,9 @@ ASSET_MIME_TYPES = {
 SKIP_DIRS = {"node_modules", "_output", "__pycache__", "dist", "build", "target"}
 MAX_FILES = 500
 MAX_READ_BYTES = 512 * 1024
-MAX_ASSET_BYTES = 4 * 1024 * 1024
+MAX_READ_ASSET_BYTES = 4 * 1024 * 1024
+MAX_UPLOAD_ASSET_BYTES = 512 * 1024
+EXPORT_EXTENSIONS = {".html", ".svg"}
 MAX_PATH_ARG_BYTES = 1024
 MAX_SEARCH_MATCHES = 200
 MOUNTINFO_PATH = pathlib.Path("/proc/self/mountinfo")
@@ -357,8 +362,10 @@ def search_markdown_files(
         raise ValueError("Parameter 'query' must be a non-empty string.")
     if len(query) > 240:
         raise ValueError("Parameter 'query' is too long (max 240 characters).")
-    if not isinstance(limit, int) or limit < 1:
+    if limit is None:
         limit = 80
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("Parameter 'limit' must be a positive integer.")
     limit = min(limit, MAX_SEARCH_MATCHES)
 
     entries = _refresh_scoped_entries(root_dir, scope=scope)
@@ -534,12 +541,12 @@ def read_markdown_asset(root_dir: str, doc_path: str, asset_href: str, scope: st
         raise ValueError("Unsupported image format.")
 
     size = os.path.getsize(target_real)
-    if size > MAX_ASSET_BYTES:
+    if size > MAX_READ_ASSET_BYTES:
         raise ValueError("Image asset exceeds maximum size of 4 MiB.")
 
     with open(target_real, "rb") as handle:
-        raw = handle.read(MAX_ASSET_BYTES + 1)
-    if len(raw) > MAX_ASSET_BYTES:
+        raw = handle.read(MAX_READ_ASSET_BYTES + 1)
+    if len(raw) > MAX_READ_ASSET_BYTES:
         raise ValueError("Image asset exceeds maximum size of 4 MiB.")
 
     normalized = pathlib.PurePosixPath(
@@ -582,7 +589,7 @@ def toggle_markdown_task(
     scope: str = "project",
 ) -> dict:
     _, target_real, normalized = _resolve_scoped_markdown_path(root_dir, rel_path, scope=scope, must_exist=True)
-    if not isinstance(line, int) or line < 1:
+    if isinstance(line, bool) or not isinstance(line, int) or line < 1:
         raise ValueError("Parameter 'line' must be a positive integer.")
     if not isinstance(expected_etag, str) or not expected_etag.strip():
         raise ValueError("Parameter 'expectedEtag' is required.")
@@ -670,7 +677,7 @@ def update_markdown_task_meta(
     scope: str = "project",
 ) -> dict:
     _, target_real, normalized = _resolve_scoped_markdown_path(root_dir, rel_path, scope=scope, must_exist=True)
-    if not isinstance(line, int) or line < 1:
+    if isinstance(line, bool) or not isinstance(line, int) or line < 1:
         raise ValueError("Parameter 'line' must be a positive integer.")
     if not isinstance(expected_etag, str) or not expected_etag.strip():
         raise ValueError("Parameter 'expectedEtag' is required.")
@@ -787,6 +794,31 @@ def _atomic_write_bytes(target_real: str, data: bytes, prefix: str = ".mdwrite-"
         raise
 
 
+def _split_scoped_norm(norm_path: str, scope: str) -> tuple[str, str]:
+    if scope == "all" and "/" in norm_path:
+        ws_name, inner_rel = norm_path.split("/", 1)
+        return ws_name, inner_rel
+    return "", norm_path
+
+
+def _ensure_safe_parent_dir(root_real: str, parent_dir: str, label: str = "Target parent directory") -> str:
+    probe = parent_dir
+    while probe and not os.path.exists(probe):
+        if os.path.islink(probe):
+            raise ValueError(f"{label} resolves outside the project root.")
+        parent_probe = os.path.dirname(probe)
+        if parent_probe == probe:
+            break
+        probe = parent_probe
+    if not probe or os.path.islink(probe) or not _is_within_root(root_real, os.path.realpath(probe)):
+        raise ValueError(f"{label} resolves outside the project root.")
+    os.makedirs(parent_dir, exist_ok=True)
+    parent_real = os.path.realpath(parent_dir)
+    if not os.path.isdir(parent_real) or not _is_within_root(root_real, parent_real):
+        raise ValueError(f"{label} resolves outside the project root.")
+    return parent_real
+
+
 def rename_markdown_file(
     root_dir: str,
     old_path: str,
@@ -794,52 +826,103 @@ def rename_markdown_file(
     update_links: bool = True,
     scope: str = "project",
 ) -> dict:
-    root_real, old_real, old_norm = _resolve_scoped_markdown_path(root_dir, old_path, scope=scope, must_exist=True)
-    _, new_real, new_norm = _resolve_scoped_markdown_path(root_dir, new_path, scope=scope, must_exist=False)
+    old_root_real, old_real, old_norm = _resolve_scoped_markdown_path(root_dir, old_path, scope=scope, must_exist=True)
+    new_root_real, new_real, new_norm = _resolve_scoped_markdown_path(root_dir, new_path, scope=scope, must_exist=False)
 
     if old_norm == new_norm:
         return {"oldPath": old_norm, "newPath": new_norm, "updatedFiles": [], "updatedCount": 0}
-    if os.path.exists(new_real):
+    if os.path.exists(new_real) or os.path.islink(new_real):
         raise ValueError(f"Destination already exists: {new_norm}")
 
     new_parent = os.path.dirname(new_real)
-    probe = new_parent
-    while probe and not os.path.exists(probe):
-        probe = os.path.dirname(probe)
-    if not probe or not _is_within_root(root_real, os.path.realpath(probe)):
-        raise ValueError("Destination parent directory resolves outside the project root.")
-    os.makedirs(new_parent, exist_ok=True)
-    os.replace(old_real, new_real)
+    _ensure_safe_parent_dir(new_root_real, new_parent, label="Destination parent directory")
+    try:
+        os.replace(old_real, new_real)
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+        with open(old_real, "rb") as handle:
+            moved_bytes = handle.read()
+        _atomic_write_bytes(new_real, moved_bytes, prefix=".mdmove-")
+        os.unlink(old_real)
 
     updated_files = []
     if update_links:
-        old_no_ext = _strip_ext(old_norm)
-        new_no_ext = _strip_ext(new_norm)
-        old_stem = pathlib.PurePosixPath(old_no_ext).name
-        new_stem = pathlib.PurePosixPath(new_no_ext).name
+        old_ws, old_rel = _split_scoped_norm(old_norm, scope)
+        new_ws, new_rel = _split_scoped_norm(new_norm, scope)
+        old_rel_no_ext = _strip_ext(old_rel)
+        new_rel_no_ext = _strip_ext(new_rel)
+        old_stem = pathlib.PurePosixPath(old_rel_no_ext).name
+        new_stem = pathlib.PurePosixPath(new_rel_no_ext).name
+        old_norm_no_ext = _strip_ext(old_norm)
+        new_norm_no_ext = _strip_ext(new_norm)
 
-        for rel_path, full_file in _iter_markdown_files(root_real):
-            try:
-                if os.path.getsize(full_file) > MAX_READ_BYTES:
+        same_workspace = scope != "all" or old_ws == new_ws
+        if same_workspace:
+            scan_workspaces = [(old_ws, old_root_real)]
+        else:
+            scan_workspaces = list(discover_workspaces(root_dir).items())
+
+        for ws_name, ws_root in scan_workspaces:
+            for rel_path, full_file in _iter_markdown_files(ws_root):
+                try:
+                    if os.path.getsize(full_file) > MAX_READ_BYTES:
+                        continue
+                    with open(full_file, "rb") as handle:
+                        raw = handle.read()
+                    if b"\x00" in raw:
+                        continue
+                    text = raw.decode("utf-8")
+                except (OSError, UnicodeDecodeError):
                     continue
-                with open(full_file, "rb") as handle:
-                    raw = handle.read()
-                if b"\x00" in raw:
-                    continue
-                text = raw.decode("utf-8")
-            except (OSError, UnicodeDecodeError):
-                continue
 
-            changed = False
+                changed = False
+                src_dir = pathlib.PurePosixPath(rel_path).parent.as_posix()
 
-            def _replace_wiki(match):
-                nonlocal changed
-                inner = match.group(1)
-                target_and_heading, *alias_rest = inner.split("|", 1)
-                target_part, *heading_rest = target_and_heading.split("#", 1)
-                clean_target = target_part.strip().replace("\\", "/").lstrip("./")
-                if _strip_ext(clean_target).lower() in (old_no_ext.lower(), old_stem.lower()) or clean_target.lower() == old_norm.lower():
-                    replacement_target = new_no_ext if "/" in clean_target else new_stem
+                def _replace_wiki(match):
+                    nonlocal changed
+                    inner = match.group(1)
+                    target_and_heading, *alias_rest = inner.split("|", 1)
+                    target_part, *heading_rest = target_and_heading.split("#", 1)
+                    raw_target = target_part.strip().replace("\\", "/")
+                    if not raw_target:
+                        return match.group(0)
+
+                    clean_target = raw_target[2:] if raw_target.startswith("./") else raw_target.lstrip("/")
+                    clean_no_ext = _strip_ext(clean_target)
+                    rel_resolved = (
+                        posixpath.normpath(posixpath.join(src_dir, raw_target))
+                        if src_dir not in ("", ".")
+                        else posixpath.normpath(raw_target)
+                    )
+                    rel_resolved_no_ext = _strip_ext(rel_resolved)
+
+                    replacement_target = None
+                    if same_workspace:
+                        if scope == "all" and clean_no_ext.lower() == old_norm_no_ext.lower():
+                            replacement_target = new_norm_no_ext
+                        elif (
+                            clean_no_ext.lower() == old_rel_no_ext.lower()
+                            or rel_resolved_no_ext.lower() == old_rel_no_ext.lower()
+                            or ("/" not in clean_target and clean_no_ext.lower() == old_stem.lower())
+                        ):
+                            replacement_target = new_rel_no_ext if ("/" in clean_target or raw_target.startswith("./")) else new_stem
+                    else:
+                        if ws_name == old_ws and (
+                            clean_no_ext.lower() == old_norm_no_ext.lower()
+                            or clean_no_ext.lower() == old_rel_no_ext.lower()
+                            or rel_resolved_no_ext.lower() == old_rel_no_ext.lower()
+                            or ("/" not in clean_target and clean_no_ext.lower() == old_stem.lower())
+                        ):
+                            replacement_target = new_norm_no_ext
+                        elif ws_name == new_ws and clean_no_ext.lower() == old_norm_no_ext.lower():
+                            replacement_target = new_rel_no_ext
+                        elif clean_no_ext.lower() == old_norm_no_ext.lower():
+                            replacement_target = new_norm_no_ext
+
+                    if replacement_target is None:
+                        return match.group(0)
+
                     rebuilt = replacement_target
                     if heading_rest:
                         rebuilt += "#" + heading_rest[0]
@@ -847,12 +930,11 @@ def rename_markdown_file(
                         rebuilt += "|" + alias_rest[0]
                     changed = True
                     return f"[[{rebuilt}]]"
-                return match.group(0)
 
-            new_text = WIKILINK_RE.sub(_replace_wiki, text)
-            if changed:
-                _atomic_write_bytes(full_file, new_text.encode("utf-8"), prefix=".mdlink-")
-                updated_files.append(rel_path)
+                new_text = WIKILINK_RE.sub(_replace_wiki, text)
+                if changed:
+                    _atomic_write_bytes(full_file, new_text.encode("utf-8"), prefix=".mdlink-")
+                    updated_files.append(f"{ws_name}/{rel_path}" if scope == "all" else rel_path)
 
     return {
         "oldPath": old_norm,
@@ -881,19 +963,31 @@ def save_markdown_asset(
         raise ValueError("Unsupported image format.")
     safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", os.path.splitext(base_name)[0]).strip("-") or "image"
 
+    compact_len = len("".join(data_b64.split()))
+    if compact_len > ((MAX_UPLOAD_ASSET_BYTES + 2) // 3) * 4 + 4:
+        raise ValueError("Image asset size must be between 1 byte and 512 KiB.")
+
     try:
         raw = base64.b64decode(data_b64.encode("ascii"), validate=True)
     except Exception as exc:
         raise ValueError("Invalid base64 image data.") from exc
-    if not raw or len(raw) > MAX_ASSET_BYTES:
-        raise ValueError("Image asset size must be between 1 byte and 4 MiB.")
+    if not raw or len(raw) > MAX_UPLOAD_ASSET_BYTES:
+        raise ValueError("Image asset size must be between 1 byte and 512 KiB.")
 
     doc_dir = os.path.dirname(doc_real)
-    assets_dir = os.path.realpath(os.path.join(doc_dir, "assets")) if os.path.exists(os.path.join(doc_dir, "assets")) else os.path.join(doc_dir, "assets")
     if not _is_within_root(root_real, os.path.realpath(doc_dir)):
         raise ValueError("Document directory resolves outside the project root.")
+
+    assets_candidate = os.path.join(doc_dir, "assets")
+    if os.path.islink(assets_candidate):
+        raise ValueError("Assets directory resolves outside the project root.")
+    assets_dir = os.path.realpath(assets_candidate)
+    if not _is_within_root(root_real, assets_dir):
+        raise ValueError("Assets directory resolves outside the project root.")
+    if os.path.exists(assets_candidate) and not os.path.isdir(assets_dir):
+        raise ValueError("Assets path is not a directory.")
     os.makedirs(assets_dir, exist_ok=True)
-    if not _is_within_root(root_real, os.path.realpath(assets_dir)):
+    if os.path.islink(assets_candidate) or not _is_within_root(root_real, os.path.realpath(assets_dir)):
         raise ValueError("Assets directory resolves outside the project root.")
 
     stamp = int(os.stat(doc_real).st_mtime_ns // 1_000_000) % 1_000_000_000
@@ -914,6 +1008,39 @@ def save_markdown_asset(
     }
 
 
+def save_exported_file(
+    root_dir: str,
+    rel_path: str,
+    content: str,
+    scope: str = "project",
+) -> dict:
+    root_real, target_real, normalized = _resolve_scoped_markdown_path(
+        root_dir,
+        rel_path,
+        scope=scope,
+        must_exist=False,
+        allowed_exts=EXPORT_EXTENSIONS,
+    )
+    if not isinstance(content, str) or not content:
+        raise ValueError("Parameter 'content' must be a non-empty string.")
+    encoded = content.encode("utf-8")
+    if len(encoded) > MAX_READ_BYTES:
+        raise ValueError("Exported file content exceeds maximum size of 512 KiB.")
+    if b"\x00" in encoded:
+        raise ValueError("Content contains invalid NUL bytes.")
+    if os.path.islink(target_real):
+        raise ValueError("Target path cannot be a symbolic link.")
+
+    parent_dir = os.path.dirname(target_real)
+    _ensure_safe_parent_dir(root_real, parent_dir, label="Target parent directory")
+    _atomic_write_bytes(target_real, encoded, prefix=".mdexport-")
+    return {
+        "path": normalized,
+        "bytes": len(encoded),
+        "saved": True,
+    }
+
+
 def replace_in_markdown_files(
     root_dir: str,
     query: str,
@@ -927,6 +1054,8 @@ def replace_in_markdown_files(
 ) -> dict:
     if not isinstance(query, str) or not query:
         raise ValueError("Parameter 'query' must be a non-empty string.")
+    if len(query) > 240:
+        raise ValueError("Parameter 'query' is too long (max 240 characters).")
     if not isinstance(replacement, str):
         raise ValueError("Parameter 'replacement' must be a string.")
 
@@ -966,7 +1095,14 @@ def replace_in_markdown_files(
         except (OSError, UnicodeDecodeError, ValueError):
             continue
 
-        new_text, count = pattern.subn(replacement, text)
+        try:
+            if regex:
+                new_text, count = pattern.subn(replacement, text)
+            else:
+                new_text, count = pattern.subn(lambda _m: replacement, text)
+        except (re.error, IndexError) as exc:
+            raise ValueError(f"Invalid replacement pattern: {exc}") from exc
+
         if count > 0 and new_text != text:
             encoded = new_text.encode("utf-8")
             if len(encoded) > MAX_READ_BYTES:
@@ -987,6 +1123,25 @@ def _tool_error(message: str) -> dict:
         "content": [{"type": "text", "text": message}],
         "isError": True,
     }
+
+
+def _format_office_text(result: dict) -> str:
+    lines = [f"Path: {result.get('path', '')}"]
+    if result.get("docType"):
+        lines.append(f"Type: {result['docType']}")
+    if result.get("format"):
+        lines.append(f"Format: {result['format']}")
+    if result.get("title"):
+        lines.append(f"Title: {result['title']}")
+    if result.get("pageCount") is not None:
+        lines.append(f"Pages: {result['pageCount']}")
+    if result.get("bytes") is not None:
+        lines.append(f"Bytes: {result['bytes']}")
+    md = str(result.get("markdown") or "").strip()
+    if md:
+        lines.append("")
+        lines.append(md)
+    return "\n".join(lines)
 
 
 def handle_request(message: dict, root_dir: str | None) -> dict | None:
@@ -1030,7 +1185,7 @@ def handle_request(message: dict, root_dir: str | None) -> dict | None:
             if name == "read_office_document":
                 result = read_office_document(root_dir, args.get("path", ""), scope=scope)
                 return {
-                    "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
+                    "content": [{"type": "text", "text": _format_office_text(result)}],
                     "structuredContent": result,
                 }
             if name == "read_markdown_file":
@@ -1172,6 +1327,17 @@ def handle_request(message: dict, root_dir: str | None) -> dict | None:
                     "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
                     "structuredContent": result,
                 }
+            if name == "save_exported_file":
+                result = save_exported_file(
+                    root_dir,
+                    args.get("path", ""),
+                    args.get("content", ""),
+                    scope=scope,
+                )
+                return {
+                    "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
+                    "structuredContent": result,
+                }
             if name == "replace_in_markdown_files":
                 result = replace_in_markdown_files(
                     root_dir,
@@ -1188,7 +1354,7 @@ def handle_request(message: dict, root_dir: str | None) -> dict | None:
                     "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
                     "structuredContent": result,
                 }
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, re.error, IndexError, RuntimeError, zlib.error, KeyError, TypeError) as exc:
             return _tool_error(str(exc))
 
         return _tool_error(f"Unknown tool: {name}")
@@ -1224,7 +1390,18 @@ def main(argv: list[str] | None = None) -> int:
         if not isinstance(request, dict) or "id" not in request:
             continue
 
-        result = handle_request(request, root_dir)
+        try:
+            result = handle_request(request, root_dir)
+        except Exception as exc:
+            reply = {
+                "jsonrpc": "2.0",
+                "id": request["id"],
+                "error": {"code": -32603, "message": f"internal error: {exc}"},
+            }
+            sys.stdout.write(json.dumps(reply, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+            continue
+
         reply = {"jsonrpc": "2.0", "id": request["id"]}
         if result is None:
             reply["error"] = {"code": -32601, "message": "method not found"}

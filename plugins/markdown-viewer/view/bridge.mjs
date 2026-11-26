@@ -31,6 +31,7 @@ function getSystemScheme() {
 }
 
 function renderActiveTheme() {
+  if (typeof document === "undefined" || !document.documentElement) return;
   const root = document.documentElement;
   if (themeMode === "light" || themeMode === "dark") {
     for (const key of THEME_KEYS) {
@@ -45,9 +46,12 @@ function renderActiveTheme() {
     ? hostTheme.scheme
     : getSystemScheme();
   root.dataset.scheme = scheme;
+  const tokens = hostTheme && hostTheme.tokens && typeof hostTheme.tokens === "object"
+    ? hostTheme.tokens
+    : null;
   for (const key of THEME_KEYS) {
-    if (hostTheme && typeof hostTheme[key] === "string" && hostTheme[key]) {
-      root.style.setProperty(`--${key}`, hostTheme[key]);
+    if (tokens && typeof tokens[key] === "string" && tokens[key]) {
+      root.style.setProperty(`--${key}`, tokens[key]);
     } else {
       root.style.removeProperty(`--${key}`);
     }
@@ -56,7 +60,10 @@ function renderActiveTheme() {
 
 export function applyTheme(theme) {
   if (theme && typeof theme === "object") {
-    hostTheme = { ...theme };
+    hostTheme = {
+      ...theme,
+      tokens: theme.tokens && typeof theme.tokens === "object" ? { ...theme.tokens } : undefined,
+    };
   }
   renderActiveTheme();
 }
@@ -89,40 +96,44 @@ if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
   }
 }
 
-window.addEventListener("message", (event) => {
-  const message = event.data;
-  if (event.source !== window.parent || !message || message.jsonrpc !== "2.0") return;
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (event.source !== window.parent || !message || message.jsonrpc !== "2.0") return;
 
-  if (message.method === "ui/themeChanged") {
-    const theme = message.params && message.params.theme ? message.params.theme : message.params;
-    applyTheme(theme);
-    for (const fn of themeListeners) fn(theme);
-    return;
-  }
-  if (message.method === "ui/visibilityChanged") {
-    visible = !message.params || message.params.visible !== false;
-    for (const fn of visibilityListeners) fn(visible);
-    return;
-  }
+    if (message.method === "ui/themeChanged") {
+      const theme = message.params && message.params.theme ? message.params.theme : message.params;
+      applyTheme(theme);
+      for (const fn of themeListeners) fn(theme);
+      return;
+    }
+    if (message.method === "ui/visibilityChanged") {
+      visible = !message.params || message.params.visible !== false;
+      for (const fn of visibilityListeners) fn(visible);
+      return;
+    }
 
-  const pending = waiting.get(message.id);
-  if (!pending) return;
-  waiting.delete(message.id);
-  if (message.error) {
-    pending.reject(new Error(message.error.message || "request failed"));
-  } else {
-    pending.resolve(message.result);
-  }
-});
+    const pending = waiting.get(message.id);
+    if (!pending) return;
+    waiting.delete(message.id);
+    if (message.error) {
+      pending.reject(new Error(message.error.message || "request failed"));
+    } else {
+      pending.resolve(message.result);
+    }
+  });
+}
 
 export async function copyText(text, notice) {
   try {
     await request("ui/copy", { text });
     if (notice) {
-      await request("ui/notify", { level: "info", message: notice }).catch(() => {});
+      await request("ui/notify", { tone: "info", message: notice }).catch(() => {});
     }
+    return true;
   } catch (err) {
-    await request("ui/notify", { level: "error", message: `复制失败: ${err.message}` }).catch(() => {});
+    await request("ui/notify", { tone: "error", message: `复制失败: ${err.message}` }).catch(() => {});
+    return false;
   }
 }
 

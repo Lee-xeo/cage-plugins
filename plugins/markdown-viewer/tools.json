@@ -188,6 +188,13 @@
     "name": "read_markdown_asset",
     "title": "Read Markdown Image Asset",
     "description": "Read a relative image asset referenced by a Markdown document inside the project root (PNG, JPEG, GIF, WebP, AVIF, SVG up to 4 MiB) and return base64-encoded data.",
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "app"
+        ]
+      }
+    },
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -229,10 +236,6 @@
             "all"
           ],
           "description": "Scope of operation: 'project' (current workspace, default) or 'all' (all mounted sibling workspaces)."
-        },
-        "includeDocs": {
-          "type": "boolean",
-          "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files."
         }
       },
       "additionalProperties": false
@@ -329,10 +332,6 @@
             "all"
           ],
           "description": "Scope of operation: 'project' (current workspace, default) or 'all' (all mounted sibling workspaces)."
-        },
-        "includeDocs": {
-          "type": "boolean",
-          "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files."
         }
       },
       "additionalProperties": false
@@ -443,10 +442,6 @@
             "all"
           ],
           "description": "Scope of operation: 'project' (current workspace, default) or 'all' (all mounted sibling workspaces)."
-        },
-        "includeDocs": {
-          "type": "boolean",
-          "description": "Also include Excel, Word, PowerPoint, and PDF documents alongside Markdown files."
         }
       },
       "additionalProperties": false
@@ -491,6 +486,13 @@
     "name": "save_markdown_asset",
     "title": "Save Markdown Image Asset",
     "description": "Save a base64-encoded image into the document's assets/ directory inside the project root.",
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "app"
+        ]
+      }
+    },
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -504,7 +506,7 @@
         },
         "data": {
           "type": "string",
-          "description": "Base64-encoded image bytes (max 4 MiB)."
+          "description": "Base64-encoded image bytes (max 512 KiB)."
         },
         "scope": {
           "type": "string",
@@ -599,6 +601,44 @@
       },
       "required": [
         "path"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "save_exported_file",
+    "title": "Save Exported HTML or SVG File",
+    "description": "Atomically save an exported standalone HTML (.html) or knowledge-graph SVG (.svg) file inside the project root (max 512 KiB).",
+    "_meta": {
+      "ui": {
+        "visibility": [
+          "app"
+        ]
+      }
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative POSIX target path ending in .html or .svg inside the project root."
+        },
+        "content": {
+          "type": "string",
+          "description": "UTF-8 HTML or SVG content to write (max 512 KiB)."
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "project",
+            "all"
+          ],
+          "description": "Scope of operation: 'project' (current workspace, default) or 'all' (all mounted sibling workspaces)."
+        }
+      },
+      "required": [
+        "path",
+        "content"
       ],
       "additionalProperties": false
     }

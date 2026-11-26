@@ -51,18 +51,31 @@ def _local_tag(tag: str) -> str:
 
 
 def _safe_read_zip_bytes(zf: zipfile.ZipFile, member: str, limit: int = MAX_ZIP_ENTRY_BYTES) -> bytes:
-    info = zf.getinfo(member)
-    if info.file_size > limit:
-        raise ValueError(f"Embedded entry '{member}' exceeds maximum safe size.")
-    raw = zf.read(member)
+    with zf.open(member, "r") as handle:
+        raw = handle.read(limit + 1)
     if len(raw) > limit:
         raise ValueError(f"Embedded entry '{member}' exceeds maximum safe size.")
     return raw
 
 
+def _decode_xml_for_scan(raw: bytes) -> str:
+    if raw.startswith((b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")):
+        return raw.decode("utf-32", errors="ignore")
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16", errors="ignore")
+    if b"\x00" in raw[:64]:
+        encoding = "utf-16-le" if raw[1:2] == b"\x00" else "utf-16-be"
+        try:
+            return raw.decode(encoding, errors="ignore")
+        except UnicodeDecodeError:
+            pass
+    return raw.decode("utf-8", errors="ignore")
+
+
 def _parse_xml(raw: bytes) -> ET.Element:
-    if b"<!ENTITY" in raw[:4096].upper():
-        raise ValueError("Unsafe XML entity declaration rejected.")
+    decoded = _decode_xml_for_scan(raw)
+    if re.search(r"<!\s*(?:DOCTYPE|ENTITY)\b", decoded, flags=re.IGNORECASE):
+        raise ValueError("Unsafe XML DOCTYPE or ENTITY declaration rejected.")
     return ET.fromstring(raw)
 
 
@@ -748,7 +761,7 @@ def _read_pdf(file_path: str) -> dict:
 
     extracted_text = "\n".join(extracted_lines).strip()
     md_text = f"# {title or os.path.basename(file_path)}\n\n" + (
-        extracted_text if extracted_text else "_（此 PDF 为扫描图片或自定义字体编码，请在上方「原版 PDF 视图」中查看）_"
+        extracted_text if extracted_text else "_（此 PDF 为扫描图片或自定义字体编码，未能提取出纯文本）_"
     )
     return {
         "docType": "pdf",
@@ -757,8 +770,6 @@ def _read_pdf(file_path: str) -> dict:
         "pageCount": max(1, page_count) if page_count else 0,
         "bytes": len(raw),
         "mimeType": "application/pdf",
-        "encoding": "base64",
-        "data": base64.b64encode(raw).decode("ascii"),
         "extractedText": extracted_text,
         "markdown": md_text + "\n",
     }
@@ -786,8 +797,8 @@ def read_office_file(file_path: str) -> dict:
             result = _read_pdf(file_path)
         else:
             raise ValueError(f"Unsupported document extension: {ext}")
-    except zipfile.BadZipFile as exc:
-        raise ValueError("Document archive is corrupted or not a valid OOXML file.") from exc
+    except (zipfile.BadZipFile, zlib.error, RuntimeError, EOFError) as exc:
+        raise ValueError("Document archive is corrupted, encrypted, or not a valid OOXML file.") from exc
     except ET.ParseError as exc:
         raise ValueError("Document XML content could not be parsed.") from exc
 

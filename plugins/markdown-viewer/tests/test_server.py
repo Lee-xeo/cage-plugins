@@ -112,8 +112,18 @@ class ServerTests(unittest.TestCase):
                 "save_markdown_asset",
                 "replace_in_markdown_files",
                 "read_office_document",
+                "save_exported_file",
             ],
         )
+        tools_by_name = {t["name"]: t for t in replies[2]["result"]["tools"]}
+        for app_only in ("read_markdown_asset", "save_markdown_asset", "save_exported_file"):
+            self.assertEqual(tools_by_name[app_only].get("_meta", {}).get("ui", {}).get("visibility"), ["app"])
+        for model_tool in ("list_markdown_files", "read_markdown_file", "search_markdown_files", "read_office_document"):
+            self.assertNotIn("_meta", tools_by_name[model_tool])
+        self.assertIn("includeDocs", tools_by_name["list_markdown_files"]["inputSchema"]["properties"])
+        for no_docs_tool in ("list_project_tags", "inspect_project_links", "get_project_graph"):
+            self.assertNotIn("includeDocs", tools_by_name[no_docs_tool]["inputSchema"]["properties"])
+        self.assertEqual(manifest["contributes"]["views"][0]["title"], "Markdown Viewer")
 
         listed = replies[3]["result"]["structuredContent"]
         self.assertEqual(listed["project"], self.root.name)
@@ -825,10 +835,256 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(pdf_out["title"], "Offline PDF Title")
         self.assertEqual(pdf_out["pageCount"], 1)
         self.assertIn("Hello Offline PDF", pdf_out["extractedText"])
-        self.assertTrue(len(pdf_out["data"]) > 10)
+        self.assertNotIn("data", pdf_out)
+        self.assertNotIn("encoding", pdf_out)
+        pdf_text = replies[6]["result"]["content"][0]["text"]
+        self.assertIn("Hello Offline PDF", pdf_text)
+        self.assertNotIn('"data"', pdf_text)
 
         self.assertTrue(replies[7]["result"]["isError"])
         self.assertTrue(replies[8]["result"]["isError"])
+
+    def test_pr10_security_and_robustness_fixes(self):
+        import base64
+        import errno
+        import zipfile
+        from unittest import mock
+
+        sys.path.insert(0, str(PLUGIN_DIR))
+        try:
+            import office_reader
+            import server as md_server
+        finally:
+            sys.path.pop(0)
+
+        # 1. _safe_read_zip_bytes streams at most limit + 1 bytes and rejects oversized entries
+        spoof_zip = self.root / "docs" / "spoof.zip"
+        with zipfile.ZipFile(spoof_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("big.xml", "<root>" + ("A" * 2048) + "</root>")
+        with zipfile.ZipFile(spoof_zip, "r") as zf:
+            orig_open = zf.open
+            read_sizes = []
+
+            def _tracked_open(member, mode="r"):
+                stream = orig_open(member, mode)
+                orig_read = stream.read
+                def _tracked_read(n=-1):
+                    read_sizes.append(n)
+                    return orig_read(n)
+                stream.read = _tracked_read
+                return stream
+
+            with mock.patch.object(zf, "open", side_effect=_tracked_open):
+                with self.assertRaises(ValueError):
+                    office_reader._safe_read_zip_bytes(zf, "big.xml", limit=128)
+            self.assertEqual(read_sizes, [129])
+
+        # Spoofed ZipInfo.file_size in a corrupted zip also surfaces as ValueError via read_office_file
+        spoof_docx = self.root / "docs" / "spoof.docx"
+        with zipfile.ZipFile(spoof_docx, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("word/document.xml", "<w:document/>" + (" " * 1024))
+        raw_zip = bytearray(spoof_docx.read_bytes())
+        # Corrupt the uncompressed size field in local+central header by flipping a byte in central dir/data
+        raw_zip[-12] ^= 0xFF
+        spoof_docx.write_bytes(bytes(raw_zip))
+        with self.assertRaises(ValueError):
+            office_reader.read_office_file(str(spoof_docx))
+
+        # 2. _parse_xml rejects DOCTYPE and ENTITY anywhere (past 4096 bytes & UTF-16)
+        padded_doctype = b"<?xml version='1.0'?>" + (b" " * 5000) + b"<!DOCTYPE foo><root/>"
+        with self.assertRaises(ValueError):
+            office_reader._parse_xml(padded_doctype)
+        utf16_entity = "<?xml version='1.0' encoding='utf-16'?><!ENTITY xxe '1'><root/>".encode("utf-16")
+        with self.assertRaises(ValueError):
+            office_reader._parse_xml(utf16_entity)
+
+        # 3. DOCX embedded base64 images stay in structuredContent, NOT content[0].text
+        tiny_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        img_b64 = base64.b64encode(tiny_png).decode("ascii")
+        img_docx = self.root / "docs" / "with-img.docx"
+        with zipfile.ZipFile(img_docx, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(
+                "[Content_Types].xml",
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Default Extension="png" ContentType="image/png"/></Types>',
+            )
+            zf.writestr(
+                "word/_rels/document.xml.rels",
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>'
+                "</Relationships>",
+            )
+            zf.writestr("word/media/logo.png", tiny_png)
+            zf.writestr(
+                "word/document.xml",
+                '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+                'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                "<w:body><w:p><w:r><w:t>Doc With Image</w:t></w:r></w:p>"
+                '<w:p><w:r><w:drawing><a:blip r:embed="rIdImg1"/></w:drawing></w:r></w:p>'
+                "</w:body></w:document>",
+            )
+        (self.root / "docs" / "corrupt.docx").write_bytes(b"not-a-zip")
+
+        # 4. Corrupt Office archive, invalid regex replacement \9, query > 240, and bool-as-int do NOT crash loop
+        readme_etag = self.run_rpc([
+            json.dumps({"jsonrpc": "2.0", "id": 100, "method": "tools/call", "params": {"name": "read_markdown_file", "arguments": {"path": "README.md"}}}),
+        ])[0]["result"]["structuredContent"]["etag"]
+
+        replies = self.run_rpc([
+            json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "read_office_document", "arguments": {"path": "docs/with-img.docx"}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "read_office_document", "arguments": {"path": "docs/corrupt.docx"}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "replace_in_markdown_files", "arguments": {"query": "Markdown", "replacement": "\\9", "regex": True}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "replace_in_markdown_files", "arguments": {"query": "x" * 241, "replacement": "y"}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "search_markdown_files", "arguments": {"query": "Markdown", "limit": True}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "list_project_tasks", "arguments": {"limit": True}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "toggle_markdown_task", "arguments": {"path": "README.md", "line": True, "checked": True, "expectedEtag": readme_etag}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 8, "method": "tools/call", "params": {"name": "update_markdown_task_meta", "arguments": {"path": "README.md", "line": False, "expectedEtag": readme_etag, "status": "done"}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 9, "method": "ping"}),
+        ])
+        self.assertEqual(len(replies), 9)
+        self.assertIn("Doc With Image", replies[0]["result"]["content"][0]["text"])
+        self.assertNotIn(img_b64, replies[0]["result"]["content"][0]["text"])
+        self.assertEqual(replies[0]["result"]["structuredContent"]["images"]["rIdImg1"]["data"], img_b64)
+        for idx in range(1, 8):
+            self.assertTrue(replies[idx]["result"]["isError"], f"Expected isError for reply {idx}")
+        self.assertEqual(replies[8]["result"], {})
+
+        # 5. save_markdown_asset checks symlink/containment BEFORE makedirs and enforces 512 KiB cap
+        outside_assets = pathlib.Path(self.outside.name) / "evil_assets_target"
+        sub_dir = self.root / "notes_sym"
+        sub_dir.mkdir()
+        (sub_dir / "note.md").write_text("# Note\n", encoding="utf-8")
+        os.symlink(outside_assets, sub_dir / "assets")
+        sym_res = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 10,
+                "method": "tools/call",
+                "params": {
+                    "name": "save_markdown_asset",
+                    "arguments": {"docPath": "notes_sym/note.md", "filename": "x.png", "data": img_b64},
+                },
+            },
+            str(self.root),
+        )
+        self.assertTrue(sym_res["isError"])
+        self.assertFalse(outside_assets.exists())
+
+        big_b64 = base64.b64encode(b"A" * (512 * 1024 + 1)).decode("ascii")
+        cap_res = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 11,
+                "method": "tools/call",
+                "params": {
+                    "name": "save_markdown_asset",
+                    "arguments": {"docPath": "notes_sym/note.md", "filename": "big.png", "data": big_b64},
+                },
+            },
+            str(self.root),
+        )
+        self.assertTrue(cap_res["isError"])
+
+        # 5b. read_markdown_asset retains 4 MiB limit (allows >512 KiB, rejects >4 MiB)
+        (sub_dir / "assets_read").mkdir()
+        os.unlink(sub_dir / "assets")
+        (sub_dir / "assets").mkdir()
+        med_png = b"\x89PNG\r\n\x1a\n" + (b"X" * (600 * 1024))
+        (sub_dir / "assets" / "med.png").write_bytes(med_png)
+        read_med = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 110,
+                "method": "tools/call",
+                "params": {
+                    "name": "read_markdown_asset",
+                    "arguments": {"docPath": "notes_sym/note.md", "assetHref": "assets/med.png"},
+                },
+            },
+            str(self.root),
+        )
+        self.assertFalse(read_med.get("isError", False))
+        self.assertEqual(read_med["structuredContent"]["bytes"], len(med_png))
+
+        huge_png = b"\x89PNG\r\n\x1a\n" + (b"Y" * (4 * 1024 * 1024))
+        (sub_dir / "assets" / "huge.png").write_bytes(huge_png)
+        read_huge = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 111,
+                "method": "tools/call",
+                "params": {
+                    "name": "read_markdown_asset",
+                    "arguments": {"docPath": "notes_sym/note.md", "assetHref": "assets/huge.png"},
+                },
+            },
+            str(self.root),
+        )
+        self.assertTrue(read_huge["isError"])
+
+        # 6. save_exported_file saves .html/.svg and rejects bad extensions & >512 KiB
+        exp_ok = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 12,
+                "method": "tools/call",
+                "params": {
+                    "name": "save_exported_file",
+                    "arguments": {"path": "exports/graph.svg", "content": "<svg/>"},
+                },
+            },
+            str(self.root),
+        )
+        self.assertTrue(exp_ok["structuredContent"]["saved"])
+        self.assertEqual((self.root / "exports" / "graph.svg").read_text(encoding="utf-8"), "<svg/>")
+        exp_bad = md_server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 13,
+                "method": "tools/call",
+                "params": {
+                    "name": "save_exported_file",
+                    "arguments": {"path": "exports/run.sh", "content": "echo hi"},
+                },
+            },
+            str(self.root),
+        )
+        self.assertTrue(exp_bad["isError"])
+
+        # 7. rename_markdown_file under scope="all": intra-workspace avoids <ws>/ prefix, cross-workspace handles EXDEV
+        with tempfile.TemporaryDirectory() as ws_parent:
+            ws_a = pathlib.Path(ws_parent) / "alpha"
+            ws_b = pathlib.Path(ws_parent) / "beta"
+            (ws_a / "docs").mkdir(parents=True)
+            ws_b.mkdir(parents=True)
+            (ws_a / "docs" / "plan.md").write_text("# Plan\n", encoding="utf-8")
+            (ws_a / "index.md").write_text("See [[docs/plan]] and [[plan]].\n", encoding="utf-8")
+
+            with mock.patch.object(md_server, "discover_workspaces", return_value={"alpha": str(ws_a.resolve()), "beta": str(ws_b.resolve())}):
+                same_ws = md_server.rename_markdown_file(
+                    str(ws_a), "alpha/docs/plan.md", "alpha/docs/roadmap.md", update_links=True, scope="all"
+                )
+                self.assertEqual(same_ws["newPath"], "alpha/docs/roadmap.md")
+                index_after = (ws_a / "index.md").read_text(encoding="utf-8")
+                self.assertEqual(index_after, "See [[docs/roadmap]] and [[roadmap]].\n")
+                self.assertNotIn("alpha/", index_after)
+
+                orig_replace = md_server.os.replace
+                def _fake_replace(src, dst):
+                    if str(src).startswith(str(ws_a.resolve())) and str(dst).startswith(str(ws_b.resolve())):
+                        raise OSError(errno.EXDEV, "Cross-device link")
+                    return orig_replace(src, dst)
+
+                with mock.patch.object(md_server.os, "replace", side_effect=_fake_replace):
+                    cross_ws = md_server.rename_markdown_file(
+                        str(ws_a), "alpha/docs/roadmap.md", "beta/notes/roadmap.md", update_links=True, scope="all"
+                    )
+                self.assertEqual(cross_ws["newPath"], "beta/notes/roadmap.md")
+                self.assertTrue((ws_b / "notes" / "roadmap.md").is_file())
+                self.assertFalse((ws_a / "docs" / "roadmap.md").exists())
+                self.assertEqual((ws_a / "index.md").read_text(encoding="utf-8"), "See [[beta/notes/roadmap]] and [[beta/notes/roadmap]].\n")
 
 
 if __name__ == "__main__":

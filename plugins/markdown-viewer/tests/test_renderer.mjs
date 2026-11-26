@@ -9,6 +9,7 @@ import {
   renderKanbanBoard,
 } from "../view/render/kanban-view.mjs";
 import { renderOfficeDocument } from "../view/render/office-viewer.mjs";
+import { createAssetLoader } from "../view/render/asset-loader.mjs";
 import { parseMarkdownSlides, renderSlidesDeck } from "../view/render/slides-view.mjs";
 import { evaluateDataviewQuery, renderDataviewBlock } from "../view/render/dataview.mjs";
 import { computeLineDiff, renderDiffView } from "../view/render/diff-view.mjs";
@@ -48,6 +49,11 @@ function createMockDocument() {
       node.parentNode = this;
       this.childNodes.push(node);
       return node;
+    }
+    append(...nodes) {
+      for (const n of nodes) {
+        this.appendChild(typeof n === "string" ? new MockNode(3, n) : n);
+      }
     }
     removeChild(node) {
       const idx = this.childNodes.indexOf(node);
@@ -804,7 +810,7 @@ test("renders offline Excel, Word, PPT, and PDF viewers with convert-to-Markdown
   assert.equal(converted, "docs/budget.xlsx");
   xlsxHandle.destroy();
 
-  // 2. Word viewer headings & tables
+  // 2. Word viewer headings, tables & data: URL embedded images (no blob:)
   const wordHandle = renderOfficeDocument(
     root,
     {
@@ -813,18 +819,23 @@ test("renders offline Excel, Word, PPT, and PDF viewers with convert-to-Markdown
       format: "docx",
       markdown: "# 架构设计",
       blocks: [
-        { kind: "heading", level: 1, text: "架构设计", runs: [{ text: "架构设计", bold: true }] },
+        { kind: "heading", level: 1, text: "架构设计", runs: [{ text: "架构设计", bold: true }], imageRids: ["rId1"] },
         { kind: "table", rows: [["模块", "状态"], ["解析器", "完成"]] },
       ],
-      images: {},
+      images: {
+        rId1: { name: "arch.png", mimeType: "image/png", data: "iVBORw0KGgo=" },
+      },
     },
     { document: doc },
   );
   assert.equal(wordHandle.headings.length, 1);
   assert.equal(wordHandle.headings[0].text, "架构设计");
+  const wordImgs = collectElements(root, (el) => el.tagName === "img");
+  assert.equal(wordImgs.length, 1);
+  assert.equal(wordImgs[0].src, "data:image/png;base64,iVBORw0KGgo=");
   wordHandle.destroy();
 
-  // 3. PPT deck slide navigation
+  // 3. PPT deck slide navigation & data: URL slide images
   const pptHandle = renderOfficeDocument(
     root,
     {
@@ -833,20 +844,29 @@ test("renders offline Excel, Word, PPT, and PDF viewers with convert-to-Markdown
       format: "pptx",
       markdown: "# Slide 1",
       slides: [
-        { index: 1, title: "第一页", bullets: [{ level: 0, text: "要点 A" }], tables: [], images: [], notes: "备注 1" },
+        {
+          index: 1,
+          title: "第一页",
+          bullets: [{ level: 0, text: "要点 A" }],
+          tables: [],
+          images: [{ name: "slide.png", mimeType: "image/png", data: "AAAA" }],
+          notes: "备注 1",
+        },
         { index: 2, title: "第二页", bullets: [{ level: 0, text: "要点 B" }], tables: [], images: [], notes: "" },
       ],
     },
     { document: doc },
   );
   assert.equal(pptHandle.headings.length, 2);
+  const pptImgs = collectElements(root, (el) => el.tagName === "img");
+  assert.equal(pptImgs[0].src, "data:image/png;base64,AAAA");
   const nextBtn = collectElements(root, (el) => el.tagName === "button" && el.textContent === "下一页 ▶")[0];
   nextBtn.click();
   const slideTitles = collectElements(root, (el) => el.className === "office-ppt-title");
   assert.equal(slideTitles[0].textContent, "第二页");
   pptHandle.destroy();
 
-  // 4. PDF viewer toggle to extracted text view
+  // 4. PDF viewer defaults directly to extracted text view without <embed>
   const pdfHandle = renderOfficeDocument(
     root,
     {
@@ -857,12 +877,11 @@ test("renders offline Excel, Word, PPT, and PDF viewers with convert-to-Markdown
       pageCount: 2,
       extractedText: "PDF Extracted Body Text",
       markdown: "# Offline Manual\n\nPDF Extracted Body Text",
-      data: "",
     },
     { document: doc },
   );
-  const textViewBtn = collectElements(root, (el) => el.tagName === "button" && el.textContent.includes("提取文本视图"))[0];
-  textViewBtn.click();
+  const embeds = collectElements(root, (el) => el.tagName === "embed");
+  assert.equal(embeds.length, 0);
   const pre = collectElements(root, (el) => el.className === "office-pdf-text")[0];
   assert.equal(pre.textContent, "PDF Extracted Body Text");
   pdfHandle.destroy();
@@ -1046,4 +1065,100 @@ test("supports smart editor autocomplete (slash, heading anchors, callout, code 
   );
   assert.ok(grEn.legend.some((item) => item.label === "Untagged"));
   assert.ok(grEn.legend.some((item) => item.label === "Broken Target"));
+});
+
+test("uses data: URLs in asset-loader and reads host theme tokens + copyText return/tone in bridge", async () => {
+  const doc = createMockDocument();
+  const styleProps = new Map();
+  doc.documentElement = {
+    dataset: {},
+    style: {
+      setProperty: (k, v) => styleProps.set(k, v),
+      removeProperty: (k) => styleProps.delete(k),
+    },
+  };
+
+  const origDoc = globalThis.document;
+  const origWindow = globalThis.window;
+  const origURL = globalThis.URL;
+
+  try {
+    globalThis.document = doc;
+    globalThis.URL = {
+      createObjectURL: () => {
+        throw new Error("blob: URL must not be used");
+      },
+      revokeObjectURL: () => {
+        throw new Error("blob: URL must not be revoked");
+      },
+    };
+
+    const figureEl = doc.createElement("figure");
+    const loader = createAssetLoader(async () => ({
+      isError: false,
+      structuredContent: {
+        resolvedPath: "docs/assets/a.png",
+        mimeType: "image/png",
+        bytes: 8,
+        data: "iVBORw0KGgo=",
+      },
+    }));
+    await loader.mountProjectImage(figureEl, "docs/guide.md", "assets/a.png", "Logo");
+    const mountedImgs = collectElements(figureEl, (el) => el.tagName === "img");
+    assert.equal(mountedImgs.length, 1);
+    assert.equal(mountedImgs[0].src, "data:image/png;base64,iVBORw0KGgo=");
+    loader.clear();
+
+    const listeners = new Map();
+    const sent = [];
+    let failCopy = false;
+    const mockParent = {
+      postMessage(msg) {
+        sent.push(msg);
+        const handlerList = listeners.get("message") || [];
+        queueMicrotask(() => {
+          const reply = msg.method === "ui/copy" && failCopy
+            ? { jsonrpc: "2.0", id: msg.id, error: { message: "denied" } }
+            : { jsonrpc: "2.0", id: msg.id, result: { ok: true } };
+          for (const fn of handlerList) fn({ source: mockParent, data: reply });
+        });
+      },
+    };
+    globalThis.window = {
+      parent: mockParent,
+      addEventListener(type, fn) {
+        if (!listeners.has(type)) listeners.set(type, []);
+        listeners.get(type).push(fn);
+      },
+    };
+
+    const bridge = await import("../view/bridge.mjs");
+    bridge.setThemeMode("system");
+    bridge.applyTheme({
+      scheme: "dark",
+      paper: "#wrong-top-level",
+      tokens: { paper: "#111213", ink: "#eaeaea" },
+    });
+    assert.equal(doc.documentElement.dataset.scheme, "dark");
+    assert.equal(styleProps.get("--paper"), "#111213");
+    assert.equal(styleProps.get("--ink"), "#eaeaea");
+
+    const ok = await bridge.copyText("hello", "Copied!");
+    assert.equal(ok, true);
+    const infoNotify = sent.find((m) => m.method === "ui/notify");
+    assert.equal(infoNotify.params.tone, "info");
+    assert.equal("level" in infoNotify.params, false);
+
+    sent.length = 0;
+    failCopy = true;
+    const failed = await bridge.copyText("hello");
+    assert.equal(failed, false);
+    const errNotify = sent.find((m) => m.method === "ui/notify");
+    assert.equal(errNotify.params.tone, "error");
+    assert.equal("level" in errNotify.params, false);
+  } finally {
+    globalThis.document = origDoc;
+    globalThis.window = origWindow;
+    globalThis.URL = origURL;
+  }
 });

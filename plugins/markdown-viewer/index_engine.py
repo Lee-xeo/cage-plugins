@@ -432,7 +432,11 @@ def summarize_tasks(
     path_prefix: str = "",
     limit: int = 500,
 ) -> dict:
-    limit = max(1, min(int(limit or 500), 1000))
+    if limit is None:
+        limit = 500
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("Parameter 'limit' must be a positive integer.")
+    limit = min(limit, 1000)
     prefix = path_prefix.strip().lstrip("./")
     tasks = []
     truncated = False

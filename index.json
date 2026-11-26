@@ -1536,7 +1536,7 @@
         "views": [
           {
             "id": "reader",
-            "title": "Markdown Viewer v1.10.0",
+            "title": "Markdown Viewer",
             "icon": "icon.svg",
             "entry": "view/index.html",
             "server": "markdown"
@@ -1546,8 +1546,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/markdown-viewer/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/markdown-viewer-1.10.0.tar.gz",
-      "sha256": "cc1fe033211752a7d69fd9df1b4c9211674298471182b670c36c29c2c2c2df54",
-      "bytes": 202294
+      "sha256": "593ab77188c5af97d9cbad7912fd32f8d30abba220d1ef5ba9a07de62c330fe9",
+      "bytes": 207034
     },
     {
       "name": "powerpoint-slides",

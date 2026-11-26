@@ -14,14 +14,9 @@ function colIndexToLetters(idx) {
   return out || "A";
 }
 
-function base64ToBlobUrl(b64, mimeType, createdUrls) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const blob = new Blob([bytes], { type: mimeType || "application/octet-stream" });
-  const url = URL.createObjectURL(blob);
-  if (Array.isArray(createdUrls)) createdUrls.push(url);
-  return url;
+function base64ToDataUrl(b64, mimeType) {
+  if (!b64) return "";
+  return `data:${mimeType || "application/octet-stream"};base64,${b64}`;
 }
 
 function renderExcelViewer(doc, rootEl, data, helpers) {
@@ -225,7 +220,7 @@ function renderWordViewer(doc, rootEl, data, createdUrls) {
       fig.className = "md-img-frame";
       const img = doc.createElement("img");
       img.className = "md-img";
-      img.src = base64ToBlobUrl(imgData.data, imgData.mimeType, createdUrls);
+      img.src = base64ToDataUrl(imgData.data, imgData.mimeType);
       img.alt = imgData.name || "Word 内嵌图片";
       fig.appendChild(img);
       page.appendChild(fig);
@@ -236,7 +231,7 @@ function renderWordViewer(doc, rootEl, data, createdUrls) {
   return { headings };
 }
 
-function renderPptViewer(doc, rootEl, data, createdUrls) {
+function renderPptViewer(doc, rootEl, data) {
   const slides = Array.isArray(data.slides) ? data.slides : [];
   if (slides.length === 0) {
     const p = doc.createElement("p");
@@ -346,7 +341,7 @@ function renderPptViewer(doc, rootEl, data, createdUrls) {
       for (const im of slide.images) {
         const img = doc.createElement("img");
         img.className = "md-img";
-        img.src = base64ToBlobUrl(im.data, im.mimeType, createdUrls);
+        img.src = base64ToDataUrl(im.data, im.mimeType);
         img.alt = im.name || `Slide ${slide.index} 图片`;
         imgGrid.appendChild(img);
       }
@@ -438,8 +433,7 @@ function renderPptViewer(doc, rootEl, data, createdUrls) {
   return { headings };
 }
 
-function renderPdfViewer(doc, rootEl, data, createdUrls) {
-  let mode = "embed"; // "embed" | "text"
+function renderPdfViewer(doc, rootEl, data) {
   const bar = doc.createElement("div");
   bar.className = "office-subbar";
 
@@ -447,68 +441,25 @@ function renderPdfViewer(doc, rootEl, data, createdUrls) {
   info.className = "count";
   info.textContent = `${data.title || "PDF 文档"}${data.pageCount ? ` · 约 ${data.pageCount} 页` : ""}`;
 
-  const switchGroup = doc.createElement("div");
-  switchGroup.className = "mode-group";
-  const embedBtn = doc.createElement("button");
-  embedBtn.type = "button";
-  embedBtn.className = "mode-btn active";
-  embedBtn.textContent = "📄 原版 PDF 视图";
-  const textBtn = doc.createElement("button");
-  textBtn.type = "button";
-  textBtn.className = "mode-btn";
-  textBtn.textContent = "📝 提取文本视图";
-  switchGroup.appendChild(embedBtn);
-  switchGroup.appendChild(textBtn);
+  const modePill = doc.createElement("span");
+  modePill.className = "office-sheet-meta muted";
+  modePill.textContent = "📝 提取文本视图";
 
   bar.appendChild(info);
-  bar.appendChild(switchGroup);
+  bar.appendChild(modePill);
   rootEl.appendChild(bar);
 
   const stage = doc.createElement("div");
   stage.className = "office-pdf-stage";
+  const pre = doc.createElement("pre");
+  pre.className = "office-pdf-text";
+  pre.textContent = data.extractedText || "（未能从该 PDF 流中提取出纯文本，可能是扫描图片型或自定义字库编码 PDF）";
+  stage.appendChild(pre);
   rootEl.appendChild(stage);
-
-  const pdfUrl = data.data ? base64ToBlobUrl(data.data, "application/pdf", createdUrls) : "";
-
-  function draw() {
-    while (stage.firstChild) stage.removeChild(stage.firstChild);
-    if (mode === "embed" && pdfUrl) {
-      const embed = doc.createElement("embed");
-      embed.className = "office-pdf-embed";
-      embed.type = "application/pdf";
-      embed.src = pdfUrl;
-      stage.appendChild(embed);
-      const tip = doc.createElement("div");
-      tip.className = "office-pdf-tip muted";
-      tip.textContent = "若当前运行容器限制内嵌 PDF 插件显示，可点击上方「📝 提取文本视图」或「转为 Markdown 笔记」阅读正文。";
-      stage.appendChild(tip);
-    } else {
-      const pre = doc.createElement("pre");
-      pre.className = "office-pdf-text";
-      pre.textContent = data.extractedText || "（未能从该 PDF 流中提取出纯文本，可能是扫描图片型或自定义字库编码 PDF）";
-      stage.appendChild(pre);
-    }
-  }
-
-  embedBtn.addEventListener("click", () => {
-    mode = "embed";
-    embedBtn.classList.add("active");
-    textBtn.classList.remove("active");
-    draw();
-  });
-  textBtn.addEventListener("click", () => {
-    mode = "text";
-    textBtn.classList.add("active");
-    embedBtn.classList.remove("active");
-    draw();
-  });
-
-  draw();
 }
 
 export function renderOfficeDocument(containerEl, data, options = {}) {
   const doc = options.document || globalThis.document;
-  const createdUrls = [];
   while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
 
   const banner = doc.createElement("div");
@@ -553,11 +504,11 @@ export function renderOfficeDocument(containerEl, data, options = {}) {
   if (data.docType === "excel") {
     renderExcelViewer(doc, bodyWrap, data, { onCopyMarkdown: options.onCopyMarkdown });
   } else if (data.docType === "word") {
-    headings = renderWordViewer(doc, bodyWrap, data, createdUrls).headings;
+    headings = renderWordViewer(doc, bodyWrap, data).headings;
   } else if (data.docType === "ppt") {
-    headings = renderPptViewer(doc, bodyWrap, data, createdUrls).headings;
+    headings = renderPptViewer(doc, bodyWrap, data).headings;
   } else if (data.docType === "pdf") {
-    renderPdfViewer(doc, bodyWrap, data, createdUrls);
+    renderPdfViewer(doc, bodyWrap, data);
   } else {
     const p = doc.createElement("p");
     p.className = "muted";
@@ -567,15 +518,6 @@ export function renderOfficeDocument(containerEl, data, options = {}) {
 
   return {
     headings,
-    destroy: () => {
-      for (const u of createdUrls) {
-        try {
-          URL.revokeObjectURL(u);
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
-      createdUrls.length = 0;
-    },
+    destroy: () => {},
   };
 }
