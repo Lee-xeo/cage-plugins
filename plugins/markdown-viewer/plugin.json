@@ -1,0 +1,25 @@
+{
+  "name": "markdown-viewer",
+  "displayName": "Markdown Viewer",
+  "version": "1.10.0",
+  "description": "Offline Markdown, Excel, Word, PowerPoint and PDF workspace with slash-command & heading autocomplete, Dataview queries, Slides deck, full-text search, Kanban swimlanes and knowledge graph.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.0" },
+  "kind": "guest",
+  "permissions": [],
+  "categories": ["files", "productivity"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "markdown", "command": ["python3", "server.py", "${PROJECT_DIR}"] }
+    ],
+    "views": [
+      {
+        "id": "reader",
+        "title": "Markdown Viewer",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "markdown"
+      }
+    ]
+  }
+}
