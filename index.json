@@ -935,8 +935,8 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/film-studio/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/film-studio-0.1.0.tar.gz",
-      "sha256": "20b2fce7651a5f7746a7498d9958ceee749e646b6452235c0ef25f92df0d8837",
-      "bytes": 98181
+      "sha256": "7a251195868b6f43fbcf0f96f088064046a4b1820b6777f2f4f46318ddae60ee",
+      "bytes": 99903
     },
     {
       "name": "git-repository",

@@ -772,7 +772,11 @@ function applyStaticText() {
   $("settings-title").textContent = T.settingsTitle;
 }
 
-$("refresh").addEventListener("click", () => { if (problem) setProblem(null); else refresh(); });
+$("refresh").addEventListener("click", () => {
+  // asked by hand: pictures that failed are tried again
+  for (const [folder, thumb] of thumbs) if (thumb.status === "error") thumbs.delete(folder);
+  if (problem) setProblem(null); else refresh();
+});
 $("new-film").addEventListener("submit", createFilm);
 $("new-name").addEventListener("input", updateTarget);
 document.addEventListener("click", () => { if (menuFolder) { menuFolder = null; renderFilms(); } });

@@ -114,14 +114,21 @@ export function commandArgs(args, { project, folder }) {
   return verb === undefined ? [name] : [name, verb, ...checked];
 }
 
-/** Steps for `canvas apply` given as JSON: every path in them must be a file of the project. */
+/**
+ * Steps for `canvas apply` given as JSON: every path in them must be a file of
+ * the project. In OpenFilm 0.4.1 a file is named by `path`; the other names a
+ * later one may use for a file or an address are checked the same way.
+ */
+const STEP_PATHS = /^(path|file|src|url|href|image|video|audio)$|(Path|File|Src|Url)$/;
+
+/** The steps as JSON again, each file in them this computer's path in the project; anything else is refused. */
 function canvasSteps(text, project, folder) {
   let steps;
   try { steps = JSON.parse(text); } catch { throw new Refused('the canvas steps are not JSON'); }
   const walk = (item) => {
     if (Array.isArray(item)) return item.map(walk);
     if (!item || typeof item !== 'object') return item;
-    return Object.fromEntries(Object.entries(item).map(([key, inner]) => [key, key === 'path' && typeof inner === 'string' ? value(inner, project, folder) : walk(inner)]));
+    return Object.fromEntries(Object.entries(item).map(([key, inner]) => [key, STEP_PATHS.test(key) && typeof inner === 'string' ? value(inner, project, folder) : walk(inner)]));
   };
   return JSON.stringify(walk(steps));
 }

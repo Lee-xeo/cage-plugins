@@ -36,6 +36,32 @@ function fontOf(body) {
   return { '774f4632': 'woff2', '774f4646': 'woff', '4f54544f': 'otf', '00010000': 'ttf', '74727565': 'ttf', '74746366': 'ttc' }[body.toString('hex', 0, 4)] ?? null;
 }
 
+/** The integrity a page asks of an address: on a script or link tag that names it, and in an import map's integrity. */
+export function integrityOf(text, raw) {
+  const wanted = [];
+  for (const [tag] of text.matchAll(/<(?:script|link)\b[^>]*>/gi)) {
+    if (!new RegExp(`=\\s*["']?${quote(raw)}(?=["'\\s>])`).test(tag)) continue;
+    const found = tag.match(/\sintegrity\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+    if (found) wanted.push(found[1] ?? found[2] ?? found[3]);
+  }
+  for (const m of text.matchAll(new RegExp(`["']${quote(raw)}["']\\s*:\\s*["']((?:sha(?:256|384|512)-[^"']*?\\s*)+)["']`, 'g'))) wanted.push(m[1]);
+  return wanted;
+}
+
+const STRENGTH = ['sha256', 'sha384', 'sha512'];
+/**
+ * Whether bytes meet an integrity a page asks for, as a browser decides: by
+ * the strongest kind of hash it names, any one of those matching. Nothing it
+ * can read in it asks for nothing.
+ */
+export function meets(body, wanted) {
+  const named = String(wanted).trim().split(/\s+/).map((token) => token.match(/^(sha256|sha384|sha512)-([A-Za-z0-9+/_-]+={0,2})(?:\?.*)?$/)).filter(Boolean);
+  if (!named.length) return true;
+  const strongest = named.reduce((best, m) => (STRENGTH.indexOf(m[1]) > STRENGTH.indexOf(best) ? m[1] : best), 'sha256');
+  const actual = hashOf(strongest, body, 'base64');
+  return named.some((m) => m[1] === strongest && m[2].replaceAll('-', '+').replaceAll('_', '/') === actual);
+}
+
 /** The addresses in a text this can fetch. */
 export const addressesIn = (text) => [...new Set(text.match(URLS) ?? [])];
 
@@ -64,6 +90,7 @@ export async function localize(folder, { say = () => {}, get = fetch } = {}) {
   let lock = {};
   try { lock = JSON.parse(readFileSync(record, 'utf8')); } catch { /* none yet */ }
   const asked = new Map();
+  const original = new Map(); // address → the bytes as they came, which an integrity is of
   const bringing = new Set();
   const problems = [];
   let bytes = 0;
@@ -125,6 +152,13 @@ export async function localize(folder, { say = () => {}, get = fetch } = {}) {
     return asked.get(address);
   }
 
+  /** Refuse an address whose bytes are not what the page's integrity asks of it: the page keeps it, and the browser judges. */
+  function checkIntegrity(text, raw, address) {
+    for (const wanted of integrityOf(text, raw)) {
+      if (!meets(original.get(address) ?? Buffer.alloc(0), wanted)) throw new Error(`is not what the page's integrity asks for (${wanted.trim().split(/\s+/)[0].slice(0, 24)}…); the page was left as it is`);
+    }
+  }
+
   /** What a fetched file loads in turn. One still being brought loads this one too: it is not waited for. */
   async function within(text, loader) {
     const address = new URL(text, loader).href.split('#')[0];
@@ -146,6 +180,7 @@ export async function localize(folder, { say = () => {}, get = fetch } = {}) {
     if ((bytes += body.length) > MOST_ALL) throw new Error('over 200 MB for one film');
     const font = fontOf(body);
     if (!font && !KINDS.test(kind)) throw new Error(`not a font, style or script (${kind || 'it does not say what it is'})`);
+    original.set(address, body);
     const sha256 = hashOf('sha256', body, 'hex');
     const google = url.hostname === 'fonts.googleapis.com'; // its style sheets change as fonts are added to
     if (!google && lock[address] && lock[address].sha256 !== sha256) throw new Error('is not the file it was when it was first fetched; it was not used');
@@ -193,12 +228,16 @@ export async function localize(folder, { say = () => {}, get = fetch } = {}) {
           // a folder in an import map: the modules the page takes from it
           const key = text.match(new RegExp(`["']([^"'\\s]+/)["']\\s*:\\s*["']${quote(raw)}["']`))?.[1];
           if (!key) continue; // a preconnect, or words
-          for (const m of text.matchAll(new RegExp(`["']${quote(key)}([^"']+)["']`, 'g'))) await fetched(address + m[1]);
+          for (const m of text.matchAll(new RegExp(`["']${quote(key)}([^"']+)["']`, 'g'))) {
+            await fetched(address + m[1]);
+            checkIntegrity(text, raw + m[1], address + m[1]);
+          }
           const there = join(vendor, new URL(address).hostname, ...decodeURIComponent(new URL(address).pathname).split('/').filter(Boolean));
           text = text.replace(new RegExp(`(["'])${quote(raw)}\\1`, 'g'), (_all, q) => `${q}${from(page, there)}/${q}`);
         } else {
           say(`fetching ${address}`);
           const place = await fetched(address);
+          checkIntegrity(text, raw, address);
           const local = from(page, place);
           text = text.replace(new RegExp(`${quote(raw)}(?=[\\s"'\`)<>\\\\]|$)`, 'g'), () => local);
         }

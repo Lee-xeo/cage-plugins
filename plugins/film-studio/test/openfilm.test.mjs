@@ -176,6 +176,7 @@ test('commandArgs: canvas apply with steps as JSON checks the paths in them', ()
   for (const path of ['/etc/passwd', '../../../x.png', 'https://example.com/x.png', '@x']) {
     refuses(['canvas', 'apply', JSON.stringify([{ op: 'add', kind: 'file', path }])]);
     refuses(['canvas', 'apply', JSON.stringify([{ op: 'set', id: 'a', deep: { path } }])]);
+    for (const key of ['file', 'src', 'url', 'posterPath', 'imageUrl']) refuses(['canvas', 'apply', JSON.stringify([{ op: 'add', [key]: path }])]);
   }
   refuses(['canvas', 'apply', '[not json'], /not JSON/);
   // a .json file of the project is still a path

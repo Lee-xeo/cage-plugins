@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFil
 import { join } from 'node:path';
 import { folderIn } from './helpers.mjs';
 
-const { localize, packageOf, addressesIn, HOSTS } = await import('../lib/localize.mjs');
+const { localize, packageOf, addressesIn, integrityOf, meets, HOSTS } = await import('../lib/localize.mjs');
 
 const sha = (kind, body, as) => createHash(kind).update(body).digest(as);
 const GSAP = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js';
@@ -63,7 +63,7 @@ const FILM = `<!doctype html><html><head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;display=swap" rel="stylesheet">
-<script src="${GSAP}" integrity="sha512-whatever" crossorigin="anonymous"></script>
+<script src="${GSAP}" integrity="sha512-${sha('sha512', 'window.gsap = {};', 'base64')}" crossorigin="anonymous"></script>
 <script type="module" src="${MAIN}" crossorigin></script>
 <script src="/local.js" integrity="sha384-keep" crossorigin="anonymous"></script>
 <script src="https://example.com/other.js" integrity="sha384-other" crossorigin></script>
@@ -134,7 +134,7 @@ test('a film is localized: fonts, scripts, modules and an import map, pages rewr
   assert.ok(film.includes('src="./assets/vendor/cdn.jsdelivr.net/npm/lib@1.2.3/dist/main.mjs"'), film);
   // preconnect is gone, integrity and crossorigin only where the tag was vendored
   assert.ok(!/preconnect/.test(film));
-  assert.ok(!/integrity="sha512-whatever"/.test(film));
+  assert.ok(!/integrity="sha512-/.test(film));
   assert.match(film, /<script src="\.\/assets\/vendor\/cdnjs\.cloudflare\.com\/ajax\/libs\/gsap\/3\.12\.5\/gsap\.min\.js"><\/script>/);
   assert.match(film, /<script type="module" src="\.\/assets\/vendor\/cdn\.jsdelivr\.net\/npm\/lib@1\.2\.3\/dist\/main\.mjs"><\/script>/);
   assert.ok(film.includes('<script src="/local.js" integrity="sha384-keep" crossorigin="anonymous"></script>'));
@@ -312,6 +312,54 @@ test('a file whose name holds $ is named as it is (escaped as the address of a f
   assert.deepEqual(done.problems, []);
   assert.equal(read(folder, 'film.html'), '<script src="./assets/vendor/unpkg.com/odd@1.0.0/a%24%26b%241.js"></script>\n');
   assert.ok(existsSync(join(folder, 'assets/vendor/unpkg.com/odd@1.0.0/a$&b$1.js')));
+});
+
+test('meets decides as a browser does: by the strongest hash named, any one of those matching', () => {
+  const body = Buffer.from('window.gsap = {};');
+  const [s256, s384, s512] = ['sha256', 'sha384', 'sha512'].map((kind) => `${kind}-${sha(kind, body, 'base64')}`);
+  const wrong = (kind) => `${kind}-${sha(kind, 'other', 'base64')}`;
+  assert.ok(meets(body, s384));
+  assert.ok(meets(body, `${wrong('sha512')} ${s512}`));
+  assert.ok(meets(body, `${s512}?ct=application/javascript`));
+  assert.ok(meets(body, s384.replaceAll('+', '-').replaceAll('/', '_')));
+  assert.ok(!meets(body, wrong('sha384')));
+  assert.ok(!meets(body, `${s256} ${wrong('sha512')}`), 'the strongest named decides');
+  assert.ok(meets(body, `${s384} md5-abc`));
+  assert.ok(meets(body, 'md5-abc'), 'nothing it can read in it asks for nothing');
+  assert.ok(meets(body, ''));
+});
+
+test('integrityOf finds what a tag or an import map asks of an address, and only of it', () => {
+  const text = `<script src="${GSAP}" integrity="sha384-a"></script><script src='${GSAP}x' integrity='sha384-b'></script>
+<link rel=stylesheet href=${CSS} integrity=sha512-c><script type="importmap">{"imports":{"t":"${THREE}"},"integrity":{"${THREE}":"sha384-d sha512-e"}}</script>`;
+  assert.deepEqual(integrityOf(text, GSAP), ['sha384-a']);
+  assert.deepEqual(integrityOf(text, CSS), ['sha512-c']);
+  assert.deepEqual(integrityOf(text, THREE), ['sha384-d sha512-e']);
+  assert.deepEqual(integrityOf(text, MAIN), []);
+});
+
+test('a file that is not what the page\'s integrity asks for is not used, and the page is left as it is', async () => {
+  const mismatch = `<script src="${GSAP}" integrity="sha384-${sha('sha384', 'something else', 'base64')}" crossorigin="anonymous"></script>\n`;
+  const folder = makeFilm({ 'film.html': mismatch, 'scene.html': `<script src="${UTIL}" integrity="sha384-${sha('sha384', body(UTIL), 'base64')}"></script>\n` });
+  const done = await localize(folder, { get: fake().get });
+  assert.equal(read(folder, 'film.html'), mismatch);
+  assert.equal(done.problems.length, 1);
+  assert.match(done.problems[0], /film\.html: https:\/\/cdnjs.*integrity asks for \(sha384-.*left as it is/);
+  // the one that matches is used, and its integrity, now of a local file, goes
+  assert.equal(read(folder, 'scene.html'), '<script src="./assets/vendor/cdn.jsdelivr.net/npm/lib@1.2.3/dist/util.mjs"></script>\n');
+});
+
+test('an import map whose integrity a module does not meet is left as it is', async () => {
+  const map = (hash) => `<script type="importmap">{"imports":{"three":"${THREE}","three/addons/":"${JSM}"},"integrity":{"${ORBIT}":"${hash}"}}</script>\n`
+    + '<script type="module">import { OrbitControls } from \'three/addons/controls/OrbitControls.js\';</script>\n';
+  const bad = map(`sha384-${sha('sha384', 'nope', 'base64')}`);
+  const folder = makeFilm({ 'film.html': bad });
+  const done = await localize(folder, { get: fake().get });
+  assert.ok(read(folder, 'film.html').includes(`"three/addons/":"${JSM}"`), 'the folder is not rewritten');
+  assert.match(done.problems.join('\n'), /OrbitControls\.js: is not what the page's integrity asks for/);
+  const good = makeFilm({ 'film.html': map(`sha384-${sha('sha384', body(ORBIT), 'base64')}`) });
+  assert.deepEqual((await localize(good, { get: fake().get })).problems, []);
+  assert.ok(!read(good, 'film.html').includes(`"three/addons/":"${JSM}"`));
 });
 
 test('a symlinked assets/vendor that leaves the film is refused', async (t) => {

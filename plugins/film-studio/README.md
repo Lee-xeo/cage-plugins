@@ -35,7 +35,7 @@ film-studio 与 OpenFilm 配合使用（works with OpenFilm），并非 OpenFilm
   - Linux：`~/.cache/film-studio` 和 `~/.local/share/film-studio`
 
   `cache` 里是能重新下载的内容（OpenFilm、渲染浏览器、缩略图），`data` 里是 OpenFilm 自己的状态（`home`）和后台任务记录（`jobs`）。
-- 支持：Windows x64、macOS arm64 与 x64、Linux x64 与 arm64。
+- 支持：Windows x64、macOS arm64 与 x64、Linux x64 与 arm64。Windows arm64 暂不支持：`runtime/browser.json` 里没有它的渲染浏览器，安装时会报告这一点。
 - 实测情况：在 Windows 11 x64（NVIDIA 显卡，在 Cage 里）、macOS arm64（由插件市场维护者实测）和 Linux x64 上真正运行过。macOS x64 和 Linux arm64 的渲染浏览器已固定下载地址和 SHA-256，并检查过能否解包，但还没有运行过，请当作尚未验证。
 
 ## 工具
