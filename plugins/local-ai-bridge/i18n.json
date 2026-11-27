@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "本地 AI 协作桥",
+    "description": "通过原生非交互 CLI 协议调度本机的 Codex、Grok 与 Antigravity，默认只读并提供侧栏实时任务与会话看板。"
+  },
+  "zh-TW": {
+    "displayName": "本機 AI 協作橋",
+    "description": "透過原生非互動 CLI 協定調度本機的 Codex、Grok 與 Antigravity，預設唯讀並提供側欄即時任務與工作階段看板。"
+  },
+  "ru": {
+    "displayName": "Мост локальных ИИ",
+    "description": "Запускает локальные CLI-ассистенты Codex, Grok и Antigravity по нативным неинтерактивным протоколам. Режим только чтения по умолчанию и панель задач."
+  },
+  "ar": {
+    "displayName": "جسر الذكاء الاصطناعي المحلي",
+    "description": "يشغّل أدوات سطر الأوامر المحلية Codex وGrok وAntigravity عبر البروتوكولات الأصلية بوضع القراءة فقط افتراضيًا مع لوحة مهام وجلسات فورية."
+  },
+  "fa": {
+    "displayName": "پل هوش مصنوعی محلی",
+    "description": "ابزارهای خط فرمان محلی Codex، Grok و Antigravity را با پروتکل‌های بومی و حالت پیش‌فرض فقط‌خواندنی همراه با داشبورد زنده اجرا می‌کند."
+  },
+  "ko": {
+    "displayName": "로컬 AI 브리지",
+    "description": "로컬 Codex, Grok, Antigravity CLI를 네이티브 비대화형 프로토콜로 호출합니다. 기본 읽기 전용 모드와 실시간 작업·세션 대시보드를 제공합니다."
+  },
+  "es": {
+    "displayName": "Puente de IA Local",
+    "description": "Ejecuta tareas en los CLI locales Codex, Grok y Antigravity mediante protocolos nativos no interactivos, solo lectura por defecto y panel en tiempo real."
+  },
+  "my": {
+    "displayName": "ဒေသတွင်း AI တံတား",
+    "description": "Codex၊ Grok နှင့် Antigravity CLI များကို မူရင်း non-interactive protocol ဖြင့် ခေါ်ဆိုပြီး ပုံသေ read-only မုဒ်နှင့် တိုက်ရိုက် dashboard ပါဝင်သည်။"
+  },
+  "be": {
+    "displayName": "Мост лакальных ШІ",
+    "description": "Запускае лакальныя CLI Codex, Grok і Antigravity праз натыўныя неінтэрактыўныя пратаколы, па змаўчанні толькі чытанне, з панэллю задач і сесій."
+  },
+  "ps": {
+    "displayName": "د سیمه‌ییز AI پل",
+    "description": "سیمه‌ییز Codex، Grok او Antigravity CLI د اصلي غیرمتقابل پروتوکول له لارې چلوي، په ډیفالټ ډول یوازې لوستل او ژوندی ډشبورډ لري."
+  },
+  "prs": {
+    "displayName": "پل هوش مصنوعی محلی",
+    "description": "ابزارهای محلی Codex، Grok و Antigravity را با پروتکل‌های بومی در حالت پیش‌فرض فقط‌خواندنی همراه با داشبورد زنده اجرا می‌کند."
+  },
+  "am": {
+    "displayName": "የአካባቢ AI ድልድይ",
+    "description": "የአካባቢውን Codex፣ Grok እና Antigravity CLI በነባሪ የንባብ ብቻ ሁኔታ እና በቀጥታ የስራ ዳሽቦርድ ያስኬዳል።"
+  },
+  "so": {
+    "displayName": "Buundada AI-ga Maxalliga ah",
+    "description": "Waxay adeegsataa Codex, Grok iyo Antigravity CLI iyadoo leh habka akhriska-kaliya ee caadiga ah iyo guddi toos ah oo hawlo iyo fadhiyo."
+  },
+  "ti": {
+    "displayName": "ናይ ከባቢ AI ድልድል",
+    "description": "ናይ ከባቢ Codex፣ Grok ከምኡውን Antigravity CLI ብነባሪ ንንባብ ጥራይ ምስ ቀጥታዊ ዳሽቦርድ የካይድ።"
+  },
+  "fr": {
+    "displayName": "Pont IA Local",
+    "description": "Exécute des tâches via les CLI locaux Codex, Grok et Antigravity en mode natif non interactif, lecture seule par défaut avec tableau de bord en direct."
+  }
+}

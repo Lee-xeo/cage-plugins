@@ -1,0 +1,29 @@
+{
+  "name": "local-ai-bridge",
+  "displayName": "Local AI Bridge",
+  "version": "0.1.0",
+  "description": "Dispatch coding tasks to local AI CLIs (Codex, Grok, Antigravity) via native non-interactive protocols with a real-time sidebar dashboard.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.0" },
+  "kind": "host",
+  "platforms": ["darwin", "linux", "windows"],
+  "permissions": ["files", "commands", "network"],
+  "categories": ["developer", "productivity"],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "bridge",
+        "command": ["python3", "-X", "utf8", "server.py", "--project-dir", "${PROJECT_DIR}"]
+      }
+    ],
+    "views": [
+      {
+        "id": "dashboard",
+        "title": "Local AI Bridge",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "bridge"
+      }
+    ]
+  }
+}

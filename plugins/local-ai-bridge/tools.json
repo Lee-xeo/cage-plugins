@@ -1,0 +1,201 @@
+{
+  "tools": [
+    {
+      "name": "ai_list_providers",
+      "description": "List available local AI coding CLIs (Codex, Grok, Antigravity), their detected versions, authentication status, active project name, and unlocked permission tier (read-only, workspace-write, or full-access).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "description": "Set true to bypass the short probe cache and re-check installed CLIs."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_list_models",
+      "description": "List selectable models and supported reasoning effort levels for a local AI CLI provider. Results are cached for 60 seconds unless refresh is true.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["provider"],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["codex", "grok", "antigravity"],
+            "description": "Target local AI CLI provider."
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "Set true to bypass the 60-second cache and query the CLI again."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_run_task",
+      "description": "Start a background task or continue an existing multi-turn session with a local AI CLI (Codex, Grok, or Antigravity) in the active project directory. Returns task_id and session_id immediately without blocking. Defaults to read-only mode (enforcing hard write/shell restrictions); workspace-write and full-access require the user to enable them in the dashboard. Use prompt_file for prompts longer than 3000 bytes. Poll with ai_task_status and follow nextCheck if running.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["provider"],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["codex", "grok", "antigravity"],
+            "description": "Target local AI CLI provider."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Task prompt text (use prompt_file for prompts longer than 3000 bytes)."
+          },
+          "prompt_file": {
+            "type": "string",
+            "description": "Relative path inside the active project directory to a UTF-8 file containing the prompt (max 512 KiB)."
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Optional existing session_id to continue a multi-turn conversation with the same provider."
+          },
+          "model": {
+            "type": "string",
+            "description": "Optional exact model ID returned by ai_list_models."
+          },
+          "effort": {
+            "type": "string",
+            "description": "Optional reasoning effort level (e.g. low, medium, high, xhigh, max)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["read-only", "workspace-write", "full-access"],
+            "description": "Execution permission mode. Defaults to read-only (blocks edits and shell commands). workspace-write allows project edits; full-access unlocks unrestricted host commands, plugins/browser control, and auto-approved execution when enabled by the user."
+          },
+          "title": {
+            "type": "string",
+            "description": "Optional short title for a new session."
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Optional idempotency key to prevent duplicate launches on retry."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_task_status",
+      "description": "Check progress or wait briefly for updates on a background AI task in the active project. Returns current status, activity phase, elapsed time, live partial preview, or the completed answer (with pagination via offset and limit for long replies). Running tasks include nextCheck for follow-up polling.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["task_id"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task ID returned by ai_run_task."
+          },
+          "wait_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25,
+            "description": "Maximum seconds to wait for status change or completion (default 0, max 25)."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Character offset when paginating a long completed answer."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 256,
+            "maximum": 32000,
+            "description": "Maximum characters to return from a completed answer."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_task_cancel",
+      "description": "Cancel a running background AI task in the active project and terminate its CLI process tree.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["task_id"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task ID to cancel."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_session_history",
+      "description": "List recent multi-turn AI sessions in the active project, or read full turn history for a specific session_id belonging to the active project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Optional session ID to read full turn history."
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["codex", "grok", "antigravity"],
+            "description": "Optional provider filter when listing sessions."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Maximum sessions or turns to return (default 20)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["model", "app"] } }
+    },
+    {
+      "name": "ai_dashboard_state",
+      "description": "Return a consolidated snapshot of local AI providers, policy settings, active tasks, and recent sessions for the sidebar dashboard.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "description": "Set true to bypass the probe cache and rescan installed CLIs."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["app"] } }
+    },
+    {
+      "name": "ai_manage_policy",
+      "description": "Manage provider enablement, permission tier policy, proxy configuration, binary path overrides, and project history cleanup from the dashboard.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["update_policy", "delete_session", "clear_finished_tasks"],
+            "description": "Management action to perform."
+          },
+          "payload": {
+            "type": "object",
+            "description": "Action-specific arguments."
+          }
+        },
+        "additionalProperties": false
+      },
+      "_meta": { "ui": { "visibility": ["app"] } }
+    }
+  ]
+}
