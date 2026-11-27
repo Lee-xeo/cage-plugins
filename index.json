@@ -120,6 +120,130 @@
       "bytes": 62711
     },
     {
+      "name": "antigravity-app",
+      "version": "0.1.1",
+      "description": "Runs Google's official Antigravity desktop app in the environment. Each update fetches Google's latest Linux release, because the app cannot update itself there.",
+      "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Antigravity",
+          "description": "在环境中运行 Google 官方的 Antigravity 桌面应用。它在 Linux 上无法自行更新，每次更新都会获取 Google 发布的最新版本。"
+        },
+        "zh-TW": {
+          "displayName": "Antigravity",
+          "description": "在環境中執行 Google 官方的 Antigravity 桌面應用程式。它在 Linux 上無法自行更新，每次更新都會取得 Google 發布的最新版本。"
+        },
+        "ru": {
+          "displayName": "Antigravity",
+          "description": "Запускает в среде официальное настольное приложение Antigravity от Google. В Linux оно не обновляется само, поэтому каждое обновление загружает последнюю версию, выпущенную Google."
+        },
+        "ar": {
+          "displayName": "Antigravity",
+          "description": "يشغّل تطبيق Antigravity الرسمي لسطح المكتب من Google داخل البيئة. لا يستطيع التحديث بنفسه على Linux، لذا يجلب كل تحديث أحدث إصدار تنشره Google."
+        },
+        "fa": {
+          "displayName": "Antigravity",
+          "description": "برنامهٔ رسمی دسکتاپ Antigravity از Google را در محیط اجرا می‌کند. این برنامه در Linux خودش به‌روز نمی‌شود، پس هر به‌روزرسانی آخرین نسخهٔ منتشرشدهٔ Google را دریافت می‌کند."
+        },
+        "ko": {
+          "displayName": "Antigravity",
+          "description": "Google의 공식 Antigravity 데스크톱 앱을 환경에서 실행합니다. Linux에서는 스스로 업데이트하지 못하므로 업데이트할 때마다 Google이 배포한 최신 버전을 받아옵니다."
+        },
+        "es": {
+          "displayName": "Antigravity",
+          "description": "Ejecuta en el entorno la aplicación de escritorio oficial Antigravity de Google. En Linux no puede actualizarse sola, así que cada actualización descarga la última versión publicada por Google."
+        },
+        "my": {
+          "displayName": "Antigravity",
+          "description": "Google ၏ တရားဝင် Antigravity desktop အက်ပ်ကို ပတ်ဝန်းကျင်ထဲတွင် ဖွင့်ပေးပါသည်။ Linux တွင် ကိုယ်တိုင် အပ်ဒိတ်မလုပ်နိုင်သဖြင့် အပ်ဒိတ်တိုင်း Google ထုတ်ပြန်သော နောက်ဆုံးဗားရှင်းကို ရယူပါသည်။"
+        },
+        "be": {
+          "displayName": "Antigravity",
+          "description": "Запускае ў асяроддзі афіцыйную настольную праграму Antigravity ад Google. У Linux яна не абнаўляецца сама, таму кожнае абнаўленне спампоўвае апошнюю версію, выпушчаную Google."
+        },
+        "ps": {
+          "displayName": "Antigravity",
+          "description": "د Google رسمي Antigravity ډیسکټاپ اپلیکیشن په چاپېریال کې چلوي. په Linux کې پخپله نه تازه کېږي، نو هر تازه کول د Google وروستۍ خپره شوې نسخه راوړي."
+        },
+        "prs": {
+          "displayName": "Antigravity",
+          "description": "اپلیکیشن رسمی دسکتاپ Antigravity از Google را در محیط اجرا می‌کند. این اپلیکیشن در Linux خودش به‌روز نمی‌شود، پس هر به‌روزرسانی آخرین نسخهٔ نشرشدهٔ Google را دریافت می‌کند."
+        },
+        "am": {
+          "displayName": "Antigravity",
+          "description": "የGoogle ይፋዊ የAntigravity ዴስክቶፕ መተግበሪያን በአካባቢው ያስኬዳል። በLinux ላይ ራሱን ማዘመን ስለማይችል እያንዳንዱ ማዘመኛ Google ያወጣውን የቅርብ ጊዜ ስሪት ያመጣል።"
+        },
+        "so": {
+          "displayName": "Antigravity",
+          "description": "Waxay deegaanka ku socodsiisaa abka desktop-ka rasmiga ah ee Antigravity ee Google. Linux kuma cusbooneysiin karo naftiisa, sidaas darteed cusbooneysiin kastaa waxay soo dejisaa noocii ugu dambeeyay ee Google sii daayay."
+        },
+        "ti": {
+          "displayName": "Antigravity",
+          "description": "ወግዓዊ ናይ Google Antigravity ዴስክቶፕ ኣፕ ኣብቲ ከባቢ የንቀሳቕስ። ኣብ Linux ባዕሉ ክሕደስ ስለ ዘይክእል፣ ነፍሲ ወከፍ ምሕዳስ ናይ መወዳእታ ስሪት ካብ Google የምጽእ።"
+        },
+        "fr": {
+          "displayName": "Antigravity",
+          "description": "Exécute dans l'environnement l'application de bureau officielle Antigravity de Google. Sous Linux, elle ne peut pas se mettre à jour seule : chaque mise à jour récupère la dernière version publiée par Google."
+        }
+      },
+      "displayName": "Antigravity",
+      "categories": [
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.1"
+      },
+      "contributes": {
+        "desktopApps": [
+          {
+            "id": "antigravity",
+            "title": "Antigravity",
+            "icon": "icon.png",
+            "source": {
+              "type": "archive",
+              "resolve": [
+                "resolve.py"
+              ],
+              "hosts": [
+                "storage.googleapis.com"
+              ]
+            },
+            "command": [
+              "antigravity"
+            ],
+            "schemes": [
+              "antigravity"
+            ],
+            "packages": [
+              "libnss3",
+              "libgtk-3-0t64",
+              "libgbm1",
+              "libasound2t64",
+              "libatk-bridge2.0-0t64",
+              "libcups2t64",
+              "libxss1",
+              "libxtst6",
+              "libsecret-1-0",
+              "libnotify4",
+              "libxshmfence1",
+              "libdrm2",
+              "libxkbfile1",
+              "git"
+            ]
+          }
+        ]
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/antigravity-app/icon.png",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/antigravity-app-0.1.1.tar.gz",
+      "sha256": "ca4841ab4a268b2191b0abca6ede13fad4e191b0bf52505ace5c3c13b9aecb5b",
+      "bytes": 23000
+    },
+    {
       "name": "blender",
       "version": "0.1.1",
       "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
@@ -534,6 +658,119 @@
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.4.tar.gz",
       "sha256": "263f9ff344ace131a3bcaec45f968e09a7db2bf62562a57f6c4ab4dc3b716ff2",
       "bytes": 2081
+    },
+    {
+      "name": "codex-app",
+      "version": "0.1.1",
+      "description": "Runs OpenAI's official Codex desktop app (the ChatGPT app for Linux) in the environment, installed from OpenAI's signed repository at its latest release.",
+      "permissions": [],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Codex",
+          "description": "在环境中运行 OpenAI 官方的 Codex 桌面应用（Linux 版 ChatGPT 应用），从 OpenAI 签名软件源安装，默认使用最新版本。"
+        },
+        "zh-TW": {
+          "displayName": "Codex",
+          "description": "在環境中執行 OpenAI 官方的 Codex 桌面應用程式（Linux 版 ChatGPT 應用程式），從 OpenAI 簽署的軟體源安裝，預設使用最新版本。"
+        },
+        "ru": {
+          "displayName": "Codex",
+          "description": "Запускает в среде официальное настольное приложение Codex от OpenAI (приложение ChatGPT для Linux), устанавливая последнюю версию из подписанного репозитория OpenAI."
+        },
+        "ar": {
+          "displayName": "Codex",
+          "description": "يشغّل تطبيق Codex الرسمي لسطح المكتب من OpenAI (تطبيق ChatGPT لنظام Linux) داخل البيئة، ويثبّت أحدث إصدار من مستودع OpenAI الموقّع."
+        },
+        "fa": {
+          "displayName": "Codex",
+          "description": "برنامهٔ رسمی دسکتاپ Codex از OpenAI (برنامهٔ ChatGPT برای Linux) را در محیط اجرا می‌کند و آخرین نسخه را از مخزن امضاشدهٔ OpenAI نصب می‌کند."
+        },
+        "ko": {
+          "displayName": "Codex",
+          "description": "OpenAI의 공식 Codex 데스크톱 앱(Linux용 ChatGPT 앱)을 환경에서 실행하며, OpenAI의 서명된 저장소에서 최신 버전을 설치합니다."
+        },
+        "es": {
+          "displayName": "Codex",
+          "description": "Ejecuta en el entorno la aplicación de escritorio oficial de Codex de OpenAI (la aplicación ChatGPT para Linux), instalando la última versión desde el repositorio firmado de OpenAI."
+        },
+        "my": {
+          "displayName": "Codex",
+          "description": "OpenAI ၏ တရားဝင် Codex desktop အက်ပ် (Linux အတွက် ChatGPT အက်ပ်) ကို ပတ်ဝန်းကျင်ထဲတွင် ဖွင့်ပေးပြီး OpenAI ၏ လက်မှတ်ထိုးထားသော repository မှ နောက်ဆုံးဗားရှင်းကို ထည့်သွင်းပါသည်။"
+        },
+        "be": {
+          "displayName": "Codex",
+          "description": "Запускае ў асяроддзі афіцыйную настольную праграму Codex ад OpenAI (праграму ChatGPT для Linux), усталёўваючы апошнюю версію з падпісанага рэпазіторыя OpenAI."
+        },
+        "ps": {
+          "displayName": "Codex",
+          "description": "د OpenAI رسمي Codex ډیسکټاپ اپلیکیشن (د Linux لپاره ChatGPT اپلیکیشن) په چاپېریال کې چلوي، او وروستۍ نسخه د OpenAI له لاسلیک شوي ذخیرې نصبوي."
+        },
+        "prs": {
+          "displayName": "Codex",
+          "description": "اپلیکیشن رسمی دسکتاپ Codex از OpenAI (اپلیکیشن ChatGPT برای Linux) را در محیط اجرا می‌کند و آخرین نسخه را از مخزن امضاشدهٔ OpenAI نصب می‌کند."
+        },
+        "am": {
+          "displayName": "Codex",
+          "description": "የOpenAI ይፋዊ የCodex ዴስክቶፕ መተግበሪያን (ለLinux የChatGPT መተግበሪያ) በአካባቢው ያስኬዳል፤ የቅርብ ጊዜውን ስሪት ከOpenAI የተፈረመ ማከማቻ ይጭናል።"
+        },
+        "so": {
+          "displayName": "Codex",
+          "description": "Waxay deegaanka ku socodsiisaa abka desktop-ka rasmiga ah ee Codex ee OpenAI (abka ChatGPT ee Linux), iyadoo ka rakibaysa noocii ugu dambeeyay kaydka la saxeexay ee OpenAI."
+        },
+        "ti": {
+          "displayName": "Codex",
+          "description": "ወግዓዊ ናይ OpenAI Codex ዴስክቶፕ ኣፕ (ናይ Linux ChatGPT ኣፕ) ኣብቲ ከባቢ የንቀሳቕስ፤ ናይ መወዳእታ ስሪት ካብ ዝተፈረመ መዝገብ OpenAI ይተክል።"
+        },
+        "fr": {
+          "displayName": "Codex",
+          "description": "Exécute dans l'environnement l'application de bureau officielle Codex d'OpenAI (l'application ChatGPT pour Linux), installée en dernière version depuis le dépôt signé d'OpenAI."
+        }
+      },
+      "displayName": "Codex",
+      "categories": [
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.1"
+      },
+      "contributes": {
+        "desktopApps": [
+          {
+            "id": "codex",
+            "title": "Codex",
+            "icon": "icon.png",
+            "source": {
+              "type": "apt",
+              "repository": "https://persistent.oaistatic.com/codex-app-prod/linux/deb",
+              "suite": "stable",
+              "components": [
+                "main"
+              ],
+              "key": "https://persistent.oaistatic.com/codex-app-prod/linux/repository-signing-key.gpg",
+              "fingerprint": "3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4",
+              "package": "chatgpt"
+            },
+            "command": [
+              "/usr/bin/chatgpt"
+            ],
+            "schemes": [
+              "codex"
+            ],
+            "packages": [
+              "git"
+            ]
+          }
+        ]
+      },
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/codex-app/icon.png",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/codex-app-0.1.1.tar.gz",
+      "sha256": "142a995059cb9f8ab0589f9c54a22ca881cd9bc7dcc31c8c782208440008a5f2",
+      "bytes": 31564
     },
     {
       "name": "codex-dispatch",
@@ -1772,7 +2009,7 @@
     },
     {
       "name": "system-status",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Shows real-time CPU, memory, disk and network telemetry of the environment in a draggable translucent floating overlay and as a tool for Claude.",
       "permissions": [],
       "author": {
@@ -1848,7 +2085,7 @@
       ],
       "kind": "guest",
       "engines": {
-        "cage": ">=0.2.0"
+        "cage": ">=0.2.1"
       },
       "contributes": {
         "mcpServers": [
@@ -1875,9 +2112,210 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.2.0.tar.gz",
-      "sha256": "87c72f7ee16b3691fd3eaf36cd08601e9a42393bdb1e3d7194ea6db25d6ceec0",
-      "bytes": 12914
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.2.1.tar.gz",
+      "sha256": "51f3545bdf0101ffe4ae9d3575dbb2ea80d602e5e8ab2fadc5cd035f8fba06ce",
+      "bytes": 12916
+    },
+    {
+      "name": "text-to-speech",
+      "version": "0.1.0",
+      "description": "Synthesize speech audio and batch video voiceovers using configurable TTS protocols including OpenAI-compatible APIs, Volcengine, MiniMax, ElevenLabs, Azure, DashScope, and custom HTTP endpoints.",
+      "permissions": [
+        "files",
+        "network"
+      ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "语音合成（TTS）",
+          "description": "通过可配置的多协议 TTS 接口生成配音音频与批量视频分镜/字幕配音，支持 OpenAI 兼容协议、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里云百炼及自定义 HTTP 模板。"
+        },
+        "zh-TW": {
+          "displayName": "語音合成（TTS）",
+          "description": "透過可設定的多協定 TTS 介面產生配音音訊與批次影片分鏡／字幕配音，支援 OpenAI 相容協定、火山引擎（V1/V3）、MiniMax、ElevenLabs、Azure、阿里雲百煉及自訂 HTTP 範本。"
+        },
+        "ru": {
+          "displayName": "Синтез речи (TTS)",
+          "description": "Синтезируйте озвучку и пакетные дорожки для видео через настраиваемые протоколы TTS: совместимые с OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope и пользовательские HTTP-шаблоны."
+        },
+        "ar": {
+          "displayName": "تحويل النص إلى كلام (TTS)",
+          "description": "توليد مقاطع صوتية ودبلجة فيديو مجمّعة عبر بروتوكولات TTS قابلة للتخصيص تشمل واجهات متوافقة مع OpenAI وVolcengine وMiniMax وElevenLabs وAzure وDashScope ونقاط HTTP مخصصة."
+        },
+        "fa": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو از طریق پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "ko": {
+          "displayName": "음성 합성 (TTS)",
+          "description": "OpenAI 호환 API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope 및 사용자 지정 HTTP 엔드포인트 등 설정 가능한 TTS 프로토콜로 음성과 동영상 더빙 오디오를 일괄 생성합니다."
+        },
+        "es": {
+          "displayName": "Texto a voz (TTS)",
+          "description": "Sintetiza audio de voz y doblajes de video por lotes mediante protocolos TTS configurables, incluidos API compatibles con OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope y endpoints HTTP personalizados."
+        },
+        "my": {
+          "displayName": "စာသားမှ အသံပြောင်းခြင်း (TTS)",
+          "description": "OpenAI နှင့် ကိုက်ညီသော API များ၊ Volcengine၊ MiniMax၊ ElevenLabs၊ Azure၊ DashScope နှင့် စိတ်ကြိုက် HTTP လိပ်စာများအပါအဝင် ပြင်ဆင်နိုင်သော TTS ပရိုတိုကောများဖြင့် အသံဖိုင်နှင့် ဗီဒီယို အသံသွင်းခြင်းများကို ဖန်တီးပါ။"
+        },
+        "be": {
+          "displayName": "Сінтэз маўлення (TTS)",
+          "description": "Сінтэзуйце агучку і пакетныя аўдыядарожкі для відэа праз наладжвальныя пратаколы TTS: сумяшчальныя з OpenAI API, Volcengine, MiniMax, ElevenLabs, Azure, DashScope і карыстальніцкія HTTP-шаблоны."
+        },
+        "ps": {
+          "displayName": "متن په غږ بدلول (TTS)",
+          "description": "د تنظیم وړ TTS پروتوکولونو له لارې غږیز فایلونه او د ویډیو ډله‌ییزه ډوبلنګ جوړ کړئ، لکه OpenAI-compatible APIs،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope او دودیز HTTP پای‌ټکي."
+        },
+        "prs": {
+          "displayName": "تبدیل متن به گفتار (TTS)",
+          "description": "تولید صدا و دوبله دسته‌ای ویدیو با پروتکل‌های قابل تنظیم TTS شامل رابط‌های سازگار با OpenAI،‏ Volcengine،‏ MiniMax،‏ ElevenLabs،‏ Azure،‏ DashScope و نقاط پایانی سفارشی HTTP."
+        },
+        "am": {
+          "displayName": "ጽሑፍ ወደ ንግግር (TTS)",
+          "description": "OpenAI ተኳሃኝ APIዎችን፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope እና ብጁ HTTP አድራሻዎችን ጨምሮ ሊዋቀሩ በሚችሉ የTTS ፕሮቶኮሎች ድምፅና የቪዲዮ ድምፅ ቅጂዎችን በቡድን ይፍጠሩ።"
+        },
+        "so": {
+          "displayName": "Qoraal-u-Cod (TTS)",
+          "description": "Soo saar codad iyo cod-gelin fiidiyow oo kooxeed adigoo adeegsanaya borotokoollo TTS oo la habeyn karo sida API-yada la jaanqaada OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope iyo HTTP gaar ah."
+        },
+        "ti": {
+          "displayName": "ጽሑፍ ናብ ድምጺ (TTS)",
+          "description": "ምስ OpenAI ዝሳነዩ APIታት፣ Volcengine፣ MiniMax፣ ElevenLabs፣ Azure፣ DashScope ከምኡውን ብሕታዊ HTTP መስመራት ሓዊሱ ብዝስተኻኸሉ TTS ፕሮቶኮላት ድምጽን ናይ ቪድዮ ድምጺ ምቕዳሕን ብእኩብ ኣፍሪ።"
+        },
+        "fr": {
+          "displayName": "Synthèse vocale (TTS)",
+          "description": "Synthétisez des voix off et doublages vidéo par lots via des protocoles TTS configurables, dont les API compatibles OpenAI, Volcengine, MiniMax, ElevenLabs, Azure, DashScope et des points de terminaison HTTP personnalisés."
+        }
+      },
+      "displayName": "Text to Speech",
+      "categories": [
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "tts",
+            "command": [
+              "python3",
+              "server.py",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ],
+        "settings": [
+          {
+            "id": "protocol",
+            "title": "TTS Protocol",
+            "description": "Speech synthesis API protocol to use for the default profile (openai covers OpenAI and compatible gateways or local engines).",
+            "type": "choice",
+            "env": "TTS_PROTOCOL",
+            "choices": [
+              "openai",
+              "volcengine-v3",
+              "volcengine-v1",
+              "minimax",
+              "elevenlabs",
+              "azure",
+              "dashscope",
+              "http-generic"
+            ],
+            "default": "volcengine-v3"
+          },
+          {
+            "id": "api-key",
+            "title": "API Key / Access Token",
+            "description": "API key, access key, or subscription key for the selected protocol (stored encrypted; optional for unauthenticated local servers).",
+            "type": "secret",
+            "env": "TTS_API_KEY"
+          },
+          {
+            "id": "endpoint",
+            "title": "API Endpoint or Base URL",
+            "description": "Optional custom URL, base URL, or Azure region. Leave blank to use the protocol default endpoint.",
+            "type": "string",
+            "env": "TTS_ENDPOINT"
+          },
+          {
+            "id": "app-id",
+            "title": "App ID / Group ID",
+            "description": "Optional application or group identifier (for example Volcengine App ID, MiniMax Group ID, or Azure region).",
+            "type": "string",
+            "env": "TTS_APP_ID"
+          },
+          {
+            "id": "resource-id",
+            "title": "Model / Resource ID / Cluster",
+            "description": "Model name, resource ID, or cluster (for example seed-tts-2.0, volc.service_type.10029, volcano_tts, gpt-4o-mini-tts, speech-02-hd).",
+            "type": "string",
+            "env": "TTS_RESOURCE_ID"
+          },
+          {
+            "id": "voice",
+            "title": "Default Voice / Speaker",
+            "description": "Default voice or speaker identifier used when a tool call omits the voice parameter.",
+            "type": "string",
+            "env": "TTS_VOICE"
+          },
+          {
+            "id": "format",
+            "title": "Default Audio Format",
+            "description": "Default output audio encoding.",
+            "type": "choice",
+            "env": "TTS_FORMAT",
+            "choices": [
+              "mp3",
+              "wav",
+              "ogg_opus",
+              "pcm",
+              "flac"
+            ],
+            "default": "mp3"
+          },
+          {
+            "id": "sample-rate",
+            "title": "Default Sample Rate (Hz)",
+            "description": "Default audio sample rate when supported by the protocol.",
+            "type": "choice",
+            "env": "TTS_SAMPLE_RATE",
+            "choices": [
+              "16000",
+              "22050",
+              "24000",
+              "32000",
+              "44100",
+              "48000"
+            ],
+            "default": "24000"
+          },
+          {
+            "id": "profiles-path",
+            "title": "Profiles Config File",
+            "description": "Optional path to a JSON file defining multiple named TTS profiles, voice presets, or http-generic templates.",
+            "type": "string",
+            "env": "TTS_PROFILES_PATH"
+          },
+          {
+            "id": "timeout",
+            "title": "Request Timeout (seconds)",
+            "description": "HTTP timeout in seconds per synthesis request (5 to 120).",
+            "type": "string",
+            "env": "TTS_TIMEOUT",
+            "default": "45"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/text-to-speech/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/text-to-speech-0.1.0.tar.gz",
+      "sha256": "91c9575c5a9c3c28cf91ea5e9ad29c68c226f84b56d9aec8a9406d02df7dca57",
+      "bytes": 30887
     },
     {
       "name": "web-fetch",
