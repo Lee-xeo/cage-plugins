@@ -1,0 +1,62 @@
+{
+  "zh-CN": {
+    "displayName": "Linux 文件",
+    "description": "按分栏浏览整个 Linux 文件系统，复制任意路径，并把文件或压缩后的文件夹下载到你的电脑。"
+  },
+  "zh-TW": {
+    "displayName": "Linux 檔案",
+    "description": "以分欄瀏覽整個 Linux 檔案系統，複製任意路徑，並把檔案或壓縮後的資料夾下載到你的電腦。"
+  },
+  "ru": {
+    "displayName": "Файлы Linux",
+    "description": "Просматривайте всю файловую систему Linux по столбцам, копируйте любой путь и скачивайте файлы или папки в виде ZIP-архива на свой компьютер."
+  },
+  "ar": {
+    "displayName": "ملفات Linux",
+    "description": "تصفّح نظام ملفات Linux بالكامل في أعمدة، وانسخ أي مسار، ونزّل الملفات أو المجلدات المضغوطة إلى حاسوبك."
+  },
+  "fa": {
+    "displayName": "فایل‌های Linux",
+    "description": "کل سیستم فایل Linux را به‌صورت ستونی مرور کنید، هر مسیری را کپی کنید و فایل‌ها یا پوشه‌های فشرده را در رایانهٔ خود دانلود کنید."
+  },
+  "ko": {
+    "displayName": "Linux 파일",
+    "description": "Linux 파일 시스템 전체를 열 보기로 탐색하고, 원하는 경로를 복사하고, 파일이나 압축한 폴더를 컴퓨터로 다운로드합니다."
+  },
+  "es": {
+    "displayName": "Archivos de Linux",
+    "description": "Explora todo el sistema de archivos de Linux en columnas, copia cualquier ruta y descarga archivos o carpetas comprimidas en tu equipo."
+  },
+  "my": {
+    "displayName": "Linux ဖိုင်များ",
+    "description": "Linux ဖိုင်စနစ်တစ်ခုလုံးကို ကော်လံများဖြင့် ကြည့်ရှုပါ၊ မည်သည့်လမ်းကြောင်းကိုမဆို ကူးယူပါ၊ ဖိုင်များ သို့မဟုတ် ချုံ့ထားသော ဖိုင်တွဲများကို သင့်ကွန်ပျူတာသို့ ဒေါင်းလုဒ်လုပ်ပါ။"
+  },
+  "be": {
+    "displayName": "Файлы Linux",
+    "description": "Праглядайце ўсю файлавую сістэму Linux па слупках, капіруйце любы шлях і спампоўвайце файлы або сціснутыя ў ZIP папкі на свой камп’ютар."
+  },
+  "ps": {
+    "displayName": "د Linux فایلونه",
+    "description": "د Linux ټول فایل سیسټم په ستونونو کې وګورئ، هره لاره کاپي کړئ، او فایلونه یا کمپرس شوي فولډرونه خپل کمپیوټر ته ډاونلوډ کړئ."
+  },
+  "prs": {
+    "displayName": "فایل‌های Linux",
+    "description": "تمام سیستم فایل Linux را به شکل ستونی مرور کنید، هر مسیر را کاپی کنید و فایل‌ها یا پوشه‌های فشرده‌شده را در کمپیوتر خود دانلود کنید."
+  },
+  "am": {
+    "displayName": "የLinux ፋይሎች",
+    "description": "መላውን የLinux ፋይል ሥርዓት በዓምዶች ያስሱ፣ ማንኛውንም ዱካ ይቅዱ፣ እና ፋይሎችን ወይም የታመቁ አቃፊዎችን ወደ ኮምፒውተርዎ ያውርዱ።"
+  },
+  "so": {
+    "displayName": "Faylasha Linux",
+    "description": "Ku baadh dhammaan nidaamka faylasha Linux adigoo adeegsanaya tiirar, koobiyee waddo kasta, oo kombiyuutarkaaga ku soo deji faylal ama galal la cufay."
+  },
+  "ti": {
+    "displayName": "ፋይላት Linux",
+    "description": "ምሉእ ስርዓተ ፋይል Linux ብዓምድታት ዳህስሱ፣ ዝኾነ መንገዲ ቅድሑ፣ ፋይላት ወይ ዝተጸቕጡ ማህደራት ናብ ኮምፒተርኩም ኣውርዱ።"
+  },
+  "fr": {
+    "displayName": "Fichiers Linux",
+    "description": "Parcourez tout le système de fichiers Linux en colonnes, copiez n’importe quel chemin et téléchargez des fichiers ou des dossiers compressés sur votre ordinateur."
+  }
+}

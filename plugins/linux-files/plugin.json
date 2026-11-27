@@ -1,0 +1,25 @@
+{
+  "name": "linux-files",
+  "displayName": "Linux Files",
+  "version": "0.2.6",
+  "description": "Browse the whole Linux file system in columns, copy any path, and download files or zipped folders to your computer.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.1" },
+  "kind": "guest",
+  "permissions": [],
+  "categories": ["files", "system"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "files", "command": ["python3", "server.py"] }
+    ],
+    "views": [
+      {
+        "id": "browser",
+        "title": "Linux Files",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "files"
+      }
+    ]
+  }
+}

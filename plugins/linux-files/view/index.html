@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-scheme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux Files</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app">
+  <aside class="sidebar" aria-label="Places">
+    <h2 class="side-title" data-text="places">Places</h2>
+    <nav id="places" class="places"></nav>
+    <h2 class="side-title" data-text="shared">Shared folders</h2>
+    <nav id="shared" class="places"></nav>
+  </aside>
+
+  <section class="main">
+    <header class="toolbar">
+      <div id="crumbs" class="crumbs" role="navigation"></div>
+      <div id="path-form" class="path-form" hidden>
+        <input id="path-input" class="path-input" type="text" spellcheck="false" autocomplete="off" aria-label="Path">
+      </div>
+      <div class="tools">
+        <button type="button" class="icon-btn" id="edit-path-btn" data-title="goTo"></button>
+        <button type="button" class="icon-btn" id="hidden-btn" data-title="showHidden" aria-pressed="false"></button>
+        <button type="button" class="icon-btn" id="refresh-btn" data-title="refresh"></button>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <button type="button" class="text-btn" id="copy-btn" data-text="copyPath">Copy path</button>
+        <button type="button" class="text-btn primary" id="download-btn" data-text="download">Download to computer</button>
+      </div>
+    </header>
+
+    <div id="browser" class="browser" tabindex="0" aria-label="Files">
+      <div id="columns" class="columns"></div>
+      <p id="empty-note" class="empty-note" hidden></p>
+    </div>
+
+    <footer class="statusbar">
+      <span id="status-count" class="status-count"></span>
+      <span id="jobs" class="jobs"></span>
+      <span class="dest">
+        <span id="dest-label" class="dest-label"></span>
+        <button type="button" class="link-btn" id="dest-btn" data-text="destButton">Download folder…</button>
+      </span>
+    </footer>
+  </section>
+</div>
+
+<div id="menu" class="menu" role="menu" hidden></div>
+
+<div id="modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title" data-text="pickTitle">Where should downloads go?</h3>
+    <p id="modal-text" class="modal-text"></p>
+    <div id="modal-list" class="modal-list" role="listbox"></div>
+    <label id="remember-row" class="remember">
+      <input type="checkbox" id="remember-box">
+      <span data-text="remember">Remember this folder and don't ask again</span>
+    </label>
+    <p id="modal-hint" class="modal-hint"></p>
+    <div class="modal-actions">
+      <button type="button" class="text-btn" id="modal-cancel" data-text="cancel">Cancel</button>
+      <button type="button" class="text-btn primary" id="modal-ok" data-text="useFolder">Use this folder</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
