@@ -1,0 +1,25 @@
+{
+  "name": "ip-check",
+  "displayName": "IP Check",
+  "version": "0.1.0",
+  "description": "Checks a public IP address for risk signals: a 0-100 risk score, network type (residential, hosting, VPN, proxy, Tor, mobile), reasons, and whether it looks suitable for signing in to Claude. Data comes from ip-check.leeguoo.com and public network signals; it cannot prove an account is safe.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.1" },
+  "kind": "guest",
+  "permissions": ["network"],
+  "categories": ["network"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "ip-check", "command": ["python3", "server.py"] }
+    ],
+    "settings": [
+      {
+        "id": "api-key",
+        "title": "API key (optional)",
+        "description": "A free ipck_ key from account.leeguoo.com/apikeys raises the daily lookup limit from 10 to 100. It is sent only to ip-check.leeguoo.com.",
+        "type": "secret",
+        "env": "IPCHECK_API_KEY"
+      }
+    ]
+  }
+}

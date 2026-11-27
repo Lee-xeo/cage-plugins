@@ -1376,6 +1376,112 @@
       "bytes": 20520
     },
     {
+      "name": "ip-check",
+      "version": "0.1.0",
+      "description": "Checks a public IP address for risk signals: a 0-100 risk score, network type (residential, hosting, VPN, proxy, Tor, mobile), reasons, and whether it looks suitable for signing in to Claude. Data comes from ip-check.leeguoo.com and public network signals; it cannot prove an account is safe.",
+      "permissions": [
+        "network"
+      ],
+      "author": {
+        "name": "leeguooooo"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "IP 检测",
+          "description": "查询公网 IP 的风险：0–100 风险分、网络类型（住宅、机房、VPN、代理、Tor、移动网络）、判定理由，以及是否适合登录 Claude。可以查当前出口，也可以查指定 IP。数据来自 ip-check.leeguoo.com 和公开的网络信号，不能证明账号一定安全。"
+        },
+        "zh-TW": {
+          "displayName": "IP 檢測",
+          "description": "查詢公網 IP 的風險：0–100 風險分、網路類型（住宅、機房、VPN、代理、Tor、行動網路）、判定理由，以及是否適合登入 Claude。可以查目前出口，也可以查指定 IP。資料來自 ip-check.leeguoo.com 與公開的網路訊號，無法證明帳號一定安全。"
+        },
+        "ru": {
+          "displayName": "Проверка IP",
+          "description": "Проверяет риск публичного IP-адреса: оценка риска 0–100, тип сети (домашняя, хостинг, VPN, прокси, Tor, мобильная), причины и подходит ли адрес для входа в Claude. Проверяет текущий выходной адрес или указанный IP. Данные берутся с ip-check.leeguoo.com и из открытых сетевых сигналов; они не доказывают, что аккаунт в безопасности."
+        },
+        "ar": {
+          "displayName": "فحص IP",
+          "description": "يفحص مخاطر عنوان IP عام: درجة خطر من 0 إلى 100، ونوع الشبكة (منزلية، استضافة، VPN، وكيل، Tor، جوال)، والأسباب، وهل يناسب تسجيل الدخول إلى Claude. يفحص عنوان الخروج الحالي أو عنوان IP محددًا. البيانات من ip-check.leeguoo.com ومن إشارات شبكية عامة، ولا تثبت أن الحساب آمن."
+        },
+        "fa": {
+          "displayName": "بررسی IP",
+          "description": "ریسک یک نشانی IP عمومی را بررسی می‌کند: امتیاز ریسک ۰ تا ۱۰۰، نوع شبکه (خانگی، میزبانی، VPN، پروکسی، Tor، موبایل)، دلایل، و اینکه برای ورود به Claude مناسب است یا نه. نشانی خروجی فعلی یا یک IP مشخص را بررسی می‌کند. داده‌ها از ip-check.leeguoo.com و سیگنال‌های عمومی شبکه می‌آیند و امن بودن حساب را ثابت نمی‌کنند."
+        },
+        "ko": {
+          "displayName": "IP 검사",
+          "description": "공인 IP 주소의 위험도를 확인합니다: 0–100 위험 점수, 네트워크 유형(가정용, 호스팅, VPN, 프록시, Tor, 모바일), 판단 이유, Claude 로그인에 적합한지 여부. 현재 출구 주소나 지정한 IP를 확인합니다. 데이터는 ip-check.leeguoo.com과 공개 네트워크 신호에서 오며, 계정이 안전하다는 것을 증명하지는 않습니다."
+        },
+        "es": {
+          "displayName": "Comprobación de IP",
+          "description": "Comprueba el riesgo de una dirección IP pública: puntuación de riesgo de 0 a 100, tipo de red (residencial, hosting, VPN, proxy, Tor, móvil), motivos y si es adecuada para iniciar sesión en Claude. Comprueba la dirección de salida actual o una IP indicada. Los datos vienen de ip-check.leeguoo.com y de señales públicas de red; no prueban que una cuenta esté segura."
+        },
+        "my": {
+          "displayName": "IP စစ်ဆေးခြင်း",
+          "description": "အများသုံး IP လိပ်စာ၏ အန္တရာယ်ကို စစ်ဆေးသည်- ၀ မှ ၁၀၀ အထိ အန္တရာယ်အမှတ်၊ ကွန်ရက်အမျိုးအစား (အိမ်သုံး၊ hosting၊ VPN၊ proxy၊ Tor၊ မိုဘိုင်း)၊ အကြောင်းရင်းများနှင့် Claude သို့ ဝင်ရောက်ရန် သင့်တော်မှု ရှိမရှိ။ လက်ရှိ ထွက်ပေါက်လိပ်စာ သို့မဟုတ် သတ်မှတ်ထားသော IP ကို စစ်ဆေးသည်။ ဒေတာသည် ip-check.leeguoo.com နှင့် အများသုံး ကွန်ရက်အချက်ပြမှုများမှ လာပြီး အကောင့် လုံခြုံကြောင်း သက်သေမပြနိုင်ပါ။"
+        },
+        "be": {
+          "displayName": "Праверка IP",
+          "description": "Правярае рызыку публічнага IP-адраса: ацэнка рызыкі 0–100, тып сеткі (хатняя, хостынг, VPN, проксі, Tor, мабільная), прычыны і ці падыходзіць адрас для ўваходу ў Claude. Правярае бягучы выхадны адрас або зададзены IP. Даныя бяруцца з ip-check.leeguoo.com і з адкрытых сеткавых сігналаў; яны не даказваюць, што акаўнт у бяспецы."
+        },
+        "ps": {
+          "displayName": "د IP ازموینه",
+          "description": "د یوې عامه IP پتې خطر ګوري: له ۰ تر ۱۰۰ پورې د خطر نمره، د شبکې ډول (کورنۍ، کوربه توب، VPN، پراکسي، Tor، ګرځنده)، لاملونه، او دا چې Claude ته د ننوتلو لپاره مناسبه ده که نه. اوسنۍ وتونکې پته یا یوه ټاکل شوې IP ګوري. معلومات له ip-check.leeguoo.com او عامه شبکه‌یي نښو راځي او دا نه ثابتوي چې حساب خوندي دی."
+        },
+        "prs": {
+          "displayName": "بررسی IP",
+          "description": "خطر یک آدرس IP عمومی را بررسی می‌کند: نمرهٔ خطر از ۰ تا ۱۰۰، نوع شبکه (خانگی، میزبانی، VPN، پراکسی، Tor، موبایل)، دلایل، و اینکه برای ورود به Claude مناسب است یا نه. آدرس خروجی فعلی یا یک IP مشخص را بررسی می‌کند. معلومات از ip-check.leeguoo.com و نشانه‌های عمومی شبکه می‌آید و مصون بودن حساب را ثابت نمی‌کند."
+        },
+        "am": {
+          "displayName": "IP ፍተሻ",
+          "description": "የአንድ ይፋዊ IP አድራሻ ስጋትን ይፈትሻል፦ ከ0 እስከ 100 የስጋት ነጥብ፣ የአውታረ መረብ አይነት (የቤት፣ ማስተናገጃ፣ VPN፣ ፕሮክሲ፣ Tor፣ ሞባይል)፣ ምክንያቶች እና ወደ Claude ለመግባት ተስማሚ መሆኑን። የአሁኑን የመውጫ አድራሻ ወይም የተሰጠ IP ይፈትሻል። መረጃው ከip-check.leeguoo.com እና ከይፋዊ የአውታረ መረብ ምልክቶች የመጣ ሲሆን መለያው ደህንነቱ የተጠበቀ መሆኑን አያረጋግጥም።"
+        },
+        "so": {
+          "displayName": "Hubinta IP",
+          "description": "Wuxuu hubiyaa khatarta cinwaan IP dadweyne: dhibcaha khatarta 0–100, nooca shabakadda (guri, martigelin, VPN, proxy, Tor, mobile), sababaha, iyo haddii uu ku habboon yahay gelitaanka Claude. Wuxuu hubiyaa cinwaanka bixitaanka hadda ama IP la bixiyay. Xogtu waxay ka timaaddaa ip-check.leeguoo.com iyo calaamado shabakadeed oo dadweyne; ma caddeyn karto in akoonku ammaan yahay."
+        },
+        "ti": {
+          "displayName": "ፍተሻ IP",
+          "description": "ሓደጋ ናይ ሓደ ህዝባዊ IP ኣድራሻ ይፍትሽ፦ ካብ 0 ክሳብ 100 ነጥቢ ሓደጋ፡ ዓይነት መርበብ (ናይ ገዛ፡ መዐንገሊ፡ VPN፡ ፕሮክሲ፡ Tor፡ ሞባይል)፡ ምኽንያታትን ንClaude ንምእታው ዝሰማማዕ እንተኾይኑን። ህሉው ኣድራሻ መውጽኢ ወይ ዝተዋህበ IP ይፍትሽ። እቲ ሓበሬታ ካብ ip-check.leeguoo.com ከምኡውን ካብ ህዝባዊ ምልክታት መርበብ ዝመጽእ ኮይኑ፡ ኣካውንት ውሑስ ምዃኑ ኣየረጋግጽን።"
+        },
+        "fr": {
+          "displayName": "Vérification d'IP",
+          "description": "Vérifie le risque d'une adresse IP publique : score de risque de 0 à 100, type de réseau (résidentiel, hébergement, VPN, proxy, Tor, mobile), raisons, et si elle convient pour se connecter à Claude. Vérifie l'adresse de sortie actuelle ou une IP donnée. Les données viennent de ip-check.leeguoo.com et de signaux réseau publics ; elles ne prouvent pas qu'un compte est sûr."
+        }
+      },
+      "displayName": "IP Check",
+      "categories": [
+        "network"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.1"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "ip-check",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ],
+        "settings": [
+          {
+            "id": "api-key",
+            "title": "API key (optional)",
+            "description": "A free ipck_ key from account.leeguoo.com/apikeys raises the daily lookup limit from 10 to 100. It is sent only to ip-check.leeguoo.com.",
+            "type": "secret",
+            "env": "IPCHECK_API_KEY"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/ip-check/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/ip-check-0.1.0.tar.gz",
+      "sha256": "c0e830429e1967385b593b0b417f41f189d738055e794036aa817082aa1cd10b",
+      "bytes": 8574
+    },
+    {
       "name": "knowledge-memory",
       "version": "0.1.2",
       "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
