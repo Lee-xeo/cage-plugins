@@ -1,0 +1,57 @@
+{
+  "name": "mount-guardian",
+  "displayName": "Mount Guardian",
+  "version": "0.2.0",
+  "description": "Watches shared project folders, mirrors their git metadata locally, and repairs the workspace catalog when a mapping drops.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.0" },
+  "kind": "guest",
+  "permissions": [],
+  "categories": ["system", "developer"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "guardian", "command": ["python3", "server.py"] }
+    ],
+    "views": [
+      {
+        "id": "panel",
+        "title": "Mount Guardian",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "guardian"
+      }
+    ],
+    "settings": [
+      {
+        "id": "auto-mirror",
+        "title": "Auto mirror",
+        "description": "Mirror git metadata into the local mirror directory while a project mapping is live.",
+        "type": "boolean",
+        "env": "MG_AUTO_MIRROR",
+        "default": "true"
+      },
+      {
+        "id": "auto-heal",
+        "title": "Auto heal",
+        "description": "Restore git metadata from the local mirror when a mapping drops and git stops resolving.",
+        "type": "boolean",
+        "env": "MG_AUTO_HEAL",
+        "default": "true"
+      },
+      {
+        "id": "watch-interval",
+        "title": "Check interval (seconds)",
+        "type": "string",
+        "env": "MG_WATCH_INTERVAL",
+        "default": "300"
+      },
+      {
+        "id": "extra-projects",
+        "title": "Extra projects (JSON)",
+        "description": "Optional JSON array of {\"name\", \"path\"} objects to watch in addition to discovered shared folders.",
+        "type": "string",
+        "env": "MG_EXTRA_PROJECTS"
+      }
+    ]
+  }
+}

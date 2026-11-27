@@ -1681,6 +1681,143 @@
       "bytes": 8697
     },
     {
+      "name": "mount-guardian",
+      "version": "0.2.0",
+      "description": "Watches shared project folders, mirrors their git metadata locally, and repairs the workspace catalog when a mapping drops.",
+      "permissions": [],
+      "author": {
+        "name": "nierainbow"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "映射守护",
+          "description": "监控共享项目文件夹的挂载状态，本地镜像其 git 元数据，并在映射掉线导致工作区目录断链时自动修复。"
+        },
+        "zh-TW": {
+          "displayName": "映射守護",
+          "description": "監控共享專案資料夾的掛載狀態，本機鏡像其 git 中繼資料，並在映射離線導致工作區目錄斷鏈時自動修復。"
+        },
+        "ru": {
+          "displayName": "Mount Guardian",
+          "description": "Следит за подключением общих папок проектов, локально зеркалирует их метаданные git и восстанавливает их при обрыве подключения."
+        },
+        "ar": {
+          "displayName": "Mount Guardian",
+          "description": "يراقب مجلدات المشاريع المشتركة، وينسخ بيانات git الوصفية محليًا، ويستعيدها عند انقطاع الربط."
+        },
+        "fa": {
+          "displayName": "Mount Guardian",
+          "description": "پوشه‌های پروژه اشتراکی را زیر نظر دارد، فراداده git آن‌ها را به‌صورت محلی آینه می‌کند و هنگام قطع شدن نگاشت بازیابی می‌کند."
+        },
+        "ko": {
+          "displayName": "Mount Guardian",
+          "description": "공유 프로젝트 폴드의 마운트 상태를 감시하고 git 메타데이터를 로컬에 미러링하며, 매핑이 끊기면 복구합니다."
+        },
+        "es": {
+          "displayName": "Mount Guardian",
+          "description": "Vigila las carpetas de proyecto compartidas, refleja localmente sus metadatos de git y los restaura cuando se pierde la asignación."
+        },
+        "my": {
+          "displayName": "Mount Guardian",
+          "description": "မျှဝေထားသော ပရောဂျက်ဖိုင်တွဲများကို စောင့်ကြည့်ပြီး git metadata ကို local တွင် mirror လုပ်ကာ ချိတ်ဆက်မှုပျက်စီးချိန်တွင် ပြင်ဆင်ပေးသည်။"
+        },
+        "be": {
+          "displayName": "Mount Guardian",
+          "description": "Сочыць за падключэннем агульных папак праектаў, лакальна капіюе іх метаданыя git і аднаўляе іх пры знікненні падключэння."
+        },
+        "ps": {
+          "displayName": "Mount Guardian",
+          "description": "شريکو پروژه فولډونو حالت څارنه کوي، د هغوی git معلومات په محلي ډول ساتي، او کله چې نښته ودرې نو بيا يې رغوي."
+        },
+        "prs": {
+          "displayName": "Mount Guardian",
+          "description": "پوشه‌های پروژه مشترک را نظارت می‌کند، معلومات git آن‌ها را به صورت محلی mirror می‌کند و هنگام قطع شدن mapping آن‌ها را بازیابی می‌کند."
+        },
+        "am": {
+          "displayName": "Mount Guardian",
+          "description": "የጋራ ፕሮጀክት ፎልዶችን ይከታተላል፣ የ git መረጃዎችን በአካባቢው ያስቀምጣል፣ ግንኙነት ሲቋረጥ ያስግኛል።"
+        },
+        "so": {
+          "displayName": "Mount Guardian",
+          "description": "Kormeeraa foldarrada mashaariicda ee la wadaago, gudbinaya xogta git si maxalli ah, kuna soo celiya marka isku xirku kado."
+        },
+        "ti": {
+          "displayName": "Mount Guardian",
+          "description": "ዝተዋሳኑ ፕሮጀክት ፎልደር ይከታተል፣ ናይ git ሓበሬታ ብከባቢ ይቕመጥ፣ ምትራኽ ሲፍጠር ይሕስን።"
+        },
+        "fr": {
+          "displayName": "Mount Guardian",
+          "description": "Surveille les dossiers de projet partagés, met en miroir local leurs métadonnées git et les restaure lorsqu'un montage est perdu."
+        }
+      },
+      "displayName": "Mount Guardian",
+      "categories": [
+        "system",
+        "developer"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "guardian",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "panel",
+            "title": "Mount Guardian",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "guardian"
+          }
+        ],
+        "settings": [
+          {
+            "id": "auto-mirror",
+            "title": "Auto mirror",
+            "description": "Mirror git metadata into the local mirror directory while a project mapping is live.",
+            "type": "boolean",
+            "env": "MG_AUTO_MIRROR",
+            "default": "true"
+          },
+          {
+            "id": "auto-heal",
+            "title": "Auto heal",
+            "description": "Restore git metadata from the local mirror when a mapping drops and git stops resolving.",
+            "type": "boolean",
+            "env": "MG_AUTO_HEAL",
+            "default": "true"
+          },
+          {
+            "id": "watch-interval",
+            "title": "Check interval (seconds)",
+            "type": "string",
+            "env": "MG_WATCH_INTERVAL",
+            "default": "300"
+          },
+          {
+            "id": "extra-projects",
+            "title": "Extra projects (JSON)",
+            "description": "Optional JSON array of {\"name\", \"path\"} objects to watch in addition to discovered shared folders.",
+            "type": "string",
+            "env": "MG_EXTRA_PROJECTS"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/mount-guardian/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/mount-guardian-0.2.0.tar.gz",
+      "sha256": "b45d3f78d653a9cdeba3f8016f317e88e229c519368fcbb60b2556daa2ef41de",
+      "bytes": 15891
+    },
+    {
       "name": "powerpoint-slides",
       "version": "0.2.1",
       "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
