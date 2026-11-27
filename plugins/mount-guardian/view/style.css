@@ -1,0 +1,36 @@
+:root {
+  --paper: #ffffff; --ink: #1f2328; --muted: #6a737d; --line: #d0d7de;
+  --accent: #4f8cff; --success: #2da44e; --danger: #cf222e; --warn: #bf8700;
+  --hover: #f6f8fa; --button: #4f8cff; --button-ink: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 10px 12px; font: 13px/1.5 -apple-system, "Segoe UI", sans-serif;
+  background: var(--paper); color: var(--ink); height: 100vh; overflow: auto;
+}
+.bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.title { font-weight: 600; }
+.spacer { flex: 1; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--success); }
+.dot.degraded { background: var(--warn); }
+.dot.broken { background: var(--danger); }
+.list { display: flex; flex-direction: column; gap: 6px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.card .name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.card .path { color: var(--muted); font-size: 11px; word-break: break-all; margin-top: 2px; }
+.tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+.tag.ok { color: var(--success); border-color: var(--success); }
+.tag.bad { color: var(--danger); border-color: var(--danger); }
+.tag.warn { color: var(--warn); border-color: var(--warn); }
+.catalog { margin-top: 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 12px; }
+.foot { display: flex; gap: 8px; margin-top: 10px; }
+.btn {
+  border: 1px solid var(--line); background: var(--hover); color: var(--ink);
+  border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 12px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.danger { color: var(--danger); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.empty { color: var(--muted); text-align: center; padding: 20px 0; }
