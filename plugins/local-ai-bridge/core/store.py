@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
+import random
 import threading
 import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+if os.name == "nt":
+    import msvcrt  # type: ignore[import-not-found]
+    fcntl = None  # type: ignore[assignment]
+else:
+    import fcntl
+    msvcrt = None  # type: ignore[assignment]
 
 from .security import (
     DEFAULT_NO_PROXY,
@@ -25,6 +34,18 @@ MAX_STORED_TASKS = 80
 DEFAULT_MAX_CONCURRENT = 4
 _LOCK_STALE_SECONDS = 30.0
 _LOCK_TIMEOUT_SECONDS = 10.0
+_WIN_RETRY_ERRNOS = {errno.EACCES, errno.EPERM, errno.EBUSY}
+_WIN_RETRY_WINERRORS = {5, 32, 33}  # ACCESS_DENIED, SHARING_VIOLATION, LOCK_VIOLATION
+
+
+def _is_transient_fs_error(exc: OSError) -> bool:
+    """Detect transient Windows NTFS lock/sharing/delete-pending errors worth retrying."""
+    if isinstance(exc, PermissionError):
+        return True
+    if exc.errno in _WIN_RETRY_ERRNOS:
+        return True
+    winerr = getattr(exc, "winerror", None)
+    return isinstance(winerr, int) and winerr in _WIN_RETRY_WINERRORS
 
 
 def utc_now() -> str:
@@ -60,7 +81,10 @@ def default_policy() -> dict[str, Any]:
 
 class CrossProcessLock:
     """
-    Thread-safe + cross-process atomic lockfile guard with stale-lock recovery.
+    Thread-safe + cross-process lock guard using OS kernel file locks:
+    - Windows: `msvcrt.locking` on a persistent lockfile (never unlinked, avoiding NTFS
+      delete-pending PermissionError races) with transient PermissionError retries.
+    - POSIX: `fcntl.flock` on a persistent lockfile (auto-released by kernel on crash).
     Strictly fail-closed on timeout.
     """
 
@@ -82,33 +106,112 @@ class CrossProcessLock:
         try:
             self._lock_path.parent.mkdir(parents=True, exist_ok=True)
             deadline = time.monotonic() + self._timeout
-            while True:
-                try:
-                    self._fd = os.open(
-                        str(self._lock_path),
-                        os.O_CREAT | os.O_EXCL | os.O_WRONLY,
-                        0o600,
-                    )
-                    os.write(self._fd, f"{os.getpid()}:{time.time()}\n".encode("ascii"))
-                    return self
-                except FileExistsError:
+            if os.name == "nt" and msvcrt is not None:
+                self._acquire_windows(deadline)
+            elif fcntl is not None:
+                self._acquire_posix_flock(deadline)
+            else:
+                self._acquire_excl_fallback(deadline)
+            return self
+        except BaseException:
+            self._close_fd()
+            self._release_local()
+            raise
+
+    def _acquire_windows(self, deadline: float) -> None:
+        while True:
+            fd: int | None = None
+            try:
+                fd = os.open(str(self._lock_path), os.O_CREAT | os.O_RDWR)
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                self._fd = fd
+                return
+            except OSError as exc:
+                if fd is not None:
                     try:
-                        age = time.time() - self._lock_path.stat().st_mtime
-                        if age > _LOCK_STALE_SECONDS:
-                            self._lock_path.unlink(missing_ok=True)
-                            continue
+                        os.close(fd)
                     except OSError:
                         pass
+                retryable = _is_transient_fs_error(exc) or exc.errno in (errno.EDEADLK, errno.EAGAIN)
+                if not retryable:
+                    raise RuntimeError(f"Failed to acquire state lock: {exc}") from exc
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Timed out waiting for state lock ({self._timeout:.0f}s)."
+                    ) from exc
+                time.sleep(0.015 + random.random() * 0.02)
+
+    def _acquire_posix_flock(self, deadline: float) -> None:
+        fd = os.open(str(self._lock_path), os.O_CREAT | os.O_RDWR, 0o600)
+        self._fd = fd
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"Timed out waiting for state lock ({self._timeout:.0f}s).")
+                time.sleep(0.015 + random.random() * 0.015)
+            except OSError as exc:
+                if exc.errno in (errno.EAGAIN, errno.EACCES, errno.EINTR):
                     if time.monotonic() >= deadline:
                         raise TimeoutError(
                             f"Timed out waiting for state lock ({self._timeout:.0f}s)."
-                        )
+                        ) from exc
+                    time.sleep(0.015)
+                    continue
+                raise RuntimeError(f"Failed to acquire state lock: {exc}") from exc
+
+    def _acquire_excl_fallback(self, deadline: float) -> None:
+        while True:
+            try:
+                self._fd = os.open(
+                    str(self._lock_path),
+                    os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                    0o600,
+                )
+                os.write(self._fd, f"{os.getpid()}:{time.time()}\n".encode("ascii"))
+                return
+            except FileExistsError:
+                try:
+                    age = time.time() - self._lock_path.stat().st_mtime
+                    if age > _LOCK_STALE_SECONDS:
+                        self._lock_path.unlink(missing_ok=True)
+                        continue
+                except OSError:
+                    pass
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"Timed out waiting for state lock ({self._timeout:.0f}s).")
+                time.sleep(0.025)
+            except OSError as exc:
+                if _is_transient_fs_error(exc) and time.monotonic() < deadline:
                     time.sleep(0.025)
-                except OSError as exc:
-                    raise RuntimeError(f"Failed to acquire state lock: {exc}") from exc
-        except BaseException:
-            self._release_local()
-            raise
+                    continue
+                raise RuntimeError(f"Failed to acquire state lock: {exc}") from exc
+
+    def _close_fd(self) -> None:
+        if self._fd is None:
+            return
+        fd = self._fd
+        self._fd = None
+        try:
+            if os.name == "nt" and msvcrt is not None:
+                try:
+                    os.lseek(fd, 0, os.SEEK_SET)
+                    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    pass
+            elif fcntl is not None:
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                except OSError:
+                    pass
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
     def _release_local(self) -> None:
         if self._acquired_local:
@@ -117,16 +220,7 @@ class CrossProcessLock:
 
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         try:
-            if self._fd is not None:
-                try:
-                    os.close(self._fd)
-                except OSError:
-                    pass
-                self._fd = None
-                try:
-                    self._lock_path.unlink(missing_ok=True)
-                except OSError:
-                    pass
+            self._close_fd()
         finally:
             self._release_local()
 
@@ -164,12 +258,19 @@ class StateStore:
         return CrossProcessLock(self._project_rlock, self._project_lock_file)
 
     def _read_json(self, path: Path, fallback: Any) -> Any:
-        try:
-            if not path.is_file():
+        deadline = time.monotonic() + 1.5
+        while True:
+            try:
+                if not path.is_file():
+                    return fallback
+                return json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
                 return fallback
-            return json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return fallback
+            except OSError as exc:
+                if os.name == "nt" and _is_transient_fs_error(exc) and time.monotonic() < deadline:
+                    time.sleep(0.015)
+                    continue
+                return fallback
 
     def _write_json(self, path: Path, payload: Any, private: bool = True) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -186,9 +287,16 @@ class StateStore:
                     pass
             if private:
                 harden_private_file(tmp)
-            os.replace(tmp, path)
-            if private and os.name == "nt":
-                harden_private_file(path)
+            replace_deadline = time.monotonic() + 3.0
+            while True:
+                try:
+                    os.replace(tmp, path)
+                    break
+                except OSError as exc:
+                    if os.name == "nt" and _is_transient_fs_error(exc) and time.monotonic() < replace_deadline:
+                        time.sleep(0.02 + random.random() * 0.02)
+                        continue
+                    raise
         except BaseException:
             tmp.unlink(missing_ok=True)
             raise
@@ -226,7 +334,7 @@ class StateStore:
         return base
 
     def get_policy(self) -> dict[str, Any]:
-        with self._policy_rlock:
+        with self._policy_lock():
             return self._parse_policy(self._read_json(self.policy_file, {}))
 
     def update_policy(self, updates: dict[str, Any]) -> dict[str, Any]:
@@ -248,7 +356,6 @@ class StateStore:
                 for key in ("http_proxy", "https_proxy", "all_proxy"):
                     if key in px:
                         val = px[key]
-                        # Preserve existing credentials if the UI re-submitted a masked placeholder unchanged
                         if isinstance(val, str) and "://***@" in val and policy["proxy"].get(key):
                             continue
                         policy["proxy"][key] = validate_proxy_url(val, label=key)
@@ -293,7 +400,7 @@ class StateStore:
         self._write_json(self.sessions_file, data, private=True)
 
     def get_session(self, session_id: str) -> dict[str, Any] | None:
-        with self._project_rlock:
+        with self._project_lock():
             return self._load_sessions_map().get(session_id)
 
     def upsert_session(self, session: dict[str, Any]) -> dict[str, Any]:
@@ -357,7 +464,7 @@ class StateStore:
         provider: str | None = None,
         limit: int = 30,
     ) -> list[dict[str, Any]]:
-        with self._project_rlock:
+        with self._project_lock():
             items = list(self._load_sessions_map().values())
         if provider:
             items = [s for s in items if s.get("provider") == provider]
@@ -375,7 +482,7 @@ class StateStore:
 
     # ---- Persisted task snapshots (strictly per-project isolated) ----
     def load_saved_tasks(self) -> list[dict[str, Any]]:
-        with self._project_rlock:
+        with self._project_lock():
             raw = self._read_json(self.tasks_file, [])
             if not isinstance(raw, list):
                 return []
@@ -389,16 +496,28 @@ class StateStore:
 
     def save_task_snapshot(self, snapshot: dict[str, Any]) -> None:
         with self._project_lock():
-            items = self.load_saved_tasks()
+            items = self._load_saved_tasks_unlocked()
             tid = snapshot["id"]
             snapshot["project_dir"] = self.project_dir
             items = [item for item in items if item.get("id") != tid]
             items.insert(0, snapshot)
             self._write_json(self.tasks_file, items[:MAX_STORED_TASKS], private=True)
 
+    def _load_saved_tasks_unlocked(self) -> list[dict[str, Any]]:
+        raw = self._read_json(self.tasks_file, [])
+        if not isinstance(raw, list):
+            return []
+        if not self.project_dir:
+            return [item for item in raw if isinstance(item, dict)]
+        return [
+            item
+            for item in raw
+            if isinstance(item, dict) and item.get("project_dir") == self.project_dir
+        ]
+
     def clear_finished_tasks(self) -> int:
         with self._project_lock():
-            items = self.load_saved_tasks()
+            items = self._load_saved_tasks_unlocked()
             count = len(items)
             self._write_json(self.tasks_file, [], private=True)
             return count

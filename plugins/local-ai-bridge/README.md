@@ -13,9 +13,9 @@
 - **三级权限档位（默认硬只读、逐项二次确认放行）**：
   - `read-only`（默认）：
     - **Codex**：`--sandbox read-only --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps -c web_search="disabled"`（Windows 额外加 `-c windows.sandbox="unelevated"`）。
-    - **Grok**：`--permission-mode plan --disable-web-search --no-subagents --tools read_file,list_dir,grep` 并通过 `--disallowed-tools` 与 `--deny` 禁用终端执行、文件写入、编辑与 MCP 工具。
-    - **Antigravity (`agy`)**：`--disable-slash-commands --settings <temp_deny.json>`，通过引擎最高优先级 `Deny > Ask > Allow` 硬拒绝 `write_file(*)`、`command(*)`、`mcp(*)`、`execute_url(*)`、`download_url(*)`、`read_url(*)`（覆盖用户本地 `Allow` 规则，且兼容 Windows 10/11）。
-  - `workspace-write`：Codex `workspace-write`（禁用 hooks/plugins/apps）；Grok `acceptEdits`（仍禁用终端执行与 MCP）；Antigravity `--mode accept-edits`（仍拒绝 `command(*)` / `mcp(*)` / 浏览器操作）。
+    - **Grok**：`--permission-mode plan --disable-web-search --no-subagents --tools read_file,list_dir,grep`，配合 `--disallowed-tools`（同时覆盖 `run_terminal_cmd` / `run_terminal_command` 等工具名）与内置前缀 `--deny Bash(*)` / `Edit(*)` / `Write(*)` / `MCPTool(*)` / `WebFetch(*)` / `WebSearch(*)` 硬禁止终端执行、文件写入/编辑、网络与 MCP 工具。
+    - **Antigravity (`agy`)**：`--disable-slash-commands --settings <temp_deny.json>`，通过引擎最高优先级 `Deny > Ask > Allow` 硬拒绝 `write_file(*)`、`command(*)`、`mcp(*)`、`execute_url(*)`、`download_url(*)`、`read_url(*)`（覆盖用户本地 `Allow` 规则，且兼容 Windows 10/11；注：`agy` 当前未为 `run_workflow` 或项目内 `.agents/hooks.json` 提供独立 deny 规则字段，对不信任仓库请先审查项目内 hooks 配置）。
+  - `workspace-write`：Codex `workspace-write`（禁用 hooks/plugins/apps）；Grok `acceptEdits`（加 `--no-subagents`、`--disable-web-search`，并通过 `--disallowed-tools` 与 `--deny Bash(*)` / `MCPTool(*)` / `WebFetch(*)` / `WebSearch(*)` 禁用终端执行与 MCP）；Antigravity `--mode accept-edits`（仍拒绝 `command(*)` / `mcp(*)` / 浏览器操作）。
   - `full-access`：Codex `danger-full-access`（保留本机 plugins/apps 与浏览器/Chrome MCP）；Grok `bypassPermissions --always-approve`；Antigravity `--dangerously-skip-permissions`。
   - 每次为全局或任意单个 AI 新增解锁 `workspace-write` / `full-access` 均须在侧栏看板经 `ui/confirm` 二次确认。
 - **异步并行 + 流式进度 + 完整进程树取消**：启动任务立即返回 `task_id` 与 `session_id`；支持 `prompt_file`（严格限制在 `${PROJECT_DIR}` 内，防路径穿越和软链逃逸）绕开 4000 字节参数上限；取消或退出时在 POSIX 终止整个进程组、在 Windows 调用 `taskkill /T /F` 清理全部子孙进程。

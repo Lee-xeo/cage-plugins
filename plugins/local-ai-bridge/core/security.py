@@ -444,6 +444,8 @@ def _extra_search_dirs(platform_name: str | None = None) -> list[Path]:
         if appdata:
             dirs.append(Path(appdata) / "npm")
         if localappdata:
+            dirs.append(Path(localappdata) / "agy" / "bin")
+            dirs.append(Path(localappdata) / "grok" / "bin")
             dirs.append(Path(localappdata) / "Programs")
     return dirs
 

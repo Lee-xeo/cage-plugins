@@ -247,6 +247,36 @@ class SecurityAndPolicyTests(unittest.TestCase):
             )
             self.assertIsNone(rejected_proj)
 
+            # Windows official @xai-official/grok shim & %LOCALAPPDATA%\agy\bin discovery
+            grok_entry = bin_dir / "node_modules" / "@xai-official" / "grok" / "bin" / "grok.js"
+            grok_entry.parent.mkdir(parents=True)
+            grok_entry.write_text("// grok", encoding="utf-8")
+            grok_cmd = bin_dir / "grok.cmd"
+            grok_cmd.write_text("@echo shim\r\n", encoding="utf-8")
+            resolved_grok = resolve_cli_command(
+                "grok",
+                "AI_BRIDGE_TEST_NONE",
+                policy_override=str(grok_cmd),
+                npm_rel_entries=("node_modules/@xai-official/grok/bin/grok.js",),
+                project_dir=str(proj),
+                platform_name="win32",
+                node_exe="C:/Program Files/nodejs/node.exe",
+            )
+            self.assertEqual(resolved_grok, ["C:/Program Files/nodejs/node.exe", str(grok_entry)])
+
+            from core.security import _extra_search_dirs
+
+            old_local = os.environ.get("LOCALAPPDATA")
+            try:
+                os.environ["LOCALAPPDATA"] = str(root / "LocalAppData")
+                win_dirs = _extra_search_dirs("win32")
+                self.assertIn(root / "LocalAppData" / "agy" / "bin", win_dirs)
+            finally:
+                if old_local is None:
+                    os.environ.pop("LOCALAPPDATA", None)
+                else:
+                    os.environ["LOCALAPPDATA"] = old_local
+
     def test_strict_schema_validation(self) -> None:
         # Reject bool masquerading as integer
         with self.assertRaises(ValueError):
@@ -302,10 +332,32 @@ class ParserAndHardReadOnlyTests(unittest.TestCase):
         self.assertIn("--tools", grok_ro)
         self.assertIn("read_file,list_dir,grep", grok_ro)
         self.assertIn("--disallowed-tools", grok_ro)
+        disallowed_ro = grok_ro[grok_ro.index("--disallowed-tools") + 1]
+        self.assertIn("run_terminal_cmd", disallowed_ro)
+        self.assertIn("run_terminal_command", disallowed_ro)
         self.assertIn("--disable-web-search", grok_ro)
         self.assertIn("--no-subagents", grok_ro)
+        for rule in ("Bash(*)", "Edit(*)", "Write(*)", "MCPTool(*)", "WebFetch(*)", "WebSearch(*)"):
+            self.assertIn(rule, grok_ro)
         self.assertIn("--prompt-file", grok_ro)
         self.assertNotIn("-p", grok_ro)
+
+        grok_rw = GrokProvider()._build_argv(
+            ["/usr/bin/grok"],
+            TurnRequest(prompt="edit file", project_dir="/tmp", mode="workspace-write"),
+            session_uuid="11111111-1111-1111-1111-111111111111",
+            is_resume=False,
+            prompt_file_path="/tmp/prompt.txt",
+        )
+        self.assertIn("--no-subagents", grok_rw)
+        self.assertIn("--disable-web-search", grok_rw)
+        disallowed_rw = grok_rw[grok_rw.index("--disallowed-tools") + 1]
+        self.assertIn("run_terminal_cmd", disallowed_rw)
+        self.assertIn("run_terminal_command", disallowed_rw)
+        for rule in ("Bash(*)", "MCPTool(*)", "WebFetch(*)", "WebSearch(*)"):
+            self.assertIn(rule, grok_rw)
+        self.assertNotIn("Write(*)", grok_rw)
+        self.assertNotIn("Edit(*)", grok_rw)
 
         agy_ro = AntigravityProvider()._build_argv(
             ["/usr/bin/agy"],
@@ -421,14 +473,65 @@ class RunnerIsolationAndProtocolTests(unittest.TestCase):
             finally:
                 runner.shutdown()
 
-            # Verify shutdown wakes a 25s wait immediately
+            # Verify shutdown wakes a 25s wait immediately, then drain worker cleanly before tmp cleanup
             fake_slow = FakeProvider(delay=10.0)
             runner2 = TaskRunner(str(proj), StateStore(Path(tmp) / "state2", str(proj)), {"codex": fake_slow})
-            started_slow = runner2.start_task(provider_id="codex", prompt="slow")
-            t0 = time.monotonic()
-            threading.Timer(0.15, lambda: runner2.shutdown(wait_workers=False)).start()
-            runner2.get_task_status(started_slow["task_id"], wait_seconds=25)
-            self.assertLess(time.monotonic() - t0, 2.0)
+            try:
+                started_slow = runner2.start_task(provider_id="codex", prompt="slow")
+                t0 = time.monotonic()
+                timer = threading.Timer(0.15, lambda: runner2.shutdown(wait_workers=False))
+                timer.start()
+                runner2.get_task_status(started_slow["task_id"], wait_seconds=25)
+                elapsed = time.monotonic() - t0
+                timer.join(timeout=2.0)
+                self.assertLess(elapsed, 2.0)
+            finally:
+                runner2.shutdown(wait_workers=True)
+
+    def test_multiprocess_concurrent_store_stress(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state_dir = Path(tmp) / "shared-state"
+            proj = Path(tmp) / "repo"
+            proj.mkdir()
+            worker_code = "\n".join(
+                [
+                    "import sys",
+                    "from pathlib import Path",
+                    f"sys.path.insert(0, {str(PLUGIN_DIR)!r})",
+                    "from core.store import StateStore",
+                    "idx = int(sys.argv[1])",
+                    "s = StateStore(Path(sys.argv[2]), sys.argv[3])",
+                    "for i in range(15):",
+                    "    s.update_policy({'max_concurrent': (idx + i) % 8 + 1})",
+                    "    _ = s.get_policy()",
+                    "    s.upsert_session({'id': f'p{idx}-s{i}', 'provider': 'codex', 'title': 't', 'turns': []})",
+                ]
+            )
+            procs = [
+                subprocess.Popen(
+                    [sys.executable, "-c", worker_code, str(idx), str(state_dir), str(proj)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                for idx in range(4)
+            ]
+            results: list[tuple[int, str, str]] = []
+            for p in procs:
+                try:
+                    out, err = p.communicate(timeout=25)
+                    results.append((p.returncode or 0, out, err))
+                finally:
+                    if p.stdout:
+                        p.stdout.close()
+                    if p.stderr:
+                        p.stderr.close()
+            for code, out, err in results:
+                self.assertEqual(code, 0, f"Worker failed: stdout={out} stderr={err}")
+
+            final_store = StateStore(state_dir, str(proj))
+            self.assertEqual(len(final_store.list_sessions(limit=100)), 60)
+            self.assertIn(final_store.get_policy()["max_concurrent"], range(1, 9))
 
     def test_mcp_stdio_protocol_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

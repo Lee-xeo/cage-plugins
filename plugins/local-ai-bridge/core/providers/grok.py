@@ -22,19 +22,40 @@ from .base import (
 )
 
 _GROK_NPM_ENTRIES = (
+    "node_modules/@xai-official/grok/bin/grok.js",
+    "node_modules/@xai-official/grok/bin/grok.mjs",
     "node_modules/@xai/grok/bin/grok.js",
     "node_modules/grok/bin/grok.js",
 )
 
-# Hard read-only tool allowlist and blocklist verified against Grok CLI built-in tool registry.
+# Hard read-only tool allowlist and blocklist covering both @xai-official/grok 1.0.46 (`run_terminal_cmd`)
+# and newer releases (`run_terminal_command`).
 _GROK_READONLY_TOOLS = "read_file,list_dir,grep"
 _GROK_READONLY_DISALLOWED = (
-    "run_terminal_command,write,search_replace,use_tool,search_tool,workflow,"
+    "run_terminal_cmd,run_terminal_command,kill_command_or_subagent,get_command_or_subagent_output,"
+    "monitor,write,search_replace,use_tool,search_tool,workflow,"
     "image_gen,image_edit,image_to_video,reference_to_video"
 )
 _GROK_WORKSPACE_WRITE_DISALLOWED = (
-    "run_terminal_command,use_tool,search_tool,workflow,"
+    "run_terminal_cmd,run_terminal_command,kill_command_or_subagent,get_command_or_subagent_output,"
+    "monitor,use_tool,search_tool,workflow,"
     "image_gen,image_edit,image_to_video,reference_to_video"
+)
+
+# Official Grok CLI `--deny` built-in rule prefixes (verified against @xai-official/grok 1.0.46 & 1.0.92).
+_GROK_READONLY_DENIES = (
+    "Bash(*)",
+    "Edit(*)",
+    "Write(*)",
+    "MCPTool(*)",
+    "WebFetch(*)",
+    "WebSearch(*)",
+)
+_GROK_WORKSPACE_WRITE_DENIES = (
+    "Bash(*)",
+    "MCPTool(*)",
+    "WebFetch(*)",
+    "WebSearch(*)",
 )
 
 _AUTH_ERR_RE = re.compile(
@@ -220,26 +241,21 @@ class GrokProvider(AIProvider):
                     _GROK_READONLY_TOOLS,
                     "--disallowed-tools",
                     _GROK_READONLY_DISALLOWED,
-                    "--deny",
-                    "run_terminal_command(*)",
-                    "--deny",
-                    "write(*)",
-                    "--deny",
-                    "search_replace(*)",
-                    "--deny",
-                    "use_tool(*)",
                 ]
             )
+            for rule in _GROK_READONLY_DENIES:
+                argv.extend(["--deny", rule])
         elif req.mode == "workspace-write":
             argv.extend(
                 [
                     "--disable-web-search",
+                    "--no-subagents",
                     "--disallowed-tools",
                     _GROK_WORKSPACE_WRITE_DISALLOWED,
-                    "--deny",
-                    "run_terminal_command(*)",
                 ]
             )
+            for rule in _GROK_WORKSPACE_WRITE_DENIES:
+                argv.extend(["--deny", rule])
         elif req.mode == "full-access":
             argv.append("--always-approve")
 

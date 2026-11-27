@@ -1693,8 +1693,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-ai-bridge/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-ai-bridge-0.1.0.tar.gz",
-      "sha256": "9e4bc1f9e90270930b7fcab8e5b4b5179431bfe460b5218d50b10b482370da89",
-      "bytes": 57913
+      "sha256": "2ccbb3049660cab37c7e43ccaa9c1d5d0775653ce7e3e86cd457c488b788793a",
+      "bytes": 60116
     },
     {
       "name": "local-preview",
