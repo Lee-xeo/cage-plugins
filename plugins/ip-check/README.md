@@ -19,8 +19,10 @@ and proxy operators, Tor exits, anycast ranges and region. It cannot prove that
 an account is safe, and it cannot see local proxy settings, browser state or
 anything else on the machine.
 
-`ip_check_exit` uses ASN and edge data only. Residential-proxy and abuse
-reputation feeds are applied only by `ip_check_ip`.
+`ip_check_exit` uses ASN and edge data only. Residential-proxy, mobile and
+abuse reputation feeds are applied only when `ip_check_ip` checks an address
+other than the caller's own; passing the exit address to `ip_check_ip` from the
+same network gives the same result as `ip_check_exit`.
 
 ## Data flow
 

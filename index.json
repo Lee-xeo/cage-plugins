@@ -1478,8 +1478,8 @@
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/ip-check/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/ip-check-0.1.0.tar.gz",
-      "sha256": "c0e830429e1967385b593b0b417f41f189d738055e794036aa817082aa1cd10b",
-      "bytes": 8574
+      "sha256": "0aa76082f49f05ea2b9aef4b77e1acf0140c2bfda5b5e65dea901e0abaea70d4",
+      "bytes": 8727
     },
     {
       "name": "knowledge-memory",

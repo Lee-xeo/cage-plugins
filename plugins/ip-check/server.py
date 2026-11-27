@@ -4,10 +4,10 @@
 # The only network destination is https://ip-check.leeguoo.com. A request
 # carries the address being looked up (or nothing, for the exit address) and,
 # when IPCHECK_API_KEY is set, that key as a bearer token.
+import http.client
 import ipaddress
 import json
 import os
-import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -25,17 +25,19 @@ TOOLS = [
         "name": "ip_check_exit",
         "description": (
             "Check the public IP address that this tool's own internet traffic leaves from. Returns a 0-100 "
-            "risk score (higher is riskier), the network type (residential, hosting, VPN, Tor, mobile, China "
-            "cloud), the reasons, the country and ASN, and a verdict on whether the network looks suitable for "
-            "signing in to Claude, including Anthropic's supported-region list. This check uses ASN and edge "
-            "data only; residential-proxy and abuse feeds are applied by ip_check_ip. " + NOTE
+            "risk score (higher is riskier), the network type (residential, hosting, VPN, Tor, China cloud), "
+            "the reasons, the country and ASN, and a verdict on whether the network looks suitable for "
+            "signing in to Claude, including Anthropic's supported-region list. The exit address is judged from "
+            "ASN and edge data only: residential-proxy, mobile and abuse feeds are not applied to it, and passing "
+            "the same address to ip_check_ip from this network gives the same result. " + NOTE
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
         "name": "ip_check_ip",
         "description": (
-            "Check a given public IPv4 or IPv6 address. Returns a 0-100 risk score (higher is riskier), the "
+            "Check a given public IPv4 or IPv6 address other than the current exit (for the exit, use "
+            "ip_check_exit). Returns a 0-100 risk score (higher is riskier), the "
             "network type (residential, hosting, VPN, residential proxy, Tor, mobile, China cloud), the reasons, "
             "the country and ASN, abuse reputation, and a verdict on whether the address looks suitable for "
             "signing in to Claude, including Anthropic's supported-region list. Without an API key the service "
@@ -86,7 +88,7 @@ def fetch(ip=None):
             body = response.read(1 << 20)
     except urllib.error.HTTPError as failure:
         raise CheckError(explain_http(failure))
-    except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as failure:
+    except (OSError, http.client.HTTPException) as failure:  # URLError, timeouts, TLS and reset errors
         reason = getattr(failure, "reason", failure)
         raise CheckError(f"could not reach ip-check.leeguoo.com: {reason}. Check the network connection and try again.")
     try:
@@ -183,6 +185,8 @@ def answer(message):
             report = call(params.get("name"), arguments)
         except CheckError as failure:
             return {"content": [{"type": "text", "text": f"failed: {failure}"}], "isError": True}
+        except Exception as failure:  # never let one call stop the server
+            return {"content": [{"type": "text", "text": f"failed: unexpected error: {failure!r}"}], "isError": True}
         return {"content": [{"type": "text", "text": json.dumps(report, ensure_ascii=False)}], "structuredContent": report}
     if method == "ping":
         return {}
