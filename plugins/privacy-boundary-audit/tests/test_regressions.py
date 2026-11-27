@@ -6,7 +6,9 @@ import io
 import json
 import pathlib
 import re
+import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -18,6 +20,7 @@ for candidate in (str(PLUGIN_DIR), str(AUDIT_KIT_DIR)):
     if candidate not in sys.path:
         sys.path.insert(0, candidate)
 
+import audit_client_boundary  # noqa: E402
 import claude_local_data  # noqa: E402
 import config_snapshot  # noqa: E402
 import environment_report  # noqa: E402
@@ -27,6 +30,10 @@ import server  # noqa: E402
 
 def _check_map(summary: dict) -> dict[str, dict]:
     return {item["id"]: item for item in summary["checks"]}
+
+
+def _split_routes_without_candidates():
+    return {"ipv6": inspect_unix_network.route_summary([], "test", {}, "split_route_count")}
 
 
 class PrivacyBoundaryAuditRegressionTests(unittest.TestCase):
@@ -45,7 +52,7 @@ class PrivacyBoundaryAuditRegressionTests(unittest.TestCase):
                 "ipv4": inspect_unix_network.route_summary(parsed_v4, "netstat", {}),
                 "ipv6": inspect_unix_network.route_summary([], "netstat", {}),
             },
-            "split_tunnel_routes": {},
+            "split_tunnel_routes": _split_routes_without_candidates(),
         }
         check = environment_report._evaluate_routing_check(network_data)
         self.assertEqual(check["status"], "pass")
@@ -66,7 +73,7 @@ class PrivacyBoundaryAuditRegressionTests(unittest.TestCase):
                     "ipv4": inspect_unix_network.route_summary(tun_v4, "iproute2", {}),
                     "ipv6": inspect_unix_network.route_summary(eth_v6, "iproute2", {}),
                 },
-                "split_tunnel_routes": {},
+                "split_tunnel_routes": _split_routes_without_candidates(),
             }
         )
         self.assertEqual(gap_check["status"], "gap")
@@ -81,10 +88,90 @@ class PrivacyBoundaryAuditRegressionTests(unittest.TestCase):
                     "ipv4": inspect_unix_network.route_summary(tun_v4, "iproute2", {}),
                     "ipv6": inspect_unix_network.route_summary(tun_v6, "iproute2", {}),
                 },
-                "split_tunnel_routes": {},
+                "split_tunnel_routes": _split_routes_without_candidates(),
             }
         )
         self.assertEqual(pass_check["status"], "pass")
+
+    def test_unix_ipv6_incomplete_or_mixed_route_evidence_marks_unknown(self) -> None:
+        def route(*interfaces):
+            return inspect_unix_network.route_summary(
+                [(True, (name,) if name else ()) for name in interfaces], "test", {}
+            )
+
+        unavailable = {"status": "unavailable"}
+        cases = (
+            ("default unavailable", unavailable, route("tun0")),
+            ("split unavailable", route("tun0"), unavailable),
+            ("mixed default candidates", route("tun0", "eth0"), route()),
+            ("mixed default and split candidates", route("eth0"), route("tun0")),
+            ("unclassified candidate", route("tun0", None), route()),
+        )
+        for case, ipv6_default, ipv6_split in cases:
+            with self.subTest(case=case):
+                check = environment_report._evaluate_routing_check({
+                    "default_routes": {"ipv4": route("tun0"), "ipv6": ipv6_default},
+                    "split_tunnel_routes": {"ipv6": ipv6_split},
+                })
+                self.assertEqual(check["status"], "unknown")
+
+    def test_mcp_bridge_counts_distinguish_missing_unreadable_and_configured(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = pathlib.Path(temp)
+            state = home / ".claude.json"
+            settings = home / ".claude" / "settings.json"
+            settings.parent.mkdir()
+
+            def assert_audit(count, observation, status):
+                data = audit_client_boundary.collect_boundary_audit(system="Darwin", home=home, env={})
+                bridges = data["localMcpBridges"]
+                self.assertEqual(bridges["claudeCliMcpServerCount"], count)
+                self.assertEqual(bridges["claudeCliMcpObservation"], observation)
+                summary = environment_report.build_tri_state_summary({
+                    "clientBoundary": {"status": "collected", "data": data}
+                })
+                self.assertEqual(_check_map(summary)["local_mcp_host_bridges"]["status"], status)
+
+            assert_audit(0, "observed", "pass")
+            state.write_text('{"mcpServers":{}}', encoding="utf-8")
+            assert_audit(0, "observed", "pass")
+            with mock.patch.object(pathlib.Path, "open", side_effect=PermissionError):
+                assert_audit(None, "unknown", "unknown")
+
+            for case, config in (
+                ("oversized", json.dumps({"mcpServers": {"fixture": {}}, "padding": "x" * (1024 * 1024)})),
+                ("malformed", '{"mcpServers":'),
+                ("invalid field", '{"mcpServers":[]}'),
+            ):
+                with self.subTest(case=case):
+                    state.write_text(config, encoding="utf-8")
+                    assert_audit(None, "unknown", "unknown")
+
+            settings.write_text('{"mcpServers":{"fixture":{}}}', encoding="utf-8")
+            assert_audit(None, "unknown", "gap")
+            state.write_text('{}', encoding="utf-8")
+            assert_audit(1, "observed", "gap")
+
+    def test_manifest_entry_initializes_mcp_and_lists_three_tools(self) -> None:
+        manifest = json.loads((PLUGIN_DIR / "plugin.json").read_text(encoding="utf-8"))
+        _, *args = manifest["contributes"]["mcpServers"][0]["command"]
+        requests = (
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+                "protocolVersion": "2024-11-05", "capabilities": {},
+                "clientInfo": {"name": "regression-test", "version": "1"},
+            }},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        )
+        result = subprocess.run(
+            [sys.executable, *args], cwd=PLUGIN_DIR,
+            input="".join(json.dumps(request) + "\n" for request in requests),
+            capture_output=True, encoding="utf-8", timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        replies = {reply["id"]: reply for reply in map(json.loads, result.stdout.splitlines())}
+        self.assertEqual(replies[1]["result"]["protocolVersion"], "2024-11-05")
+        self.assertEqual(len(replies[2]["result"]["tools"]), 3)
 
     def test_windows_all_unavailable_marks_network_collector_unknown(self) -> None:
         report = {

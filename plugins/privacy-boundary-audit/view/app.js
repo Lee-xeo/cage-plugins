@@ -275,6 +275,7 @@
   let triageLoadedFromServer = false;
   let lastTimestamp = "";
   let busy = false;
+  const AUDIT_RESULTS_VERSION = 1;
   const appliedTokenKeys = new Set();
 
   const byId = (id) => document.getElementById(id);
@@ -393,6 +394,7 @@
 
   function persistState() {
     const fullCandidate = {
+      auditResultsVersion: AUDIT_RESULTS_VERSION,
       activeTab,
       activeFilter,
       lastTimestamp,
@@ -406,6 +408,7 @@
       return;
     }
     const compact = {
+      auditResultsVersion: AUDIT_RESULTS_VERSION,
       activeTab,
       activeFilter,
       lastTimestamp,
@@ -587,8 +590,8 @@
 
     const kvMcp = byId("kv-mcp-env");
     kvMcp.textContent = "";
-    addKv(kvMcp, copy.kv.desktopMcp, String(mcp.claudeDesktopMcpServerCount ?? 0));
-    addKv(kvMcp, copy.kv.cliMcp, String(mcp.claudeCliMcpServerCount ?? 0));
+    addKv(kvMcp, copy.kv.desktopMcp, String(mcp.claudeDesktopMcpServerCount ?? copy.statusLabels.unknown));
+    addKv(kvMcp, copy.kv.cliMcp, String(mcp.claudeCliMcpServerCount ?? copy.statusLabels.unknown));
     addKv(kvMcp, copy.kv.baseUrl, envFlags.ANTHROPIC_BASE_URL_set ? copy.yes : copy.no);
     addKv(kvMcp, copy.kv.configDir, envFlags.CLAUDE_CONFIG_DIR_set ? copy.yes : copy.no);
     const anyProxy = Boolean(envFlags.HTTP_PROXY_set || envFlags.HTTPS_PROXY_set || envFlags.ALL_PROXY_set);
@@ -860,10 +863,12 @@
       if (init && init.locale) applyLocale(init.locale);
       const saved = init && init.state && typeof init.state === "object" ? init.state : null;
       if (saved) {
-        if (saved.fullReport) fullReport = saved.fullReport;
-        fullReportCompacted = Boolean(saved.fullReportCompacted);
-        if (saved.boundaryData) boundaryData = saved.boundaryData;
-        if (saved.lastTimestamp) lastTimestamp = saved.lastTimestamp;
+        if (saved.auditResultsVersion === AUDIT_RESULTS_VERSION) {
+          if (saved.fullReport) fullReport = saved.fullReport;
+          fullReportCompacted = Boolean(saved.fullReportCompacted);
+          if (saved.boundaryData) boundaryData = saved.boundaryData;
+          if (saved.lastTimestamp) lastTimestamp = saved.lastTimestamp;
+        }
         if (saved.activeFilter) activeFilter = saved.activeFilter;
         if (saved.activeTab) activeTab = saved.activeTab;
       }

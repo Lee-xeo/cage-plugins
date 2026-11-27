@@ -1664,8 +1664,8 @@
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/privacy-boundary-audit/icon.svg",
       "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/privacy-boundary-audit-0.1.0.tar.gz",
-      "sha256": "00d7d6d90ba88dfc5f70d69d0a1c02e6b61cb7e5e28df5b61f20ae9e86cfb2bd",
-      "bytes": 49848
+      "sha256": "3a4fcb183761170b8ab0375413029a9be17e517a86e7d8ae207e1f7b93246216",
+      "bytes": 51744
     },
     {
       "name": "sqlite",

@@ -89,29 +89,37 @@ def _has_msix_claude(local_appdata):
 def _read_json_file_bounded(file_path, max_bytes=1024 * 1024):
     try:
         info = os.lstat(file_path)
+    except FileNotFoundError:
+        return "missing", None
+    except OSError:
+        return "unknown", None
+
+    try:
         if not stat.S_ISREG(info.st_mode) or info.st_size > max_bytes:
-            return None
-        raw = Path(file_path).read_text(encoding="utf-8-sig")
-        return json.loads(raw)
-    except (OSError, UnicodeError, ValueError):
-        return None
+            return "unknown", None
+        with file_path.open("rb") as source:
+            raw = source.read(max_bytes + 1)
+        if len(raw) > max_bytes:
+            return "unknown", None
+        return "observed", json.loads(raw.decode("utf-8-sig"))
+    except (OSError, ValueError, RecursionError):
+        return "unknown", None
 
 
-def _read_cli_settings_env(cli_dir):
-    data = _read_json_file_bounded(Path(cli_dir) / "settings.json")
+def _cli_settings_env(data):
     if isinstance(data, dict) and isinstance(data.get("env"), dict):
         return {str(key): str(val) for key, val in data["env"].items() if val is not None}
     return {}
 
 
-def _count_mcp_servers(file_path):
-    data = _read_json_file_bounded(file_path)
-    if not isinstance(data, dict):
+def _count_mcp_servers(observation):
+    status, data = observation
+    if status == "missing":
         return 0
-    servers = data.get("mcpServers")
-    if not isinstance(servers, dict):
-        return 0
-    return len(servers)
+    if status != "observed" or not isinstance(data, dict):
+        return None
+    servers = data.get("mcpServers", {})
+    return len(servers) if isinstance(servers, dict) else None
 
 
 def _flag_enabled(value):
@@ -132,7 +140,8 @@ def collect_boundary_audit(system=None, home=None, env=None, now_local=None, con
     else:
         cli_dir = home_dir / ".claude"
     cli_json = home_dir / ".claude.json"
-    settings_env = _read_cli_settings_env(cli_dir)
+    settings = _read_json_file_bounded(cli_dir / "settings.json")
+    settings_env = _cli_settings_env(settings[1])
 
     desktop_appdata_present = False
     desktop_msix_present = False
@@ -154,18 +163,24 @@ def collect_boundary_audit(system=None, home=None, env=None, now_local=None, con
         desktop_appdata_present = _safe_exists(desktop_config_dir)
 
     desktop_mcp_count = (
-        _count_mcp_servers(desktop_config_dir / "claude_desktop_config.json")
+        _count_mcp_servers(_read_json_file_bounded(desktop_config_dir / "claude_desktop_config.json"))
         if desktop_config_dir is not None
-        else 0
+        else None
     )
-    cli_mcp_count = (
-        _count_mcp_servers(cli_dir / "settings.json")
-        + _count_mcp_servers(cli_json)
+    cli_counts = (
+        _count_mcp_servers(settings),
+        _count_mcp_servers(_read_json_file_bounded(cli_json)),
     )
+    cli_observed_count = sum(count for count in cli_counts if count is not None)
+    cli_mcp_count = None if None in cli_counts else cli_observed_count
+    desktop_configured = None if desktop_mcp_count is None else desktop_mcp_count > 0
+    cli_configured = True if cli_observed_count > 0 else (None if cli_mcp_count is None else False)
     local_mcp_bridges = {
-        "claudeDesktopMcpConfigured": desktop_mcp_count > 0,
+        "claudeDesktopMcpConfigured": desktop_configured,
+        "claudeDesktopMcpObservation": "unknown" if desktop_mcp_count is None else "observed",
         "claudeDesktopMcpServerCount": desktop_mcp_count,
-        "claudeCliMcpConfigured": cli_mcp_count > 0,
+        "claudeCliMcpConfigured": cli_configured,
+        "claudeCliMcpObservation": "unknown" if cli_mcp_count is None else "observed",
         "claudeCliMcpServerCount": cli_mcp_count,
     }
 
@@ -212,7 +227,7 @@ def collect_boundary_audit(system=None, home=None, env=None, now_local=None, con
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1) are not both enabled; cold-start CLI runs "
             "may still contact api.anthropic.com:443 even when logged out or using a custom base URL."
         )
-    if desktop_mcp_count > 0 or cli_mcp_count > 0:
+    if desktop_configured or cli_configured:
         warnings.append(
             "Local MCP / host-tool bridge configuration detected. Local MCP servers run in the host OS "
             "context and may expose host clock, timezone, or local filesystem metadata into sessions; "

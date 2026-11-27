@@ -199,14 +199,16 @@ def route_summary(routes, source, link_kinds, count_key="default_route_count"):
     if routes is None:
         return {"status": "unavailable"}
     candidates = {name for eligible, names in routes if eligible for name in names}
+    interface_types = Counter(interface_kind(name, link_kinds) for name in candidates)
+    for eligible, names in routes:
+        if eligible and not names:
+            interface_types["other_or_unknown"] += 1
     return {
         "status": "observed",
         "source": source,
         count_key: len(routes),
         "forwarding_candidate_count": sum(eligible for eligible, _ in routes),
-        "candidate_interface_types": dict(sorted(Counter(
-            interface_kind(name, link_kinds) for name in candidates
-        ).items())),
+        "candidate_interface_types": dict(sorted(interface_types.items())),
     }
 
 

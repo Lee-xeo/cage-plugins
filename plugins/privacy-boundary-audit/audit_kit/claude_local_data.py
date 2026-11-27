@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import stat
 import sys
+from typing import Optional
 
 from config_snapshot import (
     SnapshotError,
@@ -50,7 +51,7 @@ class WorkFile:
     relative: Path
     category: str
     identity: tuple
-    posix_mode: int | None
+    posix_mode: Optional[int]
 
 
 def _configured_env_dir():

@@ -159,6 +159,38 @@ def _unix_route_interface_types(route_obj):
     return {key for key, count in mapping.items() if count}
 
 
+def _unix_routing_result(default_routes, split_routes):
+    ipv4 = default_routes.get("ipv4")
+    if not isinstance(ipv4, dict) or ipv4.get("status") != "observed":
+        return "unknown", "Local IPv4 route table could not be observed."
+
+    v4_types = _unix_route_interface_types(ipv4) | _unix_route_interface_types(split_routes.get("ipv4"))
+    if "tunnel_candidate" not in v4_types:
+        return "gap", "No tunnel interface candidate observed in local IPv4 default or split-tunnel routes."
+
+    v6_types = set()
+    for route in (default_routes.get("ipv6"), split_routes.get("ipv6")):
+        if not isinstance(route, dict) or route.get("status") != "observed":
+            return "unknown", "Local IPv6 default and split-default route observations are incomplete."
+        count = route.get("forwarding_candidate_count")
+        interface_types = _unix_route_interface_types(route)
+        if not isinstance(count, int) or bool(count) != bool(interface_types):
+            return "unknown", "Local IPv6 forwarding route candidates could not be classified."
+        v6_types.update(interface_types)
+
+    if "other_or_unknown" in v6_types:
+        return "unknown", "At least one IPv6 forwarding route has an unclassified interface."
+    if "tunnel_candidate" in v6_types and len(v6_types) > 1:
+        return "unknown", "Tunnel and non-tunnel IPv6 route candidates coexist; route precedence was not verified."
+    if v6_types and "tunnel_candidate" not in v6_types:
+        return "gap", "Active non-tunnel IPv6 route candidates were observed; confirm IPv6 is tunnelled or blocked."
+    ipv6_detail = (
+        "Observed IPv6 forwarding candidates were all classified as tunnel interfaces."
+        if v6_types else "No IPv6 default or split-default forwarding candidates were observed."
+    )
+    return "pass", f"An IPv4 tunnel candidate was observed. {ipv6_detail} Policy-routing precedence was not tested."
+
+
 def _make_check(check_id, category, title, status, evidence_tier, detail):
     return {
         "id": check_id,
@@ -250,57 +282,19 @@ def _evaluate_routing_check(network_data):
         )
 
     if "default_routes" in network_data:
-        default_routes = network_data.get("default_routes") or {}
-        split_routes = network_data.get("split_tunnel_routes") or {}
-        ipv4 = default_routes.get("ipv4") if isinstance(default_routes, dict) else None
-        ipv6 = default_routes.get("ipv6") if isinstance(default_routes, dict) else None
-        if not isinstance(ipv4, dict) or ipv4.get("status") != "observed":
-            return _make_check(
-                "routing_and_ipv6_surface",
-                "network",
-                "Default route and IPv6 surface",
-                "unknown",
-                "observed_local",
-                "Local IPv4 route table could not be observed.",
-            )
-        v4_types = _unix_route_interface_types(ipv4)
-        split_v4 = split_routes.get("ipv4") if isinstance(split_routes, dict) else None
-        v4_types.update(_unix_route_interface_types(split_v4))
-        v6_types = set()
-        v6_active = False
-        if isinstance(ipv6, dict) and ipv6.get("status") == "observed":
-            v6_active = (ipv6.get("forwarding_candidate_count") or 0) > 0
-            v6_types.update(_unix_route_interface_types(ipv6))
-        split_v6 = split_routes.get("ipv6") if isinstance(split_routes, dict) else None
-        if isinstance(split_v6, dict) and split_v6.get("status") == "observed":
-            if (split_v6.get("forwarding_candidate_count") or 0) > 0:
-                v6_active = True
-            v6_types.update(_unix_route_interface_types(split_v6))
-        if v6_active and "tunnel_candidate" not in v6_types:
-            return _make_check(
-                "routing_and_ipv6_surface",
-                "network",
-                "Default route and IPv6 surface",
-                "gap",
-                "observed_local",
-                "Active non-tunnel IPv6 default route candidate observed; confirm IPv6 is tunnelled or blocked.",
-            )
-        if "tunnel_candidate" in v4_types:
-            return _make_check(
-                "routing_and_ipv6_surface",
-                "network",
-                "Default route and IPv6 surface",
-                "pass",
-                "observed_local",
-                "Tunnel interface candidate observed in local IPv4 routes; policy-routing precedence is not tested.",
-            )
+        default_routes = network_data.get("default_routes")
+        split_routes = network_data.get("split_tunnel_routes")
+        status, detail = _unix_routing_result(
+            default_routes if isinstance(default_routes, dict) else {},
+            split_routes if isinstance(split_routes, dict) else {},
+        )
         return _make_check(
             "routing_and_ipv6_surface",
             "network",
             "Default route and IPv6 surface",
-            "gap",
+            status,
             "observed_local",
-            "No tunnel interface candidate observed in local IPv4 default or split-tunnel routes.",
+            detail,
         )
 
     return _make_check(
@@ -650,18 +644,27 @@ def build_tri_state_summary(report):
             ))
 
         mcp = boundary_data.get("localMcpBridges") or {}
-        mcp_total = int(mcp.get("claudeDesktopMcpServerCount") or 0) + int(mcp.get("claudeCliMcpServerCount") or 0)
-        if mcp_total > 0:
+        desktop_count = mcp.get("claudeDesktopMcpServerCount")
+        cli_count = mcp.get("claudeCliMcpServerCount")
+        counts_observed = (
+            mcp.get("claudeDesktopMcpObservation") == mcp.get("claudeCliMcpObservation") == "observed"
+            and desktop_count is not None and cli_count is not None
+        )
+        known_count = (desktop_count or 0) + (cli_count or 0)
+        if known_count or mcp.get("claudeDesktopMcpConfigured") or mcp.get("claudeCliMcpConfigured"):
+            detail = (
+                f"Detected {known_count} configured local MCP server entry/entries."
+                if counts_observed else "Local MCP server configuration was detected; the total count is unknown."
+            )
             checks.append(_make_check(
                 "local_mcp_host_bridges",
                 "client_boundary",
                 "Local MCP / host-tool bridges",
                 "gap",
                 "static_config",
-                f"Detected {mcp_total} configured local MCP server entry/entries; host-side MCP tools run in "
-                "the host OS context and can expose host timezone or filesystem metadata.",
+                f"{detail} Host-side MCP tools can expose host timezone or filesystem metadata.",
             ))
-        else:
+        elif counts_observed:
             checks.append(_make_check(
                 "local_mcp_host_bridges",
                 "client_boundary",
@@ -669,6 +672,15 @@ def build_tri_state_summary(report):
                 "pass",
                 "static_config",
                 "No local Claude Desktop or CLI MCP server bridges configured.",
+            ))
+        else:
+            checks.append(_make_check(
+                "local_mcp_host_bridges",
+                "client_boundary",
+                "Local MCP / host-tool bridges",
+                "unknown",
+                "static_config",
+                "One or more local MCP configurations could not be inspected.",
             ))
 
     if local_payload is not None:

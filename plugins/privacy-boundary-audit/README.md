@@ -15,9 +15,10 @@ This plugin audits the **host computer** itself (host OS routing tables, host fi
 
 ## Runtime & Dependencies
 
-- Pure **Python 3 standard library** (`python3`), zero third-party packages, zero runtime downloads.
+- Pure **Python 3.9+ standard library** (`python3` on the host path), zero third-party packages, zero runtime downloads.
 - On Windows, resolves the system Windows directory via `GetSystemWindowsDirectoryW` and invokes built-in Windows PowerShell (`Collect-WindowsEvidence.ps1`, read-only) to inspect active tunnel/default routing, DNS/DoH, firewall profiles, and native client/MSIX outbound Allow rules.
 - On macOS and Linux, invokes bundled pure-Python `inspect_unix_network.py` (read-only) to inspect local route and resolver metadata.
+- The Unix routing check reports `unknown` when IPv6 default or split-default evidence is incomplete or the observed candidates disagree. MCP bridge counts are `null` where the matching `McpObservation` field is `unknown`.
 
 ## Security & Data Flow
 
