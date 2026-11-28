@@ -26,9 +26,6 @@ class StatsAndSyncPlanTests(unittest.TestCase):
             starter_file = dist_dir / "browser-0.2.0.tar.gz"
             starter_file.write_bytes(b"B" * 240)
 
-            truncated_file = dist_dir / "sqlite-0.1.1.tar.gz"
-            truncated_file.write_bytes(b"C" * 300)
-
             missing_file = dist_dir / "agent-mesh-1.0.1.tar.gz"
             missing_file.write_bytes(b"D" * 450)
 
@@ -48,14 +45,6 @@ class StatsAndSyncPlanTests(unittest.TestCase):
                     "state": "starter",
                     "size": 0,
                     "download_count": 0,
-                },
-                # Size mismatch / truncated upload -> delete & re-upload.
-                {
-                    "id": 1003,
-                    "name": "sqlite-0.1.1.tar.gz",
-                    "state": "uploaded",
-                    "size": 64,
-                    "download_count": 1,
                 },
                 # Historical release asset no longer in dist/ -> ignored safely.
                 {
@@ -77,11 +66,11 @@ class StatsAndSyncPlanTests(unittest.TestCase):
 
             plan = stats.plan_package_sync(assets, dist_dir)
             self.assertEqual(plan["keep"], ["clock-0.1.4.tar.gz"])
+            self.assertEqual(plan["mismatch"], [])
             self.assertEqual(
                 [(item["id"], item["name"], item["state"], item["size"]) for item in plan["delete"]],
                 [
                     (1002, "browser-0.2.0.tar.gz", "starter", 0),
-                    (1003, "sqlite-0.1.1.tar.gz", "uploaded", 64),
                 ],
             )
             self.assertEqual(
@@ -89,8 +78,74 @@ class StatsAndSyncPlanTests(unittest.TestCase):
                 [
                     "agent-mesh-1.0.1.tar.gz",
                     "browser-0.2.0.tar.gz",
-                    "sqlite-0.1.1.tar.gz",
                 ],
+            )
+
+    def test_plan_sync_preserves_uploaded_size_mismatch_and_only_deletes_empty_starter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dist_dir = pathlib.Path(tmp) / "dist"
+            dist_dir.mkdir()
+            (dist_dir / "sqlite-0.1.1.tar.gz").write_bytes(b"C" * 120)
+            (dist_dir / "clock-0.1.4.tar.gz").write_bytes(b"K" * 200)
+
+            assets = [
+                # Existing uploaded archive with different size and active download count:
+                # MUST neither be deleted nor re-uploaded; report diff in mismatch instead.
+                {
+                    "id": 3001,
+                    "name": "sqlite-0.1.1.tar.gz",
+                    "state": "uploaded",
+                    "size": 118,
+                    "download_count": 42,
+                },
+                # Non-empty starter should also NOT be auto-deleted (only 0-byte starter is auto-deleted).
+                {
+                    "id": 3002,
+                    "name": "clock-0.1.4.tar.gz",
+                    "state": "starter",
+                    "size": 64,
+                    "download_count": 0,
+                },
+                # Stray 0-byte starter sharing name with clock-0.1.4.tar.gz -> only this 0-byte starter is deleted.
+                {
+                    "id": 3003,
+                    "name": "clock-0.1.4.tar.gz",
+                    "state": "starter",
+                    "size": 0,
+                    "download_count": 0,
+                },
+            ]
+
+            plan = stats.plan_package_sync(assets, dist_dir)
+            self.assertEqual(plan["keep"], [])
+            self.assertEqual([item["id"] for item in plan["delete"]], [3003])
+            self.assertEqual(plan["upload"], [])
+            self.assertEqual(
+                plan["mismatch"],
+                [
+                    {
+                        "id": 3002,
+                        "name": "clock-0.1.4.tar.gz",
+                        "state": "starter",
+                        "size": 64,
+                        "expectedSize": 200,
+                        "downloadCount": 0,
+                        "reason": "non-empty-incomplete-asset",
+                    },
+                    {
+                        "id": 3001,
+                        "name": "sqlite-0.1.1.tar.gz",
+                        "state": "uploaded",
+                        "size": 118,
+                        "expectedSize": 120,
+                        "downloadCount": 42,
+                        "reason": "uploaded-size-mismatch",
+                    },
+                ],
+            )
+            self.assertEqual(
+                stats.aggregate_downloads(assets, ["sqlite", "clock"]),
+                {"sqlite": 42},
             )
 
     def test_plan_sync_keeps_healthy_duplicate_and_deletes_only_starter_duplicate(self) -> None:
@@ -134,11 +189,13 @@ class StatsAndSyncPlanTests(unittest.TestCase):
         repo_root = pathlib.Path(__file__).resolve().parent.parent
         dist_dir = repo_root / "dist"
         real_archives = sorted(dist_dir.glob("*.tar.gz"))
-        self.assertGreaterEqual(len(real_archives), 2)
-        healthy, starter, missing = real_archives[0], real_archives[1], real_archives[2]
+        self.assertGreaterEqual(len(real_archives), 4)
+        healthy, starter, mismatch, missing = real_archives[0], real_archives[1], real_archives[2], real_archives[3]
+        mismatch_size = mismatch.stat().st_size - 2
         fixture = [
             {"id": 10, "name": healthy.name, "state": "uploaded", "size": healthy.stat().st_size, "download_count": 7},
             {"id": 11, "name": starter.name, "state": "starter", "size": 0, "download_count": 0},
+            {"id": 12, "name": mismatch.name, "state": "uploaded", "size": mismatch_size, "download_count": 42},
         ]
         with tempfile.TemporaryDirectory() as tmp:
             fixture_path = pathlib.Path(tmp) / "assets.json"
@@ -163,9 +220,14 @@ class StatsAndSyncPlanTests(unittest.TestCase):
                 f"DELETE\t11\t{starter.name}\tstarter\t0\t{starter.stat().st_size}",
                 lines,
             )
+            self.assertIn(
+                f"MISMATCH\t12\t{mismatch.name}\tuploaded\t{mismatch_size}\t{mismatch.stat().st_size}\t42\tuploaded-size-mismatch",
+                lines,
+            )
             uploads = [line.split("\t", 1)[1] for line in lines if line.startswith("UPLOAD\t")]
             upload_names = {pathlib.Path(p).name for p in uploads}
             self.assertNotIn(healthy.name, upload_names)
+            self.assertNotIn(mismatch.name, upload_names)
             self.assertIn(starter.name, upload_names)
             self.assertIn(missing.name, upload_names)
 

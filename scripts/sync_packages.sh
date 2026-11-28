@@ -68,8 +68,9 @@ else
   ASSETS_FILE="$TMP_DIR/assets.json"
   RELEASE_ID=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" --jq '.id')
   # Collect full asset objects (id, name, state, size) across all pages so we can
-  # verify completeness (state == "uploaded" and size == local_size) without
-  # clobbering healthy archives or leaving failed-upload "starter" placeholders stuck.
+  # keep existing uploaded assets untouched (preserving download counts and reporting
+  # any byte-size mismatches instead of overwriting), while deleting confirmed 0-byte
+  # failed-upload "starter" placeholders before re-uploading.
   gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?per_page=100" > "$ASSETS_FILE"
 fi
 
@@ -78,14 +79,18 @@ PLAN_OUT=${PLAN_OUT//$'\r'/}
 
 KEEP_COUNT=0
 DELETE_LINES=()
+MISMATCH_LINES=()
 UPLOAD_FILES=()
-while IFS=$'\t' read -r action col1 col2 col3 col4 col5; do
+while IFS=$'\t' read -r action col1 col2 col3 col4 col5 col6 col7; do
   case "$action" in
     KEEP_COUNT)
       KEEP_COUNT="$col1"
       ;;
     DELETE)
       DELETE_LINES+=("$col1"$'\t'"$col2"$'\t'"$col3"$'\t'"$col4"$'\t'"$col5")
+      ;;
+    MISMATCH)
+      MISMATCH_LINES+=("$col1"$'\t'"$col2"$'\t'"$col3"$'\t'"$col4"$'\t'"$col5"$'\t'"$col6"$'\t'"$col7")
       ;;
     UPLOAD)
       UPLOAD_FILES+=("$col1")
@@ -95,10 +100,21 @@ done <<< "$PLAN_OUT"
 
 echo "Verified ${KEEP_COUNT} existing complete archive(s) on release '${TAG}' (untouched)."
 
+if [ "${#MISMATCH_LINES[@]}" -gt 0 ]; then
+  for entry in "${MISMATCH_LINES[@]}"; do
+    IFS=$'\t' read -r asset_id asset_name asset_state asset_size expected_size dl_count reason <<< "$entry"
+    msg="Warning: preserving existing remote asset '${asset_name}' (id=${asset_id}, state=${asset_state}, size=${asset_size}, expected=${expected_size}, download_count=${dl_count}, reason=${reason}) without deleting or re-uploading."
+    echo "$msg" >&2
+    if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+      echo "::warning::${msg}"
+    fi
+  done
+fi
+
 if [ "${#DELETE_LINES[@]}" -gt 0 ]; then
   for entry in "${DELETE_LINES[@]}"; do
     IFS=$'\t' read -r asset_id asset_name asset_state asset_size expected_size <<< "$entry"
-    echo "Cleaning incomplete asset '${asset_name}' (id=${asset_id}, state=${asset_state}, size=${asset_size}, expected=${expected_size})..."
+    echo "Cleaning empty starter asset '${asset_name}' (id=${asset_id}, state=${asset_state}, size=${asset_size}, expected=${expected_size})..."
     if [ "$DRY_RUN" != true ]; then
       : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
       gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" >/dev/null

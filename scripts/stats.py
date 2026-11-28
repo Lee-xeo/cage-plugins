@@ -51,6 +51,12 @@ def plugin_name_from_asset(asset_name: str, known_plugins: list[str]) -> str | N
     return None
 
 
+def _non_negative_int(value: Any, default: int = 0) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return default
+    return value
+
+
 def aggregate_downloads(assets: list[dict[str, Any]], known_plugins: list[str]) -> dict[str, int]:
     totals: dict[str, int] = {}
     for asset in assets:
@@ -62,11 +68,9 @@ def aggregate_downloads(assets: list[dict[str, Any]], known_plugins: list[str]) 
         name = plugin_name_from_asset(str(asset.get("name") or ""), known_plugins)
         if not name:
             continue
-        raw_count = asset.get("download_count", 0)
-        if isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0:
-            continue
-        if raw_count > 0:
-            totals[name] = totals.get(name, 0) + raw_count
+        count = _non_negative_int(asset.get("download_count", 0))
+        if count > 0:
+            totals[name] = totals.get(name, 0) + count
     return dict(sorted(totals.items()))
 
 
@@ -102,8 +106,43 @@ def _is_valid_uploaded_asset(asset: dict[str, Any], expected_size: int) -> bool:
     )
 
 
+def _is_empty_starter_asset(asset: dict[str, Any]) -> bool:
+    size = asset.get("size")
+    return asset.get("state") == "starter" and not isinstance(size, bool) and size == 0
+
+
+def _require_asset_id(asset: dict[str, Any], name: str) -> int:
+    asset_id = asset.get("id")
+    if not isinstance(asset_id, int) or isinstance(asset_id, bool):
+        raise ValueError(f"Empty starter remote asset {name!r} is missing a numeric id")
+    return asset_id
+
+
+def _mismatch_entry(
+    asset: dict[str, Any], name: str, expected_size: int, reason: str | None = None
+) -> dict[str, Any]:
+    resolved_reason = reason or (
+        "uploaded-size-mismatch" if asset.get("state") == "uploaded" else "non-empty-incomplete-asset"
+    )
+    return {
+        "id": asset.get("id"),
+        "name": name,
+        "state": asset.get("state"),
+        "size": asset.get("size"),
+        "expectedSize": expected_size,
+        "downloadCount": _non_negative_int(asset.get("download_count", 0)),
+        "reason": resolved_reason,
+    }
+
+
 def plan_package_sync(assets: list[dict[str, Any]], dist_dir: pathlib.Path) -> dict[str, Any]:
-    """Classify local dist/*.tar.gz archives into keep, delete-and-reupload, and upload-new."""
+    """Classify local dist/*.tar.gz archives into keep, delete, upload, and mismatch.
+
+    Only confirmed 0-byte GitHub ``starter`` placeholders are auto-deleted. Any
+    already-``uploaded`` (or other non-placeholder) asset whose size differs from
+    the local archive is preserved untouched and reported in ``mismatch`` so
+    existing download counts are never reset.
+    """
     by_name: dict[str, list[dict[str, Any]]] = {}
     for asset in assets:
         if not isinstance(asset, dict):
@@ -115,6 +154,7 @@ def plan_package_sync(assets: list[dict[str, Any]], dist_dir: pathlib.Path) -> d
     keep: list[str] = []
     delete: list[dict[str, Any]] = []
     upload: list[str] = []
+    mismatch: list[dict[str, Any]] = []
 
     archives = sorted(p for p in dist_dir.glob("*.tar.gz") if p.is_file() and not p.is_symlink())
     for archive_path in archives:
@@ -124,45 +164,50 @@ def plan_package_sync(assets: list[dict[str, Any]], dist_dir: pathlib.Path) -> d
             raise ValueError(f"Local archive is empty: {archive_path}")
 
         matches = by_name.get(name, [])
-        healthy = [a for a in matches if _is_valid_uploaded_asset(a, expected_size)]
-        if healthy:
-            # Keep the healthiest asset (highest download_count) so download metrics are never reset.
-            chosen = max(
-                healthy,
-                key=lambda a: a.get("download_count") if isinstance(a.get("download_count"), int) and not isinstance(a.get("download_count"), bool) else 0,
-            )
-            keep.append(name)
-            for asset in matches:
-                if asset is chosen:
-                    continue
-                asset_id = asset.get("id")
-                if not isinstance(asset_id, int) or isinstance(asset_id, bool):
-                    raise ValueError(f"Incomplete/duplicate remote asset {name!r} is missing a numeric id")
-                delete.append({
-                    "id": asset_id,
-                    "name": name,
-                    "state": asset.get("state"),
-                    "size": asset.get("size"),
-                    "expectedSize": expected_size,
-                    "reason": "duplicate-or-incomplete",
-                })
-            continue
-
+        healthy: list[dict[str, Any]] = []
+        empty_starters: list[dict[str, Any]] = []
+        other_assets: list[dict[str, Any]] = []
         for asset in matches:
-            asset_id = asset.get("id")
-            if not isinstance(asset_id, int) or isinstance(asset_id, bool):
-                raise ValueError(f"Incomplete remote asset {name!r} is missing a numeric id")
+            if _is_valid_uploaded_asset(asset, expected_size):
+                healthy.append(asset)
+            elif _is_empty_starter_asset(asset):
+                empty_starters.append(asset)
+            else:
+                other_assets.append(asset)
+
+        for asset in empty_starters:
             delete.append({
-                "id": asset_id,
+                "id": _require_asset_id(asset, name),
                 "name": name,
                 "state": asset.get("state"),
                 "size": asset.get("size"),
                 "expectedSize": expected_size,
-                "reason": "incomplete-or-size-mismatch",
+                "reason": "empty-starter-placeholder",
             })
+
+        if healthy:
+            # Keep the healthiest asset (highest download_count) so download metrics are never reset.
+            chosen = max(
+                healthy,
+                key=lambda a: _non_negative_int(a.get("download_count", 0)),
+            )
+            keep.append(name)
+            for asset in healthy:
+                if asset is not chosen:
+                    mismatch.append(_mismatch_entry(asset, name, expected_size, "duplicate-uploaded-asset"))
+            for asset in other_assets:
+                mismatch.append(_mismatch_entry(asset, name, expected_size))
+            continue
+
+        if other_assets:
+            # Never auto-delete or overwrite an existing uploaded / non-placeholder asset.
+            for asset in other_assets:
+                mismatch.append(_mismatch_entry(asset, name, expected_size))
+            continue
+
         upload.append(archive_path.as_posix())
 
-    return {"keep": keep, "delete": delete, "upload": upload}
+    return {"keep": keep, "delete": delete, "upload": upload, "mismatch": mismatch}
 
 
 def _api_get_json(url: str, token: str | None) -> Any:
@@ -270,6 +315,14 @@ def main() -> None:
             for item in plan["delete"]:
                 print(
                     f"DELETE\t{item['id']}\t{item['name']}\t{item.get('state')}\t{item.get('size')}\t{item['expectedSize']}"
+                )
+            for item in plan["mismatch"]:
+                asset_id = item.get("id")
+                id_str = str(asset_id) if asset_id is not None else "unknown"
+                state_str = str(item.get("state") if item.get("state") is not None else "unknown")
+                size_str = str(item.get("size") if item.get("size") is not None else "unknown")
+                print(
+                    f"MISMATCH\t{id_str}\t{item['name']}\t{state_str}\t{size_str}\t{item['expectedSize']}\t{item.get('downloadCount', 0)}\t{item['reason']}"
                 )
             for path in plan["upload"]:
                 print(f"UPLOAD\t{path}")
