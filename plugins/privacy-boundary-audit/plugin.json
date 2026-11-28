@@ -1,0 +1,46 @@
+{
+  "name": "privacy-boundary-audit",
+  "displayName": "Privacy Boundary Audit",
+  "version": "0.1.0",
+  "description": "Offline read-only host network, firewall, DNS, local client footprint, and tri-state privacy boundary audit with a workbench view.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.2.0"
+  },
+  "kind": "host",
+  "platforms": [
+    "windows",
+    "darwin",
+    "linux"
+  ],
+  "permissions": [
+    "files",
+    "commands"
+  ],
+  "categories": [
+    "system",
+    "network"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "audit",
+        "command": [
+          "python3",
+          "-X",
+          "utf8",
+          "server.py"
+        ]
+      }
+    ],
+    "views": [
+      {
+        "id": "dashboard",
+        "title": "Privacy Audit",
+        "icon": "icon.svg",
+        "entry": "view/index.html",
+        "server": "audit"
+      }
+    ]
+  }
+}
