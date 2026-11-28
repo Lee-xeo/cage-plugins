@@ -121,7 +121,7 @@
     },
     {
       "name": "antigravity-app",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Runs Google's official Antigravity desktop app in the environment. Each update fetches Google's latest Linux release, because the app cannot update itself there.",
       "permissions": [],
       "author": {
@@ -207,7 +207,8 @@
             "source": {
               "type": "archive",
               "resolve": [
-                "resolve.py"
+                "resolve.py",
+                "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases"
               ],
               "hosts": [
                 "storage.googleapis.com"
@@ -239,9 +240,9 @@
         ]
       },
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/antigravity-app/icon.png",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/antigravity-app-0.1.1.tar.gz",
-      "sha256": "ca4841ab4a268b2191b0abca6ede13fad4e191b0bf52505ace5c3c13b9aecb5b",
-      "bytes": 23000
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/antigravity-app-0.1.2.tar.gz",
+      "sha256": "adf9a0b58b9967bc36efadcaa9a257122231c6078e0c9b99085e15ba758f28e5",
+      "bytes": 22993
     },
     {
       "name": "blender",
