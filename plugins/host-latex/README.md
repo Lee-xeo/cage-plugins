@@ -58,6 +58,8 @@ if (Test-Path -LiteralPath $setup -PathType Leaf) {
 
 如果宏或自定义模板提示缺文件，可以通过 `project_inputs` 补充该文件或所在目录，路径从共享项目根目录算起。选目录会包含它下面的文件。
 
+如果稿子里的章节、参考文献或图片用的是宿主机上的绝对路径，只要文件在共享项目里，就可以沿用这个写法。插件会在临时副本里把这些路径指向复制过去的文件。用 `\graphicspath` 指定的插图目录也一样。
+
 **有参考文献时**，把已有的 `.bbl` 保留在你平时编译能找到的位置。例如在 `paper` 内编译 `My Paper.tex`，就使用 `paper/My Paper.bbl`。插件会运行两遍 LaTeX 来更新交叉引用。如果你手里只有 `.bib` 文件，需要先用 BibTeX 或 Biber 生成 `.bbl`。使用个人宏包或个人字体的项目，需要确认这些资源在隔离环境中可用。
 
 编译时，系统会限制编译器能打开哪些文件。它可以用项目的临时副本、TeX Live、系统字体和运行所需的系统文件。XeLaTeX 还需要一个生成 PDF 的程序，这一步也受同样的限制。系统无法启用隔离时，插件会停止编译并给出提示。
@@ -83,6 +85,8 @@ Windows may report that the project or output folder is in use if you move it du
 Set `working_directory` to the directory used by your usual TeX command. For example, `xelatex paper/main.tex` from the project root uses `"."`; running `xelatex main.tex` inside that subproject uses `"paper"`. Self-contained entries retain their source-directory default. For nested entries with other files or directories outside the subproject, specify the working directory explicitly. The result includes the directory used and any final-pass or PDF-driver warnings the tool recognizes.
 
 If a macro or custom template needs extra inputs, pass their project-relative paths in `project_inputs`. Selecting a directory includes its contents.
+
+Chapters, bibliography files and figures can use literal host absolute paths within the shared project. The plugin adjusts those paths in its temporary copies, including figure directories set with `\graphicspath`.
 
 The plugin runs two LaTeX passes for cross-references. For BibTeX or Biber projects, include the matching `.bbl` where your usual TeX invocation looks for it. Private fonts, packages outside the shared project or system runtime, and additional external tools may require a different workflow.
 

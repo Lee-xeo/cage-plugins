@@ -4,6 +4,7 @@ import errno
 import json
 import os
 import re
+import secrets
 import shutil
 import stat
 import subprocess
@@ -14,8 +15,7 @@ from pathlib import Path, PurePosixPath
 
 # The manifest uses Python's isolated mode. Only import helpers from this plugin.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from project_dependencies import referenced_inputs
-from graphics_aliases import graphics_command
+from project_dependencies import TEX_SOURCES, apply_staged_edits, referenced_inputs
 if os.name == "nt":
     from windows_publish import pin_project
     from windows_sandbox import private_runtime, run_contained
@@ -165,10 +165,8 @@ def copy_input(source, target):
 def snapshot_project(root, staging, selections=(Path("."),), entry=None, cwd=Path(".")):
     files = total = 0
     skipped_links = False
-    dynamic = False
-    aliases = {}
-    # Keep explicitly selected directory contents verbatim, including custom
-    # file formats. Only inspect documents that can feed the selected entry.
+    # An explicitly selected directory may contain a chapter loaded by a macro.
+    # Include custom data formats too, but only scan TeX sources for references.
     pending = [entry] if entry is not None else []
     selected_dirs = set()
 
@@ -217,20 +215,75 @@ def snapshot_project(root, staging, selections=(Path("."),), entry=None, cwd=Pat
                 if is_link(info):
                     skipped_links = True
                 elif stat.S_ISREG(info.st_mode):
-                    stage(child.relative_to(root))
+                    relative_child = child.relative_to(root)
+                    stage(relative_child)
+                    if entry is not None and child.suffix.lower() in TEX_SOURCES:
+                        pending.append(relative_child)
 
-    seen = set()
+    dynamic = stage_document_inputs(root, staging, cwd, pending, stage)
+    return skipped_links, files, total, dynamic
+
+
+def stage_document_inputs(root, staging, cwd, pending, stage):
+    # LaTeX writes an .aux for each included chapter. Classic BibTeX needs
+    # space-free filenames. Give these cases short names inside the job.
+    entries = {}
+    working = staging / cwd
+    alias_dir = None
+
+    def alias(relative, suffix):
+        nonlocal alias_dir
+        if alias_dir is None:
+            alias_dir = working / ("host-latex-" + secrets.token_hex(8))
+            if os.path.lexists(root / cwd / alias_dir.name):
+                raise BuildError("无法准备临时编译目录，请重试。")
+            # Inherit the job's directory permissions, including its Windows
+            # AppContainer grant. mkdtemp's private DACL blocks that grant.
+            alias_dir.mkdir(parents=True)
+        key = relative, suffix
+        if key not in entries:
+            entries[key] = alias_dir / f"input-{len(entries) + 1}{suffix}"
+        return entries[key].relative_to(working).with_suffix("").as_posix()
+
+    graphics_dirs = set()
+    scanned = {}
+    changes = {}
+    dynamic = False
     while pending:
-        relative = pending.pop()
-        if relative in seen:
+        while pending:
+            relative = pending.pop()
+            if relative in scanned and scanned[relative] == len(graphics_dirs):
+                continue
+            stage(relative)
+            dependencies, edits, incomplete = referenced_inputs(
+                root, relative, cwd, staging / relative, graphics_dirs=graphics_dirs,
+                include_alias=lambda p: alias(p, ".tex"), bib_alias=lambda p: alias(p, p.suffix.lower()))
+            scanned[relative] = len(graphics_dirs)
+            if edits:
+                changes[relative] = edits
+            dynamic |= incomplete
+            pending.extend(path for path in dependencies if path not in scanned)
+        # A separate preamble may declare graphics directories after we scan
+        # a chapter. Revisit earlier sources before editing any temporary copy.
+        pending.extend(path for path, count in scanned.items()
+                       if count < len(graphics_dirs) and path.suffix.lower() in TEX_SOURCES)
+
+    for relative, edits in changes.items():
+        apply_staged_edits(staging / relative, edits)
+    for (relative, suffix), entry_path in entries.items():
+        if relative not in scanned:
             continue
-        seen.add(relative)
-        stage(relative)
-        dependencies, graphics, incomplete = referenced_inputs(root, relative, cwd, staging / relative)
-        dynamic |= incomplete
-        pending.extend(dependencies)
-        aliases.update(graphics)
-    return skipped_links, files, total, aliases, dynamic
+        if suffix == ".tex":
+            name = Path(os.path.relpath(staging / relative, working)).as_posix()
+            # \detokenize preserves spaces and underscores. These characters
+            # must still be safe in a TeX argument before it is detokenized.
+            if any(not c.isprintable() or c in '\\{}%#^"' for c in name):
+                raise BuildError("所选章节的文件名无法用于 LaTeX 编译。")
+            with entry_path.open("xb") as wrapper:
+                wrapper.write(("\\input{\\detokenize{" + name + "}}\n").encode("utf-8"))
+        else:
+            shutil.copyfile(staging / relative, entry_path)
+    return dynamic
 
 
 def compilation_directory(staging, source, requested):
@@ -266,6 +319,8 @@ def compilation_warnings(output):
         line = chunk.lower().strip()
         if b"undefined" in line and any(word in line for word in (b"citation", b"reference")):
             messages.add("文中有未解析的引用，请检查标签或参考文献。")
+        elif line.startswith(b"no file ") and line.endswith(b".tex."):
+            messages.add("有 TeX 文件没有读到，生成的 PDF 可能缺少章节。")
         elif line.startswith(b"no file ") and line.endswith((b".bbl.", b".ind.", b".gls.")):
             messages.add("缺少参考文献、索引或术语表的生成文件。")
         elif b"rerun" in line and (b"warning" in line or b"cross-reference" in line):
@@ -397,7 +452,7 @@ def compile_pdf(root, args, expected_root=None):
         staging.mkdir()
         build.mkdir()
         binary, env, allowed = texlive_engine(engine, base)
-        skipped_links, file_count, input_bytes, aliases, dynamic = snapshot_project(
+        skipped_links, file_count, input_bytes, dynamic = snapshot_project(
             root, staging, selections, Path(relative), native_cwd)
         source = staging / relative
         if not source.is_file():
@@ -425,7 +480,7 @@ def compile_pdf(root, args, expected_root=None):
                 raise BuildError("找不到生成 PDF 所需的 xdvipdfmx，请检查本机 TeX Live。")
             steps.append([driver, "-D", "", "-o", str(pdf), str(pdf.with_suffix(".xdv"))])
         source_arg = "./" + Path(os.path.relpath(source, cwd)).as_posix()
-        tex.extend(graphics_command(aliases, source_arg, source.stem, base))
+        tex.append(source_arg)
         deadline = time.monotonic() + BUILD_SECONDS
         warnings = {"项目中有链接未复制到编译目录，请核对相关输入。"} if skipped_links else set()
         if dynamic and Path(".") not in selections:
