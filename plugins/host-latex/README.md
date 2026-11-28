@@ -56,7 +56,9 @@ if (Test-Path -LiteralPath $setup -PathType Leaf) {
 
 **从哪里开始编译**会影响 LaTeX 读到哪一份同名文件。如果你平时在项目根目录运行 `xelatex paper/main.tex`，告诉 Claude「从项目根目录编译」，对应 `working_directory="."`。如果平时先进 `paper` 再运行 `xelatex main.tex`，就指定 `working_directory="paper"`。单独放在一个文件夹里的论文可沿用原来的调用方式。入口在子目录、同时外层还有其他项目内容时，工具会要求明确目录。
 
-插件保留普通项目文件的名称、内容和目录结构，包括索引、外部引用、隐藏的素材目录、代码清单及 EPS/PS 原图。版本库元数据、插件自己的输出目录、常见凭据目录（`.ssh`、`.gnupg`、`.aws`）、`.env` 和 `.env.*` 文件除外。链接会跳过并提示。请共享论文本身所在的目录。生成 PDF 后，若最后一遍编译仍有缺引用、缺索引等警告，Claude 会同时收到提示。
+如果宏或自定义模板提示缺文件，可以通过 `project_inputs` 补充该文件或所在目录，路径从共享项目根目录算起。选目录会包含它下面的文件。
+
+如果稿子里的章节、参考文献或图片用的是宿主机上的绝对路径，只要文件在共享项目里，就可以沿用这个写法。插件会在临时副本里把这些路径指向复制过去的文件。用 `\graphicspath` 指定的插图目录也一样。
 
 **有参考文献时**，把已有的 `.bbl` 保留在你平时编译能找到的位置。例如在 `paper` 内编译 `My Paper.tex`，就使用 `paper/My Paper.bbl`。插件会运行两遍 LaTeX 来更新交叉引用。如果你手里只有 `.bib` 文件，需要先用 BibTeX 或 Biber 生成 `.bbl`。使用个人宏包或个人字体的项目，需要确认这些资源在隔离环境中可用。
 
@@ -82,7 +84,9 @@ Windows may report that the project or output folder is in use if you move it du
 
 Set `working_directory` to the directory used by your usual TeX command. For example, `xelatex paper/main.tex` from the project root uses `"."`; running `xelatex main.tex` inside that subproject uses `"paper"`. Self-contained entries retain their source-directory default. For nested entries with other files or directories outside the subproject, specify the working directory explicitly. The result includes the directory used and any final-pass or PDF-driver warnings the tool recognizes.
 
-The plugin copies regular project files byte for byte, including existing indexes, external references, code listings, hidden asset directories, and original EPS/PS graphics. It skips repository metadata, its output directories, credential directories (`.ssh`, `.gnupg`, `.aws`), and `.env` / `.env.*` files. Links are skipped and reported. The compiler writes auxiliary files to a separate temporary directory with the project's folder structure.
+If a macro or custom template needs extra inputs, pass their project-relative paths in `project_inputs`. Selecting a directory includes its contents.
+
+Chapters, bibliography files and figures can use literal host absolute paths within the shared project. The plugin adjusts those paths in its temporary copies, including figure directories set with `\graphicspath`.
 
 The plugin runs two LaTeX passes for cross-references. For BibTeX or Biber projects, include the matching `.bbl` where your usual TeX invocation looks for it. Private fonts, packages outside the shared project or system runtime, and additional external tools may require a different workflow.
 

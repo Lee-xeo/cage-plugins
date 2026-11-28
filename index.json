@@ -1377,7 +1377,7 @@
     },
     {
       "name": "host-latex",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Uses TeX Live already installed on this computer to turn your project's LaTeX files into PDFs and saves them in the project.",
       "permissions": [
         "files",
@@ -1478,9 +1478,9 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/host-latex/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/host-latex-0.1.0.tar.gz",
-      "sha256": "68851e878087a8759b236f270f231f6109ff3e0347eb7100c4cbb22451070c4d",
-      "bytes": 25285
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/host-latex-0.2.0.tar.gz",
+      "sha256": "a09afec88deba333f9a97df8ff761fcc45dd566f986bb2e70be46fc273d2d6ca",
+      "bytes": 40618
     },
     {
       "name": "knowledge-memory",

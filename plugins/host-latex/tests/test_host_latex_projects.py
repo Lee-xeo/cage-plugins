@@ -68,6 +68,81 @@ class ProjectTests(unittest.TestCase):
         (self.root / "value.tex").unlink()
         self.assertEqual(server.compilation_directory(self.root, source, None), source.parent)
 
+    def test_scoped_snapshot_skips_unrelated_tree_and_keeps_shared_inputs(self):
+        files = {
+            "paper/main.tex": br"\input{part}\includegraphics{../plots/result}\bibliography{../refs/library}",
+            "paper/part.tex": br"\input{../tables/numbers.inc}",
+            "paper/main.bbl": b"prepared bibliography",
+            "plots/result.pdf": b"original graphic",
+            "tables/numbers.inc": b"42",
+            "refs/library.bib": b"original references",
+            "custom/data": b"input selected for a macro",
+        }
+        write_files(self.root, files)
+        write_files(self.root, {"experiments/unrelated.pdf": b"unrelated", "paper/earlier-draft.pdf": b"old"})
+        stage = self.temp / "scratch" / "stage"
+        stage.mkdir(parents=True)
+        with patch.object(server.os, "walk", side_effect=AssertionError("unexpected directory walk")):
+            _, count, size, _ = server.snapshot_project(
+                self.root, stage, [Path("custom/data")], Path("paper/main.tex"), Path("paper"))
+        self.assertEqual(count, len(files))
+        self.assertEqual(size, sum(map(len, files.values())))
+        self.assertEqual({p.relative_to(stage).as_posix(): p.read_bytes()
+                          for p in stage.rglob("*") if p.is_file()}, files)
+
+    def test_project_inputs_keeps_directory_data_for_dynamic_names(self):
+        write_files(self.root, {"paper/main.tex": b"paper", "assets/nested/data.custom": b"42",
+                                "assets/.env": b"private", "unrelated/log": b"log"})
+        with self.assertRaises(server.BuildError):
+            server.input_name("../outside")
+        stage = self.temp / "scratch" / "stage"
+        stage.mkdir(parents=True)
+        _, count, _, _ = server.snapshot_project(
+            self.root, stage, [Path("assets"), Path("assets/nested")], Path("paper/main.tex"), Path("paper"))
+        self.assertEqual(count, 2)
+        self.assertEqual((stage / "assets/nested/data.custom").read_bytes(), b"42")
+        self.assertFalse((stage / "assets/.env").exists())
+
+    def test_edits_only_file_operands_in_the_staged_copy(self):
+        path = (self.root / "shared/part.tex").as_posix().encode()
+        prose = b"% " + path + b"\r\nLatin-1: \xe9. " + path + b"\r\n"
+        example = b"\\begin{verbatim}\r\n\\input{" + path + b"}\r\n\\end{verbatim}\r\n"
+        manuscript = prose + example + b"\\input{" + path + b"}\r\n"
+        write_files(self.root, {"paper/main.tex": manuscript, "shared/part.tex": b"Part\r\n"})
+        before = fingerprint(self.root)
+        stage = self.temp / "stage"
+        stage.mkdir()
+        server.snapshot_project(self.root, stage, [], Path("paper/main.tex"), Path("paper"))
+        self.assertEqual((stage / "paper/main.tex").read_bytes(),
+                         prose + example + b"\\input{../shared/part.tex}\r\n")
+        self.assertEqual(fingerprint(self.root), before)
+
+    def test_sibling_chapter_and_includeonly_share_the_same_aux_name(self):
+        part = (self.root / "chapters/part").as_posix()
+        manuscript = (r"\includeonly{" + part + "}\n" + r"\include{" + part + "}\n").encode()
+        write_files(self.root, {"paper/main.tex": manuscript, "chapters/part.tex": b"Chapter"})
+        stage = self.temp / "stage"
+        stage.mkdir()
+        server.snapshot_project(self.root, stage, [], Path("paper/main.tex"), Path("paper"))
+        commands = (stage / "paper/main.tex").read_text().splitlines()
+        target = commands[0].split("{")[1].rstrip("}")
+        self.assertEqual(commands[1], r"\include{" + target + "}")
+        self.assertNotIn("..", Path(target).parts)
+        self.assertFalse(Path(target).is_absolute())
+        self.assertIn(b"../chapters/part.tex", (stage / "paper" / (target + ".tex")).read_bytes())
+
+    def test_selected_chapters_retain_their_own_absolute_inputs(self):
+        shared = (self.root / "shared/values.tex").as_posix()
+        chapter = (r"\input{" + shared + "}").encode()
+        write_files(self.root, {"paper/main.tex": br"\input{\chosen}",
+                                "sections/part.tex": chapter, "shared/values.tex": b"42"})
+        stage = self.temp / "stage"
+        stage.mkdir()
+        server.snapshot_project(self.root, stage, [Path("sections")], Path("paper/main.tex"), Path("paper"))
+        self.assertEqual((stage / "sections/part.tex").read_bytes(), br"\input{../shared/values.tex}")
+        self.assertEqual((stage / "shared/values.tex").read_bytes(), b"42")
+        self.assertEqual((self.root / "sections/part.tex").read_bytes(), chapter)
+
     def test_warning_categories_do_not_expose_private_paths(self):
         log = io.BytesIO(b"LaTeX Warning: Reference 'PRIVATE' on page 1 undefined.\n"
                          b"No file C:/PRIVATE/main.ind.\nxdvipdfmx:warning: PRIVATE\n")

@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 
-SERVER = Path(__file__).resolve().parents[1] / "plugins" / "host-latex" / "server.py"
+SERVER = Path(__file__).resolve().parents[1] / "server.py"
 spec = importlib.util.spec_from_file_location("host_latex", SERVER)
 server = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)
