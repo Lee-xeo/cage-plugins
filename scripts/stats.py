@@ -56,6 +56,9 @@ def aggregate_downloads(assets: list[dict[str, Any]], known_plugins: list[str]) 
     for asset in assets:
         if not isinstance(asset, dict):
             continue
+        state = asset.get("state")
+        if state is not None and state != "uploaded":
+            continue
         name = plugin_name_from_asset(str(asset.get("name") or ""), known_plugins)
         if not name:
             continue
@@ -65,6 +68,101 @@ def aggregate_downloads(assets: list[dict[str, Any]], known_plugins: list[str]) 
         if raw_count > 0:
             totals[name] = totals.get(name, 0) + raw_count
     return dict(sorted(totals.items()))
+
+
+def load_assets_payload(raw_text: str) -> list[dict[str, Any]]:
+    """Parse release asset JSON from an object, array, or concatenated paginated arrays."""
+    decoder = json.JSONDecoder()
+    items: list[dict[str, Any]] = []
+    idx = 0
+    length = len(raw_text)
+    while idx < length:
+        while idx < length and raw_text[idx].isspace():
+            idx += 1
+        if idx >= length:
+            break
+        parsed, idx = decoder.raw_decode(raw_text, idx)
+        if isinstance(parsed, dict) and isinstance(parsed.get("assets"), list):
+            items.extend(x for x in parsed["assets"] if isinstance(x, dict))
+        elif isinstance(parsed, list):
+            items.extend(x for x in parsed if isinstance(x, dict))
+        else:
+            raise ValueError("Assets JSON must contain a list of asset objects or a release object")
+    return items
+
+
+def _is_valid_uploaded_asset(asset: dict[str, Any], expected_size: int) -> bool:
+    size = asset.get("size")
+    return (
+        asset.get("state") == "uploaded"
+        and not isinstance(size, bool)
+        and isinstance(size, int)
+        and expected_size > 0
+        and size == expected_size
+    )
+
+
+def plan_package_sync(assets: list[dict[str, Any]], dist_dir: pathlib.Path) -> dict[str, Any]:
+    """Classify local dist/*.tar.gz archives into keep, delete-and-reupload, and upload-new."""
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    for asset in assets:
+        if not isinstance(asset, dict):
+            continue
+        name = str(asset.get("name") or "")
+        if name:
+            by_name.setdefault(name, []).append(asset)
+
+    keep: list[str] = []
+    delete: list[dict[str, Any]] = []
+    upload: list[str] = []
+
+    archives = sorted(p for p in dist_dir.glob("*.tar.gz") if p.is_file() and not p.is_symlink())
+    for archive_path in archives:
+        name = archive_path.name
+        expected_size = archive_path.stat().st_size
+        if expected_size <= 0:
+            raise ValueError(f"Local archive is empty: {archive_path}")
+
+        matches = by_name.get(name, [])
+        healthy = [a for a in matches if _is_valid_uploaded_asset(a, expected_size)]
+        if healthy:
+            # Keep the healthiest asset (highest download_count) so download metrics are never reset.
+            chosen = max(
+                healthy,
+                key=lambda a: a.get("download_count") if isinstance(a.get("download_count"), int) and not isinstance(a.get("download_count"), bool) else 0,
+            )
+            keep.append(name)
+            for asset in matches:
+                if asset is chosen:
+                    continue
+                asset_id = asset.get("id")
+                if not isinstance(asset_id, int) or isinstance(asset_id, bool):
+                    raise ValueError(f"Incomplete/duplicate remote asset {name!r} is missing a numeric id")
+                delete.append({
+                    "id": asset_id,
+                    "name": name,
+                    "state": asset.get("state"),
+                    "size": asset.get("size"),
+                    "expectedSize": expected_size,
+                    "reason": "duplicate-or-incomplete",
+                })
+            continue
+
+        for asset in matches:
+            asset_id = asset.get("id")
+            if not isinstance(asset_id, int) or isinstance(asset_id, bool):
+                raise ValueError(f"Incomplete remote asset {name!r} is missing a numeric id")
+            delete.append({
+                "id": asset_id,
+                "name": name,
+                "state": asset.get("state"),
+                "size": asset.get("size"),
+                "expectedSize": expected_size,
+                "reason": "incomplete-or-size-mismatch",
+            })
+        upload.append(archive_path.as_posix())
+
+    return {"keep": keep, "delete": delete, "upload": upload}
 
 
 def _api_get_json(url: str, token: str | None) -> Any:
@@ -144,6 +242,9 @@ def main() -> None:
     parser.add_argument("--tag", default=DEFAULT_TAG, help="GitHub Release tag (default: packages)")
     parser.add_argument("--assets-json", default="", help="Optional local JSON file of release assets (for testing)")
     parser.add_argument("--authors", default=str(AUTHORS_PATH), help="Path to authors.json")
+    parser.add_argument("--dist-dir", default=str(ROOT / "dist"), help="Directory containing *.tar.gz archives (for --plan-sync)")
+    parser.add_argument("--plan-sync", action="store_true", help="Plan archive keep/delete/upload actions from assets JSON")
+    parser.add_argument("--format", choices=("json", "lines"), default="json", help="Output format for --plan-sync")
     parser.add_argument("--output", default="stats.json", help="Output path for stats.json")
     parser.add_argument("--check", action="store_true", help="Validate an existing stats.json file and exit")
     args = parser.parse_args()
@@ -155,10 +256,30 @@ def main() -> None:
         print(f"ok: stats.json ({len(data['downloads'])} plugins with downloads)")
         return
 
+    if args.plan_sync:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(newline="\n")
+        if args.assets_json:
+            assets = load_assets_payload(pathlib.Path(args.assets_json).read_text(encoding="utf-8"))
+        else:
+            token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or None
+            assets = fetch_release_assets(args.repo, args.tag, token)
+        plan = plan_package_sync(assets, pathlib.Path(args.dist_dir))
+        if args.format == "lines":
+            print(f"KEEP_COUNT\t{len(plan['keep'])}")
+            for item in plan["delete"]:
+                print(
+                    f"DELETE\t{item['id']}\t{item['name']}\t{item.get('state')}\t{item.get('size')}\t{item['expectedSize']}"
+                )
+            for path in plan["upload"]:
+                print(f"UPLOAD\t{path}")
+        else:
+            print(json.dumps(plan, ensure_ascii=False, indent=2))
+        return
+
     known_plugins = load_known_plugins(pathlib.Path(args.authors))
     if args.assets_json:
-        raw = json.loads(pathlib.Path(args.assets_json).read_text(encoding="utf-8"))
-        assets = raw["assets"] if isinstance(raw, dict) and isinstance(raw.get("assets"), list) else raw
+        assets = load_assets_payload(pathlib.Path(args.assets_json).read_text(encoding="utf-8"))
     else:
         token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or None
         assets = fetch_release_assets(args.repo, args.tag, token)
