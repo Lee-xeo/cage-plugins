@@ -1376,6 +1376,113 @@
       "bytes": 20520
     },
     {
+      "name": "host-latex",
+      "version": "0.1.0",
+      "description": "Uses TeX Live already installed on this computer to turn your project's LaTeX files into PDFs and saves them in the project.",
+      "permissions": [
+        "files",
+        "commands"
+      ],
+      "author": {
+        "name": "huanghu996"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "宿主机 LaTeX 编译",
+          "description": "用这台电脑上已有的 TeX Live，把项目里的 LaTeX 文件编译成 PDF，结果直接存回项目。"
+        },
+        "zh-TW": {
+          "displayName": "宿主機 LaTeX 編譯",
+          "description": "用這台電腦上已有的 TeX Live，把專案裡的 LaTeX 檔案編譯成 PDF，結果直接存回專案。"
+        },
+        "es": {
+          "displayName": "LaTeX en el equipo anfitrión",
+          "description": "Compila archivos LaTeX del proyecto abierto con la instalación existente de TeX Live y guarda el PDF en el proyecto."
+        },
+        "fr": {
+          "displayName": "LaTeX sur la machine hôte",
+          "description": "Compile les fichiers LaTeX du projet ouvert avec l’installation existante de TeX Live et enregistre le PDF dans le projet."
+        },
+        "ru": {
+          "displayName": "LaTeX на хосте",
+          "description": "Компилирует файлы LaTeX открытого проекта с помощью установленного TeX Live и сохраняет PDF в проекте."
+        },
+        "be": {
+          "displayName": "LaTeX на хост-машыне",
+          "description": "Кампілюе файлы LaTeX адкрытага праекта з дапамогай усталяванага TeX Live і захоўвае PDF у праекце."
+        },
+        "ko": {
+          "displayName": "호스트 LaTeX 컴파일",
+          "description": "설치된 TeX Live로 열린 프로젝트의 LaTeX 파일을 컴파일하고 PDF를 프로젝트에 저장합니다."
+        },
+        "ar": {
+          "displayName": "تصريف LaTeX على الجهاز المضيف",
+          "description": "يصرّف ملفات LaTeX في المشروع المفتوح باستخدام TeX Live المثبّت ويحفظ ملف PDF داخل المشروع."
+        },
+        "fa": {
+          "displayName": "کامپایل LaTeX روی میزبان",
+          "description": "فایل‌های LaTeX پروژهٔ باز را با TeX Live نصب‌شده کامپایل می‌کند و PDF را در همان پروژه ذخیره می‌کند."
+        },
+        "prs": {
+          "displayName": "کامپایل LaTeX روی میزبان",
+          "description": "فایل‌های LaTeX پروژهٔ باز را با TeX Live نصب‌شده کامپایل می‌کند و PDF را در همان پروژه ذخیره می‌کند."
+        },
+        "ps": {
+          "displayName": "په کوربه کې د LaTeX کمپایل",
+          "description": "د پرانیستې پروژې LaTeX دوتنې په نصب شوي TeX Live کمپایلوي او PDF په پروژه کې خوندي کوي."
+        },
+        "my": {
+          "displayName": "ဟို့စ်စက်တွင် LaTeX ပြုစုခြင်း",
+          "description": "ဖွင့်ထားသော ပရောဂျက်ရှိ LaTeX ဖိုင်များကို ထည့်သွင်းထားပြီးသား TeX Live ဖြင့် ပြုစုပြီး PDF ကို ပရောဂျက်အတွင်း သိမ်းဆည်းသည်။"
+        },
+        "am": {
+          "displayName": "በአስተናጋጅ ኮምፒውተር LaTeX ማቀናበር",
+          "description": "በተጫነው TeX Live የተከፈተውን ፕሮጀክት LaTeX ፋይሎች ያቀናብራል፣ PDFውንም በፕሮጀክቱ ውስጥ ያስቀምጣል።"
+        },
+        "ti": {
+          "displayName": "LaTeX ኣብ ኣአንጋዲ ኮምፒዩተር",
+          "description": "ብዝተተኽለ TeX Live ፋይላት LaTeX ናይቲ ክፉት ፕሮጀክት የዳሉ፣ ነቲ PDF ድማ ኣብቲ ፕሮጀክት ይዕቅብ።"
+        },
+        "so": {
+          "displayName": "LaTeX kombiyuutarka martigeliyaha",
+          "description": "Wuxuu faylasha LaTeX ee mashruuca furan ku ururiyaa TeX Live ee hore u rakiban, PDF-kana wuxuu ku kaydiyaa mashruuca."
+        }
+      },
+      "displayName": "Host LaTeX",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "categories": [
+        "developer",
+        "productivity"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.1"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "latex",
+            "command": [
+              "python3",
+              "-I",
+              "-B",
+              "server.py",
+              "${PROJECT_DIR}"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/host-latex/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/host-latex-0.1.0.tar.gz",
+      "sha256": "68851e878087a8759b236f270f231f6109ff3e0347eb7100c4cbb22451070c4d",
+      "bytes": 25285
+    },
+    {
       "name": "knowledge-memory",
       "version": "0.1.2",
       "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",

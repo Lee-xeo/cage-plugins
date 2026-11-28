@@ -1,0 +1,17 @@
+{
+  "name": "host-latex",
+  "displayName": "Host LaTeX",
+  "version": "0.1.0",
+  "description": "Uses TeX Live already installed on this computer to turn your project's LaTeX files into PDFs and saves them in the project.",
+  "icon": "icon.svg",
+  "engines": { "cage": ">=0.2.1" },
+  "kind": "host",
+  "platforms": ["windows", "darwin", "linux"],
+  "permissions": ["files", "commands"],
+  "categories": ["developer", "productivity"],
+  "contributes": {
+    "mcpServers": [
+      { "id": "latex", "command": ["python3", "-I", "-B", "server.py", "${PROJECT_DIR}"] }
+    ]
+  }
+}
