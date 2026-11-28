@@ -52,6 +52,8 @@ if (Test-Path -LiteralPath $setup -PathType Leaf) {
 
 如果入口在子目录，生成的 PDF 会保留相同的目录结构。文件名也可以带空格，例如 `paper/My Paper.tex` 会生成 `.latex-out/paper/My Paper.pdf`。如果文件管理器里看不到 `.latex-out`，macOS 的访达可按 `Command + Shift + .` 显示隐藏文件，Linux 常见的文件管理器可按 `Ctrl + H`。
 
+编译期间如果移动项目或输出文件夹，Windows 可能会提示文件夹正在使用。如果插件提示无法保存 PDF，请等移动完成，重新打开项目再编译。新的 PDF 写好后才会替换旧版。
+
 **从哪里开始编译**会影响 LaTeX 读到哪一份同名文件。如果你平时在项目根目录运行 `xelatex paper/main.tex`，告诉 Claude「从项目根目录编译」，对应 `working_directory="."`。如果平时先进 `paper` 再运行 `xelatex main.tex`，就指定 `working_directory="paper"`。单独放在一个文件夹里的论文可沿用原来的调用方式。入口在子目录、同时外层还有其他项目内容时，工具会要求明确目录。
 
 插件保留普通项目文件的名称、内容和目录结构，包括索引、外部引用、隐藏的素材目录、代码清单及 EPS/PS 原图。版本库元数据、插件自己的输出目录、常见凭据目录（`.ssh`、`.gnupg`、`.aws`）、`.env` 和 `.env.*` 文件除外。链接会跳过并提示。请共享论文本身所在的目录。生成 PDF 后，若最后一遍编译仍有缺引用、缺索引等警告，Claude 会同时收到提示。
@@ -75,6 +77,8 @@ Install Python 3.9 or newer and TeX Live on the computer running the plugin. Put
 - **macOS** requires `/usr/bin/sandbox-exec`.
 
 Open a shared project and call `latex_compile` with a project-relative path such as `paper/My Paper.tex`. The default engine is XeLaTeX. Select `pdflatex` for documents that require it. A successful build writes `.latex-out/paper/My Paper.pdf`.
+
+Windows may report that the project or output folder is in use if you move it during compilation. If the plugin cannot save the PDF after a move, reopen the project and compile again. The previous PDF is replaced only after the new file has been written.
 
 Set `working_directory` to the directory used by your usual TeX command. For example, `xelatex paper/main.tex` from the project root uses `"."`; running `xelatex main.tex` inside that subproject uses `"paper"`. Self-contained entries retain their source-directory default. For nested entries with other files or directories outside the subproject, specify the working directory explicitly. The result includes the directory used and any final-pass or PDF-driver warnings the tool recognizes.
 

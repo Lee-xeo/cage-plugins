@@ -14,8 +14,10 @@ from pathlib import Path, PurePosixPath
 # The manifest uses Python's isolated mode. Only import helpers from this plugin.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 if os.name == "nt":
+    from windows_publish import pin_project
     from windows_sandbox import private_runtime, run_contained
 else:
+    from posix_publish import pin_project
     from posix_sandbox import run_contained
 
 
@@ -266,26 +268,6 @@ def texlive_engine(engine, base):
     return binary, env, (base, *roots)
 
 
-def publish_pdf(root, relative, pdf):
-    destination = root / ARTIFACT_DIR
-    for part in (ARTIFACT_DIR, *relative.parent.parts):
-        destination = root / part if part == ARTIFACT_DIR else destination / part
-        destination.mkdir(exist_ok=True)
-        if is_link(destination.lstat()) or not destination.resolve().is_relative_to(root):
-            raise BuildError("输出目录包含链接，无法写入 PDF。")
-    destination /= relative.with_suffix(".pdf").name
-    if destination.exists() and (is_link(destination.lstat()) or not destination.is_file()):
-        raise BuildError("输出位置已被链接或目录占用。")
-    handle, temporary = tempfile.mkstemp(suffix=".pdf", dir=destination.parent)
-    try:
-        with os.fdopen(handle, "wb") as file, pdf.open("rb") as result:
-            shutil.copyfileobj(result, file)
-        os.replace(temporary, destination)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
-    return destination.relative_to(root).as_posix()
-
-
 def build_diagnostic(output):
     # TeX diagnostics can contain host paths, usernames, and arbitrary document text.
     # Return only a known error category and an optional line number.
@@ -308,15 +290,18 @@ def build_diagnostic(output):
     return "请检查源文件和所用的 TeX Live 包。"
 
 
-def compile_pdf(root, args):
+def compile_pdf(root, args, expected_root=None):
     if not isinstance(args, dict) or set(args) - {"source", "engine", "working_directory"}:
         raise BuildError("只接受 source、engine 和 working_directory 参数。")
     relative = relative_source(args.get("source"))
     engine = args.get("engine", "xelatex")
     if not isinstance(engine, str) or engine not in ENGINES:
         raise BuildError("编译器只能选择 xelatex 或 pdflatex。")
-    source_path(root, relative)
-    with tempfile.TemporaryDirectory(prefix="latex-") as directory:
+    output_pdf = Path(ARTIFACT_DIR) / relative.with_suffix(".pdf")
+    with pin_project(root, output_pdf) as project, tempfile.TemporaryDirectory(prefix="latex-") as directory:
+        if expected_root is not None and project.root_identity != expected_root:
+            raise BuildError("共享项目目录已更换，请重新打开项目后再试。")
+        source_path(root, relative)
         base = Path(directory).resolve()
         staging, build = base / "project", base / "build"
         staging.mkdir()
@@ -371,7 +356,11 @@ def compile_pdf(root, args):
         if (not pdf.is_file() or is_link(pdf.lstat()) or pdf.resolve().parent != build
                 or not 0 < pdf.stat().st_size <= MAX_PDF_BYTES):
             raise BuildError("编译未生成 PDF，或 PDF 超过 64 MiB。")
-        result = {"engine": engine, "pdf": publish_pdf(root, relative, pdf),
+        try:
+            project.publish(pdf, output_pdf)
+        except OSError:
+            raise BuildError("无法保存 PDF，请检查项目和输出目录是否已移动、被占用或缺少写入权限。") from None
+        result = {"engine": engine, "pdf": output_pdf.as_posix(),
                   "working_directory": cwd.relative_to(staging).as_posix()}
         if warnings:
             result["warnings"] = sorted(warnings)
@@ -382,7 +371,7 @@ class InvalidParams(Exception):
     pass
 
 
-def respond(root, request):
+def respond(root, request, expected_root=None):
     method = request.get("method")
     params = request.get("params", {})
     if not isinstance(params, dict):
@@ -403,7 +392,7 @@ def respond(root, request):
     if params.get("name") != TOOL["name"]:
         return {"isError": True, "content": [{"type": "text", "text": "未知工具。"}]}
     try:
-        result = compile_pdf(root, params.get("arguments", {}))
+        result = compile_pdf(root, params.get("arguments", {}), expected_root)
         return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
                 "structuredContent": result}
     except BuildError as failure:
@@ -418,10 +407,12 @@ def main():
         sys.exit("请指定共享项目目录。")
     try:
         root = Path(sys.argv[1]).resolve(strict=True)
+        info = root.lstat()
     except (OSError, RuntimeError, ValueError):
         sys.exit("无法打开共享项目目录。")
-    if not root.is_dir():
+    if not stat.S_ISDIR(info.st_mode) or is_link(info):
         sys.exit("请指定共享项目目录。")
+    expected_root = (info.st_dev, info.st_ino)
     for line in sys.stdin.buffer:
         try:
             request = json.loads(line)
@@ -431,7 +422,7 @@ def main():
             continue
         envelope = {"jsonrpc": "2.0", "id": request["id"]}
         try:
-            result = respond(root, request)
+            result = respond(root, request, expected_root)
         except InvalidParams:
             envelope["error"] = {"code": -32602, "message": "Invalid params"}
         else:

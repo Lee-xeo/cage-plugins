@@ -89,6 +89,115 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(fingerprint(self.root), before)
         self.assertEqual((self.root / ".latex-out/main.pdf").read_bytes(), b"previous PDF")
 
+    def test_publish_creates_nested_pdf_and_preserves_last_copy_on_failure(self):
+        relative = Path(".latex-out/papers/My Paper.pdf")
+        destination = self.root / relative
+        compiled = self.temp / "compiled.pdf"
+        with server.pin_project(self.root) as project:
+            for content in (b"first PDF", b"revised PDF"):
+                compiled.write_bytes(content)
+                project.publish(compiled, relative)
+                self.assertEqual(destination.read_bytes(), content)
+
+            previous = destination.stat().st_mtime_ns
+            with self.assertRaises((OSError, server.BuildError)):
+                project.publish(self.temp / "missing.pdf", relative)
+            self.assertEqual(destination.read_bytes(), b"revised PDF")
+            self.assertEqual(destination.stat().st_mtime_ns, previous)
+            self.assertEqual(list(destination.parent.iterdir()), [destination])
+
+    def test_publish_refuses_non_directory_output_component(self):
+        write_files(self.root, {".latex-out/papers": b"existing file"})
+        compiled = self.temp / "compiled.pdf"
+        compiled.write_bytes(b"new PDF")
+        with server.pin_project(self.root) as project:
+            with self.assertRaises((OSError, server.BuildError)):
+                project.publish(compiled, Path(".latex-out/papers/main.pdf"))
+        obstacle = self.root / ".latex-out/papers"
+        self.assertEqual(obstacle.read_bytes(), b"existing file")
+        self.assertEqual(list(obstacle.parent.iterdir()), [obstacle])
+
+    def test_reopened_project_requires_a_new_session(self):
+        old_root = self.root.stat()
+        self.root.rename(self.temp / "old-project")
+        write_files(self.root, {"main.tex": b"new draft"})
+        request = call(1, "tools/call", {"name": "latex_compile", "arguments": {"source": "main.tex"}})
+        with patch.object(server, "texlive_engine") as engine:
+            result = server.respond(self.root, request, (old_root.st_dev, old_root.st_ino))
+        self.assertTrue(result.get("isError"))
+        self.assertIn("重新打开项目", result["content"][0]["text"])
+        engine.assert_not_called()
+        self.assertEqual(list(self.root.iterdir()), [self.root / "main.tex"])
+
+    def test_publish_checks_identity_of_existing_output_directory(self):
+        relative = Path(".latex-out/papers/main.pdf")
+        saved = self.root / relative
+        write_files(self.root, {relative: b"previous PDF"})
+        compiled = self.temp / "compiled.pdf"
+        compiled.write_bytes(b"new PDF")
+        archived = self.temp / "archived-output"
+        previous = saved.stat().st_mtime_ns
+
+        with server.pin_project(self.root, relative) as project:
+            try:
+                saved.parent.rename(archived)
+            except PermissionError as error:
+                if os.name != "nt" or error.winerror not in (5, 32):
+                    raise
+                project.publish(compiled, relative)
+                self.assertEqual(saved.read_bytes(), b"new PDF")
+            else:
+                saved.parent.mkdir()
+                with self.assertRaises((OSError, server.BuildError)):
+                    project.publish(compiled, relative)
+                self.assertEqual(list(saved.parent.iterdir()), [])
+                original = archived / saved.name
+                self.assertEqual(list(archived.iterdir()), [original])
+                self.assertEqual(original.read_bytes(), b"previous PDF")
+                self.assertEqual(original.stat().st_mtime_ns, previous)
+
+    def test_project_rename_during_compile_keeps_output_in_selected_project(self):
+        write_files(self.root, {"main.tex": b"draft", ".latex-out/main.pdf": b"previous PDF"})
+        sibling = self.temp / "unrelated"
+        write_files(sibling, {"record.txt": b"unrelated"})
+        before = fingerprint(sibling)
+        archived = self.temp / "archived-project"
+        rename_attempted = False
+
+        def complete_engine(command, cwd, env, output, timeout, base, allowed):
+            nonlocal rename_attempted
+            if not rename_attempted:
+                rename_attempted = True
+                try:
+                    self.root.rename(archived)
+                except PermissionError as error:
+                    # A pinned Windows directory can reject the rename itself.
+                    if os.name != "nt" or error.winerror not in (5, 32):
+                        raise
+                else:
+                    self.root.mkdir()
+            (base / "build/main.pdf").write_bytes(b"new PDF")
+            return 0
+
+        request = call(1, "tools/call", {"name": "latex_compile",
+                                        "arguments": {"source": "main.tex", "engine": "pdflatex"}})
+        with patch.object(server, "texlive_engine", return_value=(self.temp / "pdflatex", {}, ())), \
+                patch.object(server, "run_contained", side_effect=complete_engine):
+            result = server.respond(self.root, request)
+
+        self.assertTrue(rename_attempted)
+        if archived.exists():
+            self.assertTrue(result.get("isError"), result)
+            self.assertEqual(list(self.root.iterdir()), [])
+            previous_pdf = archived / ".latex-out/main.pdf"
+            self.assertEqual(previous_pdf.read_bytes(), b"previous PDF")
+            self.assertEqual(list(previous_pdf.parent.iterdir()), [previous_pdf])
+        else:
+            self.assertFalse(result.get("isError"), result)
+            self.assertEqual((self.root / ".latex-out/main.pdf").read_bytes(), b"new PDF")
+        self.assertEqual(fingerprint(sibling), before)
+        self.assertEqual(list(sibling.iterdir()), [sibling / "record.txt"])
+
     @unittest.skipUnless(os.environ.get("HOST_LATEX_TEST_TEX") == "1", "requires a real TeX runtime")
     def test_generated_pdf_contains_project_inputs(self):
         # All expected content is supplied by real project files, not embedded in the main document.
