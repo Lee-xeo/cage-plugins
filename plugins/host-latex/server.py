@@ -1,5 +1,6 @@
 """Compile files from the active shared project with TeX Live."""
 
+import errno
 import json
 import os
 import re
@@ -13,6 +14,8 @@ from pathlib import Path, PurePosixPath
 
 # The manifest uses Python's isolated mode. Only import helpers from this plugin.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from project_dependencies import referenced_inputs
+from graphics_aliases import graphics_command
 if os.name == "nt":
     from windows_publish import pin_project
     from windows_sandbox import private_runtime, run_contained
@@ -25,8 +28,6 @@ ENGINES = {"xelatex", "pdflatex"}
 MCP_VERSIONS = {"2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"}
 ARTIFACT_DIR = ".latex-out"
 EXCLUDED_DIRS = {ARTIFACT_DIR, ".cage-latex", ".git", ".hg", ".svn", ".ssh", ".gnupg", ".aws"}
-MAX_INPUT_BYTES = 512 * 1024 * 1024
-MAX_INPUT_FILES = 5000
 MAX_PDF_BYTES = 64 * 1024 * 1024
 BUILD_SECONDS = 90
 TOOL = {
@@ -50,6 +51,13 @@ TOOL = {
                 "description": ("Directory normally used to run TeX, relative to the shared project. "
                                 "Use '.' for the project root or e.g. 'paper' for a subproject. "
                                 "Specify it for nested entries when the project contains other inputs."),
+            },
+            "project_inputs": {
+                "type": "array", "items": {"type": "string"},
+                "description": ("Stage the entry and its recognizable local dependencies, plus these "
+                                "project-relative files or directories. Use [] for literal inputs only. "
+                                "Directories are copied recursively with their original layout. "
+                                "Omitting the list also starts from the document's dependencies."),
             },
         },
         "required": ["source"],
@@ -101,56 +109,128 @@ def walk_error(error):
     raise error
 
 
-def snapshot_project(root, staging):
-    size, files, folders = 0, 0, 0
-    skipped_links = False
-    for folder, dirs, names in os.walk(root, followlinks=False, onerror=walk_error):
-        directory = Path(folder)
-        if directory.resolve(strict=True) != directory:
-            raise BuildError("项目目录在复制期间发生了变化。")
-        target_dir = staging / directory.relative_to(root)
-        target_dir.mkdir(exist_ok=True)
-        folders += 1
-        if folders > MAX_INPUT_FILES:
-            raise BuildError("项目包含过多目录，请打开更小的项目目录。")
-        keep = []
-        for name in dirs:
-            child = directory / name
-            if name.casefold() in EXCLUDED_DIRS or child == staging.parent:
-                continue
-            if is_link(child.lstat()):
-                skipped_links = True
-            else:
-                keep.append(name)
-        dirs[:] = keep
-        for name in names:
-            source = directory / name
-            if name.casefold() in {".git", ".env"} or name.casefold().startswith(".env."):
-                continue
-            info = source.lstat()
-            if is_link(info):
-                skipped_links = True
-                continue
-            if not stat.S_ISREG(info.st_mode):
-                continue
-            size += info.st_size
-            files += 1
-            if size > MAX_INPUT_BYTES or files > MAX_INPUT_FILES:
-                raise BuildError("项目的 LaTeX 输入超过 512 MiB 或 5000 个文件，请打开更小的项目目录。")
-            with source.open("rb") as data:
-                if not os.path.samestat(info, os.fstat(data.fileno())) or source.resolve(strict=True) != source:
+def excluded_input(name):
+    name = name.casefold()
+    return name in EXCLUDED_DIRS or name == ".env" or name.startswith(".env.")
+
+
+def input_name(value):
+    if value == ".":
+        return Path(".")
+    if (not isinstance(value, str) or not value or re.search(r'[\\<>:"|?*\x00-\x1f]', value)
+            or any(p in ("", ".", "..") or p.endswith((" ", ".")) or excluded_input(p)
+                   for p in value.split("/"))):
+        raise BuildError("project_inputs 必须是共享项目内的普通文件或目录，请使用项目相对路径。")
+    return Path(value)
+
+
+def checked_input(root, relative):
+    path = root / relative
+    # Directory junctions, including intermediate components, must never extend
+    # a selection beyond the project. Verify identity again on the open file.
+    if (not path.is_relative_to(root) or ".." in relative.parts or
+            any(excluded_input(part) for part in relative.parts)):
+        raise BuildError("所选输入不能包含项目外文件、凭据或插件输出。")
+    current = root
+    for part in relative.parts:
+        current /= part
+        if is_link(current.lstat()):
+            raise BuildError("所选的项目输入经过链接或重解析点。")
+    if path.resolve(strict=True) != path:
+        raise BuildError("项目输入目录在复制期间发生了变化。")
+    return path
+
+
+def copy_input(source, target):
+    info = source.lstat()
+    if not stat.S_ISREG(info.st_mode) or is_link(info):
+        raise BuildError("所选的编译输入不是普通文件。")
+    with source.open("rb") as data:
+        if not os.path.samestat(info, os.fstat(data.fileno())) or source.resolve(strict=True) != source:
+            raise BuildError("项目文件在复制期间发生了变化。")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as output:
+            remaining = info.st_size
+            while remaining:
+                block = data.read(min(remaining, 1024 * 1024))
+                if not block:
                     raise BuildError("项目文件在复制期间发生了变化。")
-                with (target_dir / name).open("xb") as target:
-                    remaining = info.st_size
-                    while remaining:
-                        block = data.read(min(remaining, 1024 * 1024))
-                        if not block:
-                            raise BuildError("项目文件在复制期间发生了变化。")
-                        target.write(block)
-                        remaining -= len(block)
-                    if data.read(1) or os.fstat(data.fileno()).st_mtime_ns != info.st_mtime_ns:
-                        raise BuildError("项目文件在复制期间发生了变化。")
-    return skipped_links
+                output.write(block)
+                remaining -= len(block)
+            if data.read(1) or os.fstat(data.fileno()).st_mtime_ns != info.st_mtime_ns:
+                raise BuildError("项目文件在复制期间发生了变化。")
+    return info.st_size
+
+
+def snapshot_project(root, staging, selections=(Path("."),), entry=None, cwd=Path(".")):
+    files = total = 0
+    skipped_links = False
+    dynamic = False
+    aliases = {}
+    # Keep explicitly selected directory contents verbatim, including custom
+    # file formats. Only inspect documents that can feed the selected entry.
+    pending = [entry] if entry is not None else []
+    selected_dirs = set()
+
+    def stage(relative):
+        nonlocal files, total
+        destination = staging / relative
+        if not destination.is_file():
+            source = checked_input(root, relative)
+            if source.is_relative_to(staging.parent) and staging.parent.is_relative_to(root):
+                raise BuildError("编译输入不能位于本次编译的临时目录。")
+            total += copy_input(source, destination)
+            files += 1
+
+    for relative in sorted(set(selections), key=lambda p: (len(p.parts), p.parts)):
+        if any(parent in selected_dirs for parent in relative.parents):
+            continue
+        try:
+            source = checked_input(root, relative)
+        except FileNotFoundError:
+            raise BuildError("找不到 project_inputs 中指定的文件或目录。") from None
+        if not source.is_dir():
+            stage(relative)
+            pending.append(relative)
+            continue
+        selected_dirs.add(relative)
+        for folder, dirs, names in os.walk(source, followlinks=False, onerror=walk_error):
+            directory = Path(folder)
+            if directory.resolve(strict=True) != directory:
+                raise BuildError("项目目录在复制期间发生了变化。")
+            (staging / directory.relative_to(root)).mkdir(parents=True, exist_ok=True)
+            keep = []
+            for name in dirs:
+                child = directory / name
+                if excluded_input(name) or child == staging.parent:
+                    continue
+                if is_link(child.lstat()):
+                    skipped_links = True
+                else:
+                    keep.append(name)
+            dirs[:] = keep
+            for name in names:
+                if excluded_input(name):
+                    continue
+                child = directory / name
+                info = child.lstat()
+                if is_link(info):
+                    skipped_links = True
+                elif stat.S_ISREG(info.st_mode):
+                    stage(child.relative_to(root))
+
+    seen = set()
+    while pending:
+        relative = pending.pop()
+        if relative in seen:
+            continue
+        seen.add(relative)
+        stage(relative)
+        dependencies, graphics, incomplete = referenced_inputs(root, relative, cwd, staging / relative)
+        dynamic |= incomplete
+        pending.extend(dependencies)
+        aliases.update(graphics)
+    return skipped_links, files, total, aliases, dynamic
 
 
 def compilation_directory(staging, source, requested):
@@ -159,7 +239,8 @@ def compilation_directory(staging, source, requested):
         # alongside it, the two invocation directories can produce different PDFs.
         parent = source.parent
         while parent != staging:
-            if any(sibling != parent for sibling in parent.parent.iterdir()):
+            if any(sibling != parent and not excluded_input(sibling.name) and not is_link(sibling.lstat())
+                   for sibling in parent.parent.iterdir()):
                 raise BuildError("请按项目平时启动 LaTeX 的位置指定 working_directory：项目根目录填 .，子目录填其相对路径。")
             parent = parent.parent
         return source.parent
@@ -291,8 +372,8 @@ def build_diagnostic(output):
 
 
 def compile_pdf(root, args, expected_root=None):
-    if not isinstance(args, dict) or set(args) - {"source", "engine", "working_directory"}:
-        raise BuildError("只接受 source、engine 和 working_directory 参数。")
+    if not isinstance(args, dict) or set(args) - {"source", "engine", "working_directory", "project_inputs"}:
+        raise BuildError("只接受 source、engine、working_directory 和 project_inputs 参数。")
     relative = relative_source(args.get("source"))
     engine = args.get("engine", "xelatex")
     if not isinstance(engine, str) or engine not in ENGINES:
@@ -301,19 +382,28 @@ def compile_pdf(root, args, expected_root=None):
     with pin_project(root, output_pdf) as project, tempfile.TemporaryDirectory(prefix="latex-") as directory:
         if expected_root is not None and project.root_identity != expected_root:
             raise BuildError("共享项目目录已更换，请重新打开项目后再试。")
-        source_path(root, relative)
+        original = source_path(root, relative)
+        explicit = "project_inputs" in args
+        if explicit and not isinstance(args["project_inputs"], list):
+            raise BuildError("project_inputs 必须是项目相对路径组成的列表。")
+        if "working_directory" in args and not isinstance(args["working_directory"], str):
+            raise BuildError("working_directory 必须是项目内的相对目录。")
+        requested = args.get("working_directory", relative.parent.as_posix() if explicit else None)
+        native_cwd = compilation_directory(root, original, requested).relative_to(root)
+        checked_input(root, native_cwd)
+        selections = [input_name(name) for name in args.get("project_inputs", [])]
         base = Path(directory).resolve()
         staging, build = base / "project", base / "build"
         staging.mkdir()
         build.mkdir()
         binary, env, allowed = texlive_engine(engine, base)
-        skipped_links = snapshot_project(root, staging)
+        skipped_links, file_count, input_bytes, aliases, dynamic = snapshot_project(
+            root, staging, selections, Path(relative), native_cwd)
         source = staging / relative
         if not source.is_file():
             raise BuildError("项目文件在编译期间发生了变化，请保存后再试。")
-        if "working_directory" in args and not isinstance(args["working_directory"], str):
-            raise BuildError("working_directory 必须是项目内的相对目录。")
-        cwd = compilation_directory(staging, source, args.get("working_directory"))
+        cwd = staging / native_cwd
+        cwd.mkdir(parents=True, exist_ok=True)
         # TeX opens relative chapter.aux names under its output directory;
         # it does not create their parent directories.
         for folder, _, _ in os.walk(cwd, onerror=walk_error):
@@ -334,9 +424,12 @@ def compile_pdf(root, args, expected_root=None):
             if not driver:
                 raise BuildError("找不到生成 PDF 所需的 xdvipdfmx，请检查本机 TeX Live。")
             steps.append([driver, "-D", "", "-o", str(pdf), str(pdf.with_suffix(".xdv"))])
-        tex.append("./" + Path(os.path.relpath(source, cwd)).as_posix())
+        source_arg = "./" + Path(os.path.relpath(source, cwd)).as_posix()
+        tex.extend(graphics_command(aliases, source_arg, source.stem, base))
         deadline = time.monotonic() + BUILD_SECONDS
         warnings = {"项目中有链接未复制到编译目录，请核对相关输入。"} if skipped_links else set()
+        if dynamic and Path(".") not in selections:
+            warnings.add("有输入文件名由 TeX 动态生成，请确认 project_inputs 已包含对应文件或目录。")
         for index, command in enumerate(steps):
             try:
                 # Keep diagnostics on a parent-owned handle, outside the writable job directory.
@@ -344,6 +437,9 @@ def compile_pdf(root, args, expected_root=None):
                     status = run_contained(command, cwd, env, output,
                                            max(0.1, deadline - time.monotonic()), base, allowed)
                     if status:
+                        if os.name == "nt" and (status & 0xffffffff) in (0xc0000005, 0xc0000374):
+                            raise BuildError(f"本机 {Path(command[0]).stem} 异常退出，本次没有替换 PDF。"
+                                             "可以重新编译；若反复发生，请检查本机 TeX Live。")
                         raise BuildError(f"{engine} 编译失败。{build_diagnostic(output)}")
                     if index > 0:
                         warnings.update(compilation_warnings(output))
@@ -358,9 +454,12 @@ def compile_pdf(root, args, expected_root=None):
             raise BuildError("编译未生成 PDF，或 PDF 超过 64 MiB。")
         try:
             project.publish(pdf, output_pdf)
-        except OSError:
+        except OSError as failure:
+            if failure.errno == errno.ENOSPC or getattr(failure, "winerror", None) == 112:
+                raise
             raise BuildError("无法保存 PDF，请检查项目和输出目录是否已移动、被占用或缺少写入权限。") from None
         result = {"engine": engine, "pdf": output_pdf.as_posix(),
+                  "input_files": file_count, "input_bytes": input_bytes,
                   "working_directory": cwd.relative_to(staging).as_posix()}
         if warnings:
             result["warnings"] = sorted(warnings)
@@ -382,7 +481,7 @@ def respond(root, request, expected_root=None):
             raise InvalidParams
         return {"protocolVersion": version if version in MCP_VERSIONS else "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "host-latex", "version": "0.1.0"}}
+                "serverInfo": {"name": "host-latex", "version": "0.2.0"}}
     if method == "ping":
         return {}
     if method == "tools/list":
@@ -397,7 +496,12 @@ def respond(root, request, expected_root=None):
                 "structuredContent": result}
     except BuildError as failure:
         text = str(failure)
-    except (OSError, ValueError):
+    except OSError as failure:
+        if failure.errno == errno.ENOSPC or getattr(failure, "winerror", None) == 112:
+            text = "磁盘剩余空间不足，无法复制本次输入或保存 PDF。"
+        else:
+            text = "无法读取共享项目、运行本机 TeX Live 或写入 PDF，请检查文件和本机权限。"
+    except ValueError:
         text = "无法读取共享项目、运行本机 TeX Live 或写入 PDF，请检查文件和本机权限。"
     return {"isError": True, "content": [{"type": "text", "text": text}]}
 

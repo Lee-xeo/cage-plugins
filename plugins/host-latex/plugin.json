@@ -1,7 +1,7 @@
 {
   "name": "host-latex",
   "displayName": "Host LaTeX",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Uses TeX Live already installed on this computer to turn your project's LaTeX files into PDFs and saves them in the project.",
   "icon": "icon.svg",
   "engines": { "cage": ">=0.2.1" },
