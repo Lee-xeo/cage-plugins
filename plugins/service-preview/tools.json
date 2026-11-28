@@ -1,0 +1,24 @@
+[
+  {
+    "name": "service_preview_list",
+    "description": "List TCP listeners accessible on loopback and any registered HTTP preview paths.",
+    "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+    "annotations": { "readOnlyHint": true, "openWorldHint": false }
+  },
+  {
+    "name": "service_preview_register",
+    "description": "Label a running HTTP service and show its entry path on the preview page. This does not start, verify, or open the service.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "path": { "type": "string", "description": "Absolute URL path such as / or /docs.", "default": "/", "maxLength": 512 }
+      },
+      "required": ["port", "label"],
+      "additionalProperties": false
+    },
+    "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false },
+    "_meta": { "ui": { "visibility": ["model"] } }
+  }
+]
