@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import getpass
 import json
+import os
 import re
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -29,9 +32,12 @@ _AGY_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 
 # Antigravity enforces Deny > Ask > Allow in its permission engine, overriding user local Allow rules.
 # Note: this is a CLI policy deny-list (NOT an OS-level read-only filesystem sandbox); `agy` currently
-# exposes no separate deny rule for `run_workflow` or user-global hooks, so we also pre-check project hooks.
+# exposes no separate CLI flag to disable workspace customization discovery, `run_workflow`, or user-global
+# hooks, so restricted modes pre-verify the full workspace-to-repository-root discovery chain and fail closed.
 _AGY_READONLY_SETTINGS: dict[str, Any] = {
+    "agentMode": "plan",
     "toolPermission": "request-review",
+    "allowNonWorkspaceAccess": False,
     "permissions": {
         "deny": [
             "write_file(*)",
@@ -46,6 +52,7 @@ _AGY_READONLY_SETTINGS: dict[str, Any] = {
 
 _AGY_WORKSPACE_WRITE_SETTINGS: dict[str, Any] = {
     "toolPermission": "request-review",
+    "allowNonWorkspaceAccess": False,
     "permissions": {
         "deny": [
             "command(*)",
@@ -56,63 +63,303 @@ _AGY_WORKSPACE_WRITE_SETTINGS: dict[str, Any] = {
     },
 }
 
-_PROJECT_HOOK_RELATIVE_PATHS = (
-    ".agents/hooks.json",
-    ".agent/hooks.json",
-    ".gemini/hooks.json",
-    ".antigravity/hooks.json",
+# Official Antigravity customization discovery folders and VCS repository boundary markers:
+# https://antigravity.google/docs/customization-discovery?tab=cli#workspace-folders-and-parent-directories
+_VCS_ROOT_MARKERS = (".git", ".hg", ".svn", ".jj", ".sl")
+_CUSTOMIZATION_DOT_DIRS = (".agents", ".agent", "_agents", "_agent", ".gemini", ".antigravity")
+_AUTOMATION_CONFIG_FILES = ("hooks.json", "mcp_config.json", "plugins.json")
+
+AGY_DEFAULT_DESTINATION = (
+    "Google Antigravity / Gemini / GCP service configured in host agy CLI (recipient not verified by plugin)"
+)
+AGY_FULL_DESTINATION = (
+    "Determined by host agy CLI configuration and enabled MCP/web tools (recipient not verified by plugin)"
 )
 
-_PROJECT_WORKFLOW_RELATIVE_DIRS = (
-    ".agents/workflows",
-    ".agent/workflows",
-    ".gemini/workflows",
-    ".antigravity/workflows",
-)
+
+def _is_symlink_or_reparse(st: os.stat_result) -> bool:
+    attrs = getattr(st, "st_file_attributes", 0)
+    return stat.S_ISLNK(st.st_mode) or bool(attrs & 0x400)
 
 
-def _dir_has_entries(path: Path) -> bool:
-    if path.is_symlink():
-        return True
-    if not path.is_dir():
-        return False
+def _format_scope_prefix(scan_dir: Path, workspace: Path) -> str:
+    if scan_dir == workspace:
+        return ""
     try:
-        return any(True for _ in path.iterdir())
-    except OSError:
-        return True
+        rel_up = workspace.relative_to(scan_dir)
+        return "../" * len(rel_up.parts)
+    except ValueError:
+        return "<parent>/"
 
 
-def detect_project_hook_configs(project_dir: str) -> list[str]:
+def _resolve_candidate_usernames(env: dict[str, str] | None = None) -> list[str]:
+    names: list[str] = []
+    sources = [env or {}, os.environ]
+    for src in sources:
+        for key in ("USER", "USERNAME"):
+            val = str(src.get(key) or "").strip()
+            if val and val not in names:
+                names.append(val)
+    try:
+        os_user = getpass.getuser().strip()
+        if os_user and os_user not in names:
+            names.append(os_user)
+    except Exception:
+        pass
+    return names
+
+
+def _scan_customization_root(
+    base_dir: Path,
+    prefix: str,
+    repo_root: Path,
+    env: dict[str, str] | None,
+    blocked: list[str],
+    unverified: list[str],
+    allow_personal_redirect: bool = True,
+) -> None:
+    for dot_name in _CUSTOMIZATION_DOT_DIRS:
+        dot_dir = base_dir / dot_name
+        try:
+            dot_st = os.lstat(dot_dir)
+        except FileNotFoundError:
+            continue
+        except OSError:
+            unverified.append(f"{prefix}{dot_name} (unreadable)")
+            continue
+
+        if _is_symlink_or_reparse(dot_st):
+            blocked.append(f"{prefix}{dot_name} (symlink)")
+            continue
+        if not stat.S_ISDIR(dot_st.st_mode):
+            continue
+
+        for cfg_name in _AUTOMATION_CONFIG_FILES:
+            cfg_path = dot_dir / cfg_name
+            try:
+                os.lstat(cfg_path)
+                blocked.append(f"{prefix}{dot_name}/{cfg_name}")
+            except FileNotFoundError:
+                pass
+            except OSError:
+                unverified.append(f"{prefix}{dot_name}/{cfg_name} (unreadable)")
+
+        wf_dir = dot_dir / "workflows"
+        try:
+            wf_st = os.lstat(wf_dir)
+            if _is_symlink_or_reparse(wf_st):
+                blocked.append(f"{prefix}{dot_name}/workflows/ (symlink)")
+            elif stat.S_ISDIR(wf_st.st_mode):
+                if any(True for _ in wf_dir.iterdir()):
+                    blocked.append(f"{prefix}{dot_name}/workflows/")
+        except FileNotFoundError:
+            pass
+        except OSError:
+            unverified.append(f"{prefix}{dot_name}/workflows/ (unreadable)")
+
+        plugins_dir = dot_dir / "plugins"
+        try:
+            pl_st = os.lstat(plugins_dir)
+            if _is_symlink_or_reparse(pl_st):
+                blocked.append(f"{prefix}{dot_name}/plugins/ (symlink)")
+            elif stat.S_ISDIR(pl_st.st_mode):
+                children = sorted(plugins_dir.iterdir())
+                for child in children:
+                    child_label = f"{prefix}{dot_name}/plugins/{child.name}"
+                    try:
+                        ch_st = os.lstat(child)
+                    except OSError:
+                        unverified.append(f"{child_label} (unreadable)")
+                        continue
+                    if _is_symlink_or_reparse(ch_st):
+                        blocked.append(f"{child_label} (symlink)")
+                        continue
+                    if not stat.S_ISDIR(ch_st.st_mode):
+                        continue
+                    matched_specific = False
+                    for sub in ("hooks.json", "hooks/hooks.json", "mcp_config.json"):
+                        cand = child / sub
+                        try:
+                            os.lstat(cand)
+                            blocked.append(f"{child_label}/{sub}")
+                            matched_specific = True
+                        except FileNotFoundError:
+                            pass
+                        except OSError:
+                            unverified.append(f"{child_label}/{sub} (unreadable)")
+                            matched_specific = True
+                    c_wf = child / "workflows"
+                    try:
+                        c_wf_st = os.lstat(c_wf)
+                        if _is_symlink_or_reparse(c_wf_st) or (
+                            stat.S_ISDIR(c_wf_st.st_mode) and any(True for _ in c_wf.iterdir())
+                        ):
+                            blocked.append(f"{child_label}/workflows/")
+                            matched_specific = True
+                    except FileNotFoundError:
+                        pass
+                    except OSError:
+                        unverified.append(f"{child_label}/workflows/ (unreadable)")
+                        matched_specific = True
+                    if not matched_specific:
+                        # Workspace plugins load enabled by default in `agy` and can bundle custom agents/MCP/hooks.
+                        blocked.append(f"{child_label}/")
+        except FileNotFoundError:
+            pass
+        except OSError:
+            unverified.append(f"{prefix}{dot_name}/plugins/ (unreadable)")
+
+        # Official personal_customization_dir redirect in `.gemini/config.json`
+        if allow_personal_redirect and dot_name == ".gemini":
+            gcfg_path = dot_dir / "config.json"
+            try:
+                g_st = os.lstat(gcfg_path)
+            except FileNotFoundError:
+                continue
+            except OSError:
+                unverified.append(f"{prefix}.gemini/config.json (unreadable)")
+                continue
+
+            if _is_symlink_or_reparse(g_st) or not stat.S_ISREG(g_st.st_mode) or g_st.st_size > 65536:
+                unverified.append(f"{prefix}.gemini/config.json (unverified)")
+                continue
+            try:
+                g_data = json.loads(gcfg_path.read_text(encoding="utf-8"))
+            except Exception:
+                unverified.append(f"{prefix}.gemini/config.json (invalid JSON)")
+                continue
+            if not isinstance(g_data, dict):
+                unverified.append(f"{prefix}.gemini/config.json (invalid schema)")
+                continue
+            raw_pdir = g_data.get("personal_customization_dir")
+            if raw_pdir is not None:
+                if not isinstance(raw_pdir, str) or not raw_pdir.strip():
+                    unverified.append(f"{prefix}.gemini/config.json#personal_customization_dir")
+                    continue
+                usernames = _resolve_candidate_usernames(env)
+                if "{user}" in raw_pdir and not usernames:
+                    unverified.append(f"{prefix}.gemini/config.json#personal_customization_dir (unknown user)")
+                    continue
+                expanded_list = (
+                    [raw_pdir.replace("{user}", u) for u in usernames]
+                    if "{user}" in raw_pdir
+                    else [raw_pdir]
+                )
+                seen_targets: set[Path] = set()
+                for expanded in expanded_list:
+                    for anchor in (repo_root, base_dir):
+                        cand_root = Path(expanded) if Path(expanded).is_absolute() else (anchor / expanded)
+                        if cand_root in seen_targets:
+                            continue
+                        seen_targets.add(cand_root)
+                        try:
+                            p_st = os.lstat(cand_root)
+                        except FileNotFoundError:
+                            continue
+                        except OSError:
+                            unverified.append(f"{prefix}.gemini/config.json#personal_customization_dir (unreadable)")
+                            continue
+                        if _is_symlink_or_reparse(p_st):
+                            blocked.append(f"{prefix}.gemini/config.json#personal_customization_dir (symlink)")
+                            continue
+                        if stat.S_ISDIR(p_st.st_mode):
+                            _scan_customization_root(
+                                cand_root,
+                                f"{prefix}<personal>/",
+                                repo_root,
+                                env,
+                                blocked,
+                                unverified,
+                                allow_personal_redirect=False,
+                            )
+
+
+def inspect_antigravity_workspace_automations(
+    project_dir: str,
+    env: dict[str, str] | None = None,
+) -> tuple[list[str], list[str]]:
     """
-    Detect workspace-scoped Antigravity hook configs and workflow directories that `agy`
-    cannot disable via CLI flags.
+    Inspect the full workspace-to-repository-root customization loading chain used by `agy`:
+    - Walks from `project_dir` upward through every parent folder up to the repository root
+      (`.git`, `.hg`, `.svn`, `.jj`, `.sl`). If not inside a repository, checks `project_dir`
+      and fails closed if parent repository boundaries cannot be verified.
+    - Checks `.agents/`, `.agent/`, `_agents/`, `_agent/`, `.gemini/`, `.antigravity/` for
+      hooks, MCP configs, plugins/manifests, workflows, and `.gemini/config.json` personal redirects.
+    Returns `(blocked_entries, unverified_entries)`.
     """
     if not project_dir:
-        return []
-    base = Path(project_dir)
-    found: list[str] = []
-    for rel in _PROJECT_HOOK_RELATIVE_PATHS:
-        cand = base / rel
-        if cand.exists() or cand.is_symlink():
-            found.append(rel)
-    for rel in _PROJECT_WORKFLOW_RELATIVE_DIRS:
-        cand = base / rel
-        if _dir_has_entries(cand):
-            found.append(f"{rel}/")
-    plugins_dir = base / ".agents" / "plugins"
-    if plugins_dir.is_dir():
-        try:
-            for child in sorted(plugins_dir.iterdir()):
-                for sub in ("hooks.json", "hooks/hooks.json"):
-                    cand = child / sub
-                    if cand.exists() or cand.is_symlink():
-                        found.append(f".agents/plugins/{child.name}/{sub}")
-                wf_dir = child / "workflows"
-                if _dir_has_entries(wf_dir):
-                    found.append(f".agents/plugins/{child.name}/workflows/")
-        except OSError:
-            pass
-    return found
+        return [], ["active project directory is not set"]
+    try:
+        workspace = Path(project_dir).resolve(strict=True)
+    except OSError:
+        return [], ["active project directory cannot be resolved"]
+    if not workspace.is_dir():
+        return [], ["active project directory is not a directory"]
+
+    chain: list[Path] = []
+    cur = workspace
+    while True:
+        chain.append(cur)
+        if cur.parent == cur:
+            break
+        cur = cur.parent
+
+    outermost_repo_root: Path | None = None
+    boundary_unverified: list[str] = []
+    for anc in chain:
+        found_at_level = False
+        for marker in _VCS_ROOT_MARKERS:
+            try:
+                os.lstat(anc / marker)
+                found_at_level = True
+                break
+            except FileNotFoundError:
+                continue
+            except OSError:
+                if outermost_repo_root is None:
+                    boundary_unverified.append("parent directory repository boundary could not be verified")
+                break
+        if found_at_level:
+            outermost_repo_root = anc
+        if boundary_unverified:
+            break
+
+    if boundary_unverified and outermost_repo_root is None:
+        return [], boundary_unverified
+
+    if outermost_repo_root is not None:
+        stop_idx = chain.index(outermost_repo_root)
+        scan_dirs = chain[: stop_idx + 1]
+        effective_repo_root = outermost_repo_root
+    else:
+        scan_dirs = [workspace]
+        effective_repo_root = workspace
+
+    blocked: list[str] = []
+    unverified: list[str] = []
+    for scan_dir in scan_dirs:
+        prefix = _format_scope_prefix(scan_dir, workspace)
+        _scan_customization_root(
+            scan_dir,
+            prefix=prefix,
+            repo_root=effective_repo_root,
+            env=env,
+            blocked=blocked,
+            unverified=unverified,
+        )
+    # Deduplicate while preserving discovery order
+    dedup_blocked = list(dict.fromkeys(blocked))
+    dedup_unverified = list(dict.fromkeys(unverified))
+    return dedup_blocked, dedup_unverified
+
+
+def detect_project_hook_configs(
+    project_dir: str,
+    env: dict[str, str] | None = None,
+) -> list[str]:
+    """Return all blocked or unverified workspace/ancestor Antigravity automation entries."""
+    blocked, unverified = inspect_antigravity_workspace_automations(project_dir, env=env)
+    return [*blocked, *unverified]
 
 
 def parse_agy_models_output(text: str) -> list[ModelInfo]:
@@ -146,15 +393,26 @@ def parse_agy_models_output(text: str) -> list[ModelInfo]:
 class AntigravityProvider(AIProvider):
     id = "antigravity"
     display_name = "Antigravity CLI (agy)"
-    service_destination = "Google Antigravity service (via host agy CLI)"
+    service_destination = AGY_DEFAULT_DESTINATION
     read_only_isolation = "policy-deny-best-effort"
     read_only_boundary = (
-        "Best-effort CLI policy deny list (--settings denying write_file, command, mcp, *_url) "
-        "plus pre-flight blocking of workspace hooks and workflows (.agents/hooks.json, .agents/workflows/). "
+        "Best-effort CLI policy deny list (--settings denying write_file, command, mcp, *_url; "
+        "allowNonWorkspaceAccess=false) plus pre-flight verification from the active folder up to the "
+        "repository root (blocking workspace/parent hooks, MCP configs, plugins, workflows, and personal "
+        "customization redirects, and stopping if the loading scope cannot be verified). "
         "NOT an OS-level read-only filesystem sandbox; agy still runs in the active project directory and "
-        "has no separate deny rule for run_workflow or user-global hooks/workflows."
+        "has no separate CLI flag to disable run_workflow or user-global ~/.gemini hooks."
     )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
+
+    def describe_destination(
+        self,
+        mode: str = "read-only",
+        env: dict[str, str] | None = None,
+    ) -> str:
+        if mode == "full-access":
+            return AGY_FULL_DESTINATION
+        return AGY_DEFAULT_DESTINATION
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
         return resolve_cli_command(
@@ -232,7 +490,7 @@ class AntigravityProvider(AIProvider):
             if settings_path:
                 argv.extend(["--settings", settings_path])
         else:
-            argv.append("--disable-slash-commands")
+            argv.extend(["--mode", "plan", "--disable-slash-commands"])
             if settings_path:
                 argv.extend(["--settings", settings_path])
         if req.model:
@@ -248,18 +506,32 @@ class AntigravityProvider(AIProvider):
         if not cmd:
             return TurnResult(ok=False, error="Antigravity CLI (`agy`) is not installed on this computer.")
 
-        # Refuse restricted runs when workspace hook configs or workflow directories are present
-        # because `agy` has no CLI flag to disable project lifecycle hooks or workspace workflows.
+        # Refuse restricted runs when workspace or ancestor (up to repository root) customization
+        # configs are present or cannot be verified, because `agy` walks parent folders up to the
+        # repo root and exposes no CLI flag to disable workspace hooks, plugins, MCP, or workflows.
         if req.mode in ("read-only", "workspace-write"):
-            hook_files = detect_project_hook_configs(req.project_dir)
-            if hook_files:
-                listed = ", ".join(hook_files[:5])
+            blocked_entries, unverified_entries = inspect_antigravity_workspace_automations(
+                req.project_dir,
+                env=req.env,
+            )
+            if unverified_entries:
+                listed_u = ", ".join(unverified_entries[:5])
                 return TurnResult(
                     ok=False,
                     error=(
-                        f"Refusing to run Antigravity in {req.mode} mode because this project contains "
-                        f"workspace hook/workflow entries ({listed}) that agy CLI cannot disable via flags. "
-                        "Inspect/remove those project entries or explicitly unlock full-access mode."
+                        f"Stopping Antigravity {req.mode} task because workspace/parent customization scope "
+                        f"could not be verified ({listed_u})."
+                    ),
+                )
+            if blocked_entries:
+                listed_b = ", ".join(blocked_entries[:5])
+                return TurnResult(
+                    ok=False,
+                    error=(
+                        f"Refusing to run Antigravity in {req.mode} mode because workspace or parent "
+                        f"repository customization entries ({listed_b}) would be loaded by agy CLI and "
+                        "cannot be disabled via CLI flags. Inspect/remove those entries or explicitly "
+                        "unlock full-access mode."
                     ),
                 )
 

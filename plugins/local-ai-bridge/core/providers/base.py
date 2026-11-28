@@ -125,6 +125,23 @@ class AIProvider:
     read_only_boundary: str = ""
     capabilities: tuple[str, ...] = ()
 
+    def describe_destination(
+        self,
+        mode: str = "read-only",
+        env: dict[str, str] | None = None,
+    ) -> str:
+        """Return the truthful data recipient description for a given execution mode."""
+        return self.service_destination
+
+    def destinations_by_mode(
+        self,
+        env: dict[str, str] | None = None,
+    ) -> dict[str, str]:
+        return {
+            mode: self.describe_destination(mode, env=env)
+            for mode in ("read-only", "workspace-write", "full-access")
+        }
+
     def probe(
         self,
         bin_override: str | None = None,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import re
 import sys
@@ -52,16 +53,37 @@ def _classify_codex_error(text: str) -> str:
     return ""
 
 
+CODEX_READONLY_DESTINATION = "OpenAI Codex service (via host Codex CLI with --ignore-user-config)"
+CODEX_UNVERIFIED_CONFIG_DESTINATION = (
+    "Determined by host Codex CLI configuration (recipient not verified by plugin)"
+)
+
+
 class CodexProvider(AIProvider):
     id = "codex"
     display_name = "Codex CLI"
-    service_destination = "OpenAI Codex service (via host Codex CLI)"
+    service_destination = CODEX_READONLY_DESTINATION
     read_only_isolation = "os-sandbox"
     read_only_boundary = (
         "OS-level read-only sandbox (--sandbox read-only) with --ignore-user-config, "
-        "--ignore-rules, disabled hooks/plugins/apps, and web_search disabled."
+        "--ignore-rules, untrusted project config override, disabled hooks/plugins/apps, "
+        "and web_search disabled."
     )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
+
+    def describe_destination(
+        self,
+        mode: str = "read-only",
+        env: dict[str, str] | None = None,
+    ) -> str:
+        # workspace-write and full-access omit --ignore-user-config so Codex loads the user's
+        # config.toml (which may point to a corporate relay or non-OpenAI model_provider).
+        if mode in ("workspace-write", "full-access"):
+            return CODEX_UNVERIFIED_CONFIG_DESTINATION
+        check_env = env if env is not None else os.environ
+        if any(str(check_env.get(k) or "").strip() for k in ("OPENAI_BASE_URL", "OPENAI_API_BASE")):
+            return CODEX_UNVERIFIED_CONFIG_DESTINATION
+        return CODEX_READONLY_DESTINATION
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
         return resolve_cli_command(
@@ -318,6 +340,13 @@ class CodexProvider(AIProvider):
                     "project_root_markers=[]",
                 ]
             )
+            if req.project_dir:
+                common.extend(
+                    [
+                        "-c",
+                        f"projects={{ {json.dumps(req.project_dir)} = {{ trust_level = \"untrusted\" }} }}",
+                    ]
+                )
             if plat == "win32":
                 common.extend(["-c", 'windows.sandbox="unelevated"'])
         elif req.mode == "workspace-write":

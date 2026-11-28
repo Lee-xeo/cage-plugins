@@ -18,10 +18,15 @@ sys.path.insert(0, str(PLUGIN_DIR))
 from core.providers.antigravity import (  # noqa: E402
     AntigravityProvider,
     detect_project_hook_configs,
+    inspect_antigravity_workspace_automations,
     parse_agy_models_output,
 )
 from core.providers.base import AIProvider, ModelInfo, ProviderStatus, TaskHandle, TurnRequest, TurnResult  # noqa: E402
-from core.providers.codex import CodexProvider  # noqa: E402
+from core.providers.codex import (  # noqa: E402
+    CODEX_READONLY_DESTINATION,
+    CODEX_UNVERIFIED_CONFIG_DESTINATION,
+    CodexProvider,
+)
 from core.providers.grok import GrokProvider, parse_grok_models_output  # noqa: E402
 from core.runner import TaskRunner  # noqa: E402
 from core.security import (  # noqa: E402
@@ -212,6 +217,213 @@ class SecurityAndPolicyTests(unittest.TestCase):
             )
             self.assertFalse(res2.ok)
             self.assertIn(".agents/workflows/", res2.error or "")
+
+    def test_antigravity_subdirectory_blocks_parent_repo_customizations_before_cli_spawn(self) -> None:
+        """
+        Regression test: opening a subproject inside a larger repository must still detect
+        ancestor customization markers up to the repository root (`.agents/`, `_agents/`,
+        `plugins.json`, `mcp_config.json`, `.gemini/config.json` personal redirects, and
+        unverified configs) and stop restricted runs BEFORE spawning the CLI binary.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "monorepo"
+            subproj = repo / "packages" / "service-a"
+            subproj.mkdir(parents=True)
+            (repo / ".git").mkdir()
+
+            # Cross-platform sentinel CLI (`[python, fake_agy.py]`) that handles `--version`
+            # harmlessly and writes `spawned_marker` ONLY if task execution ever spawns the CLI.
+            spawned_marker = root / "cli_was_spawned.marker"
+            sentinel_py = root / "fake_agy.py"
+            sentinel_py.write_text(
+                "import pathlib, sys\n"
+                "if '--version' in sys.argv:\n"
+                "    print('1.5.18')\n"
+                "    raise SystemExit(0)\n"
+                f"pathlib.Path({str(spawned_marker)!r}).write_text('ran', encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+
+            class SentinelAntigravity(AntigravityProvider):
+                def _resolve_cmd(self, bin_override=None, project_dir=""):
+                    return [sys.executable, str(sentinel_py)]
+
+            # 1) Upper-level `.agents/hooks.json` at repo root blocks read-only task in subproject
+            parent_hook = repo / ".agents" / "hooks.json"
+            parent_hook.parent.mkdir(parents=True)
+            parent_hook.write_text("{}", encoding="utf-8")
+
+            store = StateStore(root / "state", str(subproj))
+            store.update_policy(
+                {
+                    "providers": {
+                        "antigravity": {
+                            "enabled": True,
+                            "risk_acknowledged": True,
+                        }
+                    }
+                }
+            )
+            runner = TaskRunner(str(subproj), store, {"antigravity": SentinelAntigravity()})
+            try:
+                listed = runner.list_providers(refresh=True)
+                ag_info = listed["providers"][0]
+                self.assertIn("../../.agents/hooks.json", ag_info["workspace_automation_blockers"])
+
+                started = runner.start_task("antigravity", prompt="review subproject", mode="read-only")
+                final = runner.get_task_status(started["task_id"], wait_seconds=5)
+                self.assertEqual(final["status"], "failed")
+                self.assertIn("../../.agents/hooks.json", final.get("error") or "")
+                self.assertFalse(spawned_marker.exists(), "CLI must not be spawned when parent hooks exist!")
+            finally:
+                runner.shutdown()
+
+            # 2) Alternative `_agents/` dir, `mcp_config.json`, `plugins.json`, and `.gemini/config.json` personal redirect
+            parent_hook.unlink()
+            alt_cfg = repo / "_agents" / "mcp_config.json"
+            alt_cfg.parent.mkdir(parents=True)
+            alt_cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
+            blocked, unverified = inspect_antigravity_workspace_automations(str(subproj))
+            self.assertIn("../../_agents/mcp_config.json", blocked)
+            self.assertEqual(unverified, [])
+            alt_cfg.unlink()
+
+            gcfg = repo / ".gemini" / "config.json"
+            gcfg.parent.mkdir(parents=True)
+            gcfg.write_text('{"personal_customization_dir": "people/{user}"}', encoding="utf-8")
+            personal_hook = repo / "people" / "alice" / ".agents" / "hooks.json"
+            personal_hook.parent.mkdir(parents=True)
+            personal_hook.write_text("{}", encoding="utf-8")
+            blocked_p, unverified_p = inspect_antigravity_workspace_automations(
+                str(subproj),
+                env={"USER": "alice"},
+            )
+            self.assertTrue(any("<personal>/.agents/hooks.json" in x for x in blocked_p), blocked_p)
+            self.assertEqual(unverified_p, [])
+
+            # 3) Corrupt `.gemini/config.json` cannot be verified -> fails closed before spawning CLI
+            gcfg.write_text("{not-valid-json", encoding="utf-8")
+            h = TaskHandle(lambda *a: None, lambda *a: None, lambda *a: None)
+            unv_res = SentinelAntigravity().run_turn(
+                TurnRequest(
+                    prompt="audit",
+                    project_dir=str(subproj),
+                    mode="read-only",
+                ),
+                h,
+            )
+            self.assertFalse(unv_res.ok)
+            self.assertIn("could not be verified", unv_res.error or "")
+            self.assertFalse(spawned_marker.exists())
+
+            # 4) Clean repository with only benign `AGENTS.md` at repo root passes pre-flight
+            gcfg.unlink()
+            (repo / "AGENTS.md").write_text("# Coding style\n", encoding="utf-8")
+            clean_b, clean_u = inspect_antigravity_workspace_automations(str(subproj), env={"USER": "bob"})
+            self.assertEqual((clean_b, clean_u), ([], []))
+
+    def test_codex_recipient_disclosure_with_custom_provider_config_and_modes(self) -> None:
+        """
+        Regression test: with a custom provider configured in CODEX_HOME/config.toml (no secrets),
+        workspace-write and full-access must disclose that the recipient is determined by host
+        Codex CLI configuration (unverified by plugin), matching across MCP and sidebar UI.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            proj = root / "proj"
+            proj.mkdir()
+            codex_home = root / "codex_home"
+            codex_home.mkdir()
+            # Keyless custom relay test config
+            (codex_home / "config.toml").write_text(
+                'model_provider = "corp_relay"\n'
+                "[model_providers.corp_relay]\n"
+                'name = "Corp Relay"\n'
+                'base_url = "https://relay.corp.example/v1"\n',
+                encoding="utf-8",
+            )
+
+            codex = CodexProvider()
+            env = {**os.environ, "CODEX_HOME": str(codex_home)}
+            env.pop("OPENAI_BASE_URL", None)
+            env.pop("OPENAI_API_BASE", None)
+
+            # Unit-level mode destinations
+            self.assertEqual(codex.describe_destination("read-only", env=env), CODEX_READONLY_DESTINATION)
+            self.assertEqual(codex.describe_destination("workspace-write", env=env), CODEX_UNVERIFIED_CONFIG_DESTINATION)
+            self.assertEqual(codex.describe_destination("full-access", env=env), CODEX_UNVERIFIED_CONFIG_DESTINATION)
+            # Even in read-only, custom OPENAI_BASE_URL env flips recipient to unverified host config
+            self.assertEqual(
+                codex.describe_destination("read-only", env={**env, "OPENAI_BASE_URL": "https://relay.corp.example/v1"}),
+                CODEX_UNVERIFIED_CONFIG_DESTINATION,
+            )
+
+            # Runner + MCP consistency across list_providers, dashboard_state, and start_task
+            class StubCodex(CodexProvider):
+                def probe(self, bin_override=None, env=None, project_dir=""):
+                    return ProviderStatus(
+                        available=True,
+                        authenticated=True,
+                        account_summary="Host Codex CLI (API key)",
+                        version="codex-cli test",
+                        binary_path="/usr/bin/codex",
+                    )
+
+                def run_turn(self, req, handle):
+                    return TurnResult(ok=True, answer=f"done:{req.mode}", provider_session_id="th-1")
+
+            old_codex_home = os.environ.get("CODEX_HOME")
+            old_base_url = os.environ.get("OPENAI_BASE_URL")
+            os.environ["CODEX_HOME"] = str(codex_home)
+            os.environ.pop("OPENAI_BASE_URL", None)
+            store = StateStore(root / "state", str(proj))
+            runner = TaskRunner(str(proj), store, {"codex": StubCodex()})
+            try:
+                # Default read-only policy
+                p_ro = runner.list_providers(refresh=True)["providers"][0]
+                self.assertEqual(p_ro["service_destination"], CODEX_READONLY_DESTINATION)
+                self.assertEqual(p_ro["service_destinations"]["read-only"], CODEX_READONLY_DESTINATION)
+                self.assertEqual(p_ro["service_destinations"]["workspace-write"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+                self.assertEqual(p_ro["service_destinations"]["full-access"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+
+                t_ro = runner.start_task("codex", prompt="review", mode="read-only")
+                self.assertEqual(t_ro["service_destination"], CODEX_READONLY_DESTINATION)
+                runner.get_task_status(t_ro["task_id"], wait_seconds=5)
+
+                # Unlock workspace-write and full-access: MCP provider summary, dashboard, and task status
+                # all report the unverified host CLI config recipient (never OpenAI).
+                runner.manage_policy(
+                    "update_policy",
+                    {"providers": {"codex": {"allow_write": True, "allow_full_access": True}}},
+                )
+                p_elev = runner.list_providers()["providers"][0]
+                dash_elev = runner.dashboard_state()["providers"][0]
+                self.assertEqual(p_elev["service_destination"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+                self.assertEqual(dash_elev["service_destination"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+                self.assertEqual(dash_elev["service_destinations"], p_elev["service_destinations"])
+
+                t_rw = runner.start_task("codex", prompt="patch", mode="workspace-write")
+                self.assertEqual(t_rw["service_destination"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+                s_rw = runner.get_task_status(t_rw["task_id"], wait_seconds=5)
+                self.assertEqual(s_rw["service_destination"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+
+                t_full = runner.start_task("codex", prompt="deploy", mode="full-access")
+                self.assertEqual(t_full["service_destination"], CODEX_UNVERIFIED_CONFIG_DESTINATION)
+            finally:
+                runner.shutdown()
+                if old_codex_home is None:
+                    os.environ.pop("CODEX_HOME", None)
+                else:
+                    os.environ["CODEX_HOME"] = old_codex_home
+                if old_base_url is not None:
+                    os.environ["OPENAI_BASE_URL"] = old_base_url
+
+            # Verify sidebar view/app.js maps the exact backend constant to the required Chinese copy
+            app_js = (PLUGIN_DIR / "view" / "app.js").read_text(encoding="utf-8")
+            self.assertIn(CODEX_UNVERIFIED_CONFIG_DESTINATION, app_js)
+            self.assertIn("由本机 Codex CLI 配置决定，插件未核实接收方", app_js)
+            self.assertIn("service_destinations?.[mode]", app_js)
 
     def test_default_read_only_gate(self) -> None:
         policy = {

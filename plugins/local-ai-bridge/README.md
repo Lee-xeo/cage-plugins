@@ -4,27 +4,28 @@
 
 通过原生非交互 CLI 协议，从共享项目工作区异步委派任务给宿主机上已安装的 **Codex CLI**、**Grok CLI** 与 **Antigravity CLI (`agy`)**，并在侧栏提供实时任务与多轮会话看板。
 
-## 各 CLI 实际隔离边界与数据流向（派发前透明披露）
+## 各 CLI 实际隔离边界与数据接收方（按档位如实披露）
 
-插件默认以 **`read-only`** 启动任务，但三个上游 CLI 自身提供的约束机制不同，插件不在界面或文档中夸大任何后端的隔离强度；派发前可通过 `ai_list_providers` 或侧栏「新建任务」弹窗确认**使用哪个已登录账号**、**发往哪个服务**以及**实际隔离层级**：
+插件默认以 **`read-only`** 启动任务，但三个上游 CLI 自身提供的隔离机制与配置读取行为不同。插件不在界面、弹窗或 MCP 返回值中夸大任何后端的隔离强度或虚报数据接收方；派发前可通过 `ai_list_providers`（含按档位区分的 `service_destinations`）或侧栏「新建任务」披露框确认**使用账号**、**当前档位的数据接收方**与**实际隔离边界**：
 
-| 后端 | 使用账号与数据去向 | `read-only` 默认实际边界（如实说明） | 隔离层级标识 |
+| 后端 | 各档位数据接收方（`service_destinations`） | `read-only` 默认实际边界（如实说明） | 隔离层级标识 |
 | --- | --- | --- | --- |
-| **Codex CLI** | 本机 `codex login` 账号（ChatGPT / API Key）→ OpenAI Codex 服务 | `--sandbox read-only --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps -c web_search="disabled"`（Windows 加 `-c windows.sandbox="unelevated"`），使用 CLI 提供的 OS 级只读沙箱 | `os-sandbox` |
-| **Grok CLI** | 本机 `grok login` 账号 → xAI Grok 服务 | `--permission-mode plan --disable-web-search --no-subagents --tools read_file,list_dir,grep`，配合 `--disallowed-tools`（覆盖 `run_terminal_cmd` / `run_terminal_command` 等）与内置 `--deny Bash(*)` / `Edit(*)` / `Write(*)` / `MCPTool(*)` / `WebFetch(*)` / `WebSearch(*)`。**属于 CLI 工具/权限层约束，非 OS 内核文件系统沙箱** | `cli-tool-restricted` |
-| **Antigravity CLI (`agy`)** | **默认停用**；启用后使用本机 `agy` 已缓存登录态 → Google Antigravity 服务 | 临时 `--settings` 设 `toolPermission: "request-review"` + `permissions.deny`（拒绝 `write_file(*)`、`command(*)`、`mcp(*)`、`execute_url(*)`、`download_url(*)`、`read_url(*)`）+ `--disable-slash-commands`，并在启动前检查并**拒绝**包含项目级 hooks 或工作流（`.agents/hooks.json`、`.agents/workflows/` 等）的目录。**不是 OS 级只读沙箱**，`agy` 进程仍在当前项目目录启动，且当前 CLI 对 `run_workflow` 与用户全局 hooks/workflows 无独立 deny 规则 | `policy-deny-best-effort` |
+| **Codex CLI** | • **`read-only`**（未设 `OPENAI_BASE_URL`）：OpenAI Codex 服务（传 `--ignore-user-config` 忽略本机 `config.toml`，并将当前项目标为 `untrusted`）<br>• **`workspace-write` / `full-access`**（或设置了自定义 `OPENAI_BASE_URL`）：**由本机 Codex CLI 配置决定，插件未核实接收方**（会加载用户 `config.toml` 中可能配置的企业中继或第三方 `model_provider`） | `--sandbox read-only --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps -c web_search="disabled" -c project_root_markers=[]` 及 `trust_level="untrusted"`（Windows 加 `-c windows.sandbox="unelevated"`），使用 CLI 提供的 OS 级只读沙箱 | `os-sandbox` |
+| **Grok CLI** | xAI Grok 服务或本机 Grok CLI 配置端点（**插件未核实接收方**；`full-access` 下还包含已启用的 MCP/联网工具） | `--permission-mode plan --disable-web-search --no-subagents --tools read_file,list_dir,grep`，配合 `--disallowed-tools`（覆盖 `run_terminal_cmd` / `run_terminal_command` 等）与内置 `--deny Bash(*)` / `Edit(*)` / `Write(*)` / `MCPTool(*)` / `WebFetch(*)` / `WebSearch(*)`。**属于 CLI 工具/权限层约束，非 OS 内核文件系统沙箱** | `cli-tool-restricted` |
+| **Antigravity CLI (`agy`)** | **默认停用**；启用后发往本机 `agy` CLI 配置的 Google Antigravity / Gemini / GCP 服务（**插件未核实接收方**；`full-access` 下还包含已启用的 MCP/联网工具） | 临时 `--settings` 设 `agentMode: "plan"`、`toolPermission: "request-review"`、`allowNonWorkspaceAccess: false` + `permissions.deny`（拒绝 `write_file(*)`、`command(*)`、`mcp(*)`、`execute_url(*)`、`download_url(*)`、`read_url(*)`）+ `--disable-slash-commands`，并在启动前**从当前打开目录一路向上核验至仓库根目录**，拦截项目及上层自动化配置（无法确认加载范围时直接停止启动）。**不是 OS 级只读沙箱**，且当前 CLI 对 `run_workflow` 与用户全局 `~/.gemini` hooks 无独立禁用开关 | `policy-deny-best-effort` |
 
-> **发送上下文说明**：所有后端均通过宿主机对应 CLI 读取当前打开的共享项目目录（`${PROJECT_DIR}`），将你提供的提示词与 CLI 选取的项目文件上下文发送至各自上游服务，并占用本机对应账号用量。
+> **发送上下文说明**：所有后端均通过宿主机对应 CLI 读取当前打开的共享项目目录（`${PROJECT_DIR}`），将你提供的提示词与 CLI 选取的项目文件上下文发送至当前档位对应的数据接收方，并占用本机对应账号/密钥额度。
 
-## Antigravity 专项说明：账号合规风险与执行边界（分步独立确认）
+## Antigravity 专项说明：账号合规风险与全链路项目配置核验
 
 Antigravity 后端**默认关闭**（`enabled: false`, `risk_acknowledged: false`）。首次启用时会**分两步弹出独立 `ui/confirm` 确认**，每次从看板派发/追问时也会再次分项展示并确认两类独立信息：
 
 1. **账号与服务条款风险（Account / Usage Policy）**：
    - Antigravity CLI 官方文档提供了无头模式与流式 JSON 接口（上游文档：[Antigravity Headless Mode](https://antigravity.google/docs/cli/headless)、[Permissions](https://antigravity.google/docs/permissions)），但通过第三方工具进行非交互桥接或自动化编排是否符合你的账号类型与地区政策需自行核对（参见 [Google 服务条款](https://policies.google.com/terms) 及账号所属套餐协议），存在触发风控、限制或封禁的风险。请自行评估后再决定是否启用。
-2. **文件与执行权限边界（File & Execution Boundary）**：
-   - `agy` 在原共享项目目录启动，插件无法向其施加 OS 级只读文件系统隔离；`read-only` 仅靠临时 `--settings` 拒绝列表与启动前项目检查（检测 `.agents/hooks.json`、`.agent/hooks.json`、`.gemini/hooks.json`、`.antigravity/hooks.json`、`.agents/plugins/*/hooks.json` 以及非空的 `.agents/workflows/`、`.agent/workflows/`、`.gemini/workflows/`、`.antigravity/workflows/`、`.agents/plugins/*/workflows/` 目录，命中时在 `read-only`/`workspace-write` 下直接拒绝启动）。
-   - `agy` 目前不提供禁用 `run_workflow` 或用户全局 hooks/workflows 的独立开关；如对项目来源不信任，请优先使用具备 OS 级只读沙箱的 Codex `read-only` 审查。
+2. **文件与执行权限边界（覆盖子目录到仓库根的实际加载范围）**：
+   - 按照 [Antigravity 官方配置发现规则](https://antigravity.google/docs/customization-discovery?tab=cli#workspace-folders-and-parent-directories)，`agy` 从仓库子目录启动时会向上遍历父目录直到仓库根（如 `.git` 所在目录）加载工作区自定义项，且无 CLI 参数可整体关闭该发现机制。
+   - 因此在 `read-only` 与 `workspace-write` 受限档位下，插件在启动 `agy` **之前**会从 `${PROJECT_DIR}` 一路向上核验至仓库根目录（`.git` / `.hg` / `.svn` / `.jj` / `.sl`）：检查每一层的 `.agents/`、`.agent/`、`_agents/`、`_agent/`、`.gemini/`、`.antigravity/` 中是否存在 `hooks.json`、`mcp_config.json`、`plugins.json`、`plugins/`、`workflows/`，以及 `.gemini/config.json` 的 `personal_customization_dir` 个人目录重定向；**一旦命中或遇到符号链接/权限不可读/非法配置导致无法确认实际加载范围，立即在启动 CLI 前拒绝本次受限任务**。
+   - `agy` 目前仍无独立开关禁用内置 `run_workflow` 或本机全局 `~/.gemini` hooks；如对项目来源不信任，请优先使用具备 OS 级只读沙箱的 Codex `read-only` 审查。
 
 ## 权限分层：普通只读审查 vs 独立高风险覆盖
 

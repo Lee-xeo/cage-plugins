@@ -48,10 +48,12 @@ const I18N = {
     disabled: "Disabled",
     allowWrite: "Writable",
     enableWriteConfirmTitle: "Enable Workspace Edits?",
-    enableWriteConfirmMsg: "This allows the selected local AI CLI to modify files inside the active project directory when requested. Continue?",
+    enableWriteConfirmMsg:
+      "This allows the selected local AI CLI to modify files inside the active project directory when workspace-write is chosen. In workspace-write mode, the CLI loads your host CLI configuration (e.g. custom relays or model providers), so the data recipient is determined by your host CLI configuration and is not verified by this plugin. Continue?",
     enableWriteBtn: "Enable Write",
     enableFullConfirmTitle: "Enable Full-Access Mode?",
-    enableFullConfirmMsg: "Full-access unlocks unrestricted host commands, network, plugins/browser control (e.g. Chrome), and auto-approved execution for the selected AI CLI. Continue?",
+    enableFullConfirmMsg:
+      "Full-access unlocks unrestricted host commands, network, plugins/browser control (e.g. Chrome), and auto-approved execution for the selected AI CLI, using your host CLI configuration (recipient not verified by this plugin). Continue?",
     enableFullBtn: "Enable Full Access",
     cancelTask: "Cancel Task",
     copyReply: "Copy Reply",
@@ -80,7 +82,7 @@ const I18N = {
     agBoundaryTitle: "Step 2/2: Confirm Antigravity Execution Boundary",
     agBoundaryEnableMsg:
       "The agy process runs directly in the active shared project directory and is NOT an OS-level read-only filesystem sandbox.\n\n" +
-      "Even in read-only mode, this plugin can only enforce a best-effort --settings deny list (blocking write_file/command/mcp/*_url) plus a pre-flight check that refuses projects containing workspace hooks or workflows (.agents/hooks.json, .agents/workflows/). agy provides no separate deny flag for run_workflow or user-global hooks/workflows. Prompts and read project files will be sent via your local logged-in account to Google.",
+      "In read-only and workspace-write modes, this plugin enforces a best-effort --settings deny list (blocking write_file/command/mcp/*_url; allowNonWorkspaceAccess=false) and pre-verifies the active folder plus parent directories up to the repository root—stopping before launching agy if workspace/parent hooks, MCP configs, plugins, workflows, or personal customization redirects exist or if the loading scope cannot be verified. agy provides no separate CLI flag to disable run_workflow or user-global ~/.gemini hooks. Prompts and read project files are sent to the service configured in your host agy CLI (recipient not verified by plugin).",
     agBoundaryBtn: "I Understand Execution Boundary",
     agRiskTitle: "Confirm Antigravity Dispatch",
     agRiskBtn: "Continue Dispatch",
@@ -90,8 +92,10 @@ const I18N = {
     isoPolicyDeny: "Policy Deny-List (Not OS Sandbox)",
     fullActiveBadge: "Full Access",
     discAccount: "Account",
+    discRecipient: "Data Recipient",
     discContext: "Context Sent",
     discBoundary: "Execution Boundary",
+    discAgBlocked: "Pre-flight Blocker",
     discBoundaryRw: "Workspace-write: allows editing files in the active project (shell/MCP restricted where supported).",
     discBoundaryFull: "HIGH RISK Full Access: auto-approves arbitrary host shell commands, file writes, network, and plugins/browser control.",
     fullLockedHint: "Full-access is kept separate from read-only review; unlock it under High-Risk Override in Policy & Paths if needed.",
@@ -118,10 +122,12 @@ const I18N = {
     disabled: "已停用",
     allowWrite: "可写入",
     enableWriteConfirmTitle: "确认开启项目写入权限？",
-    enableWriteConfirmMsg: "开启后，被调度的本机 AI CLI 可在收到 workspace-write 请求时修改当前共享项目目录中的文件。确定继续吗？",
+    enableWriteConfirmMsg:
+      "开启后，所选本机 AI CLI 可在收到 workspace-write 请求时修改当前共享项目目录中的文件；该档位会读取本机 CLI 配置（如企业中继或自定义提供商），数据接收方由本机 CLI 配置决定，插件未核实接收方。确定继续吗？",
     enableWriteBtn: "允许写入",
     enableFullConfirmTitle: "确认开启完全权限（Full Access）？",
-    enableFullConfirmMsg: "开启后，所选本机 AI CLI 可在收到 full-access 请求时启用插件/浏览器控制（如 Chrome）、本机网络与自动批准的命令执行。确定继续吗？",
+    enableFullConfirmMsg:
+      "开启后，所选本机 AI CLI 可在收到 full-access 请求时启用插件/浏览器控制（如 Chrome）、本机网络与自动批准的命令执行，并读取本机 CLI 配置（数据接收方由本机 CLI 配置决定，插件未核实接收方）。确定继续吗？",
     enableFullBtn: "开启完全权限",
     cancelTask: "取消任务",
     copyReply: "复制回复",
@@ -150,7 +156,7 @@ const I18N = {
     agBoundaryTitle: "步骤 2/2：确认 Antigravity 文件与执行边界",
     agBoundaryEnableMsg:
       "agy 进程会在当前共享项目目录直接启动，并非 OS 级只读文件系统沙箱。\n\n" +
-      "即使在 read-only 档位下，本插件也只能通过临时 --settings 拒绝列表（拦截写文件/命令/MCP/网络）加启动前检查（拒绝包含 .agents/hooks.json 或 .agents/workflows/ 等项目钩子/工作流的目录）做尽力约束；agy 目前无独立开关禁用 run_workflow 或本机全局 hooks/workflows。提示词与读取的项目文件上下文会通过本机已登录账号发往 Google 服务。",
+      "在 read-only 与 workspace-write 受限档位下，本插件通过临时 --settings 拒绝列表（拦截写文件/命令/MCP/网络且禁工作区外访问）加启动前全链路预检（从当前目录向上核验至仓库根目录，检测到项目或上层 hooks、MCP 配置、plugins、workflows 或 .gemini/config.json 个人目录重定向，或无法确认加载范围时立即停止启动）做尽力约束；agy 目前无独立开关禁用 run_workflow 或本机全局 ~/.gemini hooks。提示词与读取的项目文件会发往本机 agy CLI 配置的服务（插件未核实接收方）。",
     agBoundaryBtn: "知晓执行边界并启用",
     agRiskTitle: "确认派发 Antigravity 任务",
     agRiskBtn: "确认派发",
@@ -160,8 +166,10 @@ const I18N = {
     isoPolicyDeny: "策略拒绝列表（非 OS 沙箱）",
     fullActiveBadge: "完全权限已开",
     discAccount: "使用账号",
+    discRecipient: "数据接收方",
     discContext: "发送上下文",
     discBoundary: "实际执行边界",
+    discAgBlocked: "预检拦截提示",
     discBoundaryRw: "允许改写模式：可修改当前共享项目目录中的文件（仍尽量禁用终端执行与 MCP）。",
     discBoundaryFull: "高风险完全权限：将自动批准本机任意命令、文件写入、网络与浏览器/MCP 插件调用。",
     fullLockedHint: "完全权限与普通只读审查分离；如确需开启，请在「策略与路径」底部的高风险覆盖区独立解锁。",
@@ -236,6 +244,33 @@ function el(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+const DEST_ZH_MAP = {
+  "OpenAI Codex service (via host Codex CLI with --ignore-user-config)":
+    "OpenAI Codex 服务（本机 Codex CLI 启用 --ignore-user-config 忽略用户配置）",
+  "Determined by host Codex CLI configuration (recipient not verified by plugin)":
+    "由本机 Codex CLI 配置决定，插件未核实接收方",
+  "xAI Grok service or endpoint configured in host Grok CLI (recipient not verified by plugin)":
+    "xAI Grok 服务或本机 Grok CLI 配置端点（插件未核实接收方）",
+  "Determined by host Grok CLI configuration (recipient not verified by plugin)":
+    "由本机 Grok CLI 配置决定，插件未核实接收方",
+  "Determined by host Grok CLI configuration and enabled MCP/web tools (recipient not verified by plugin)":
+    "由本机 Grok CLI 配置及已启用 MCP/联网工具决定，插件未核实接收方",
+  "Google Antigravity / Gemini / GCP service configured in host agy CLI (recipient not verified by plugin)":
+    "本机 agy CLI 配置的 Google Antigravity / Gemini / GCP 服务（插件未核实接收方）",
+  "Determined by host agy CLI configuration and enabled MCP/web tools (recipient not verified by plugin)":
+    "由本机 agy CLI 配置及已启用 MCP/联网工具决定，插件未核实接收方",
+};
+
+function destinationForMode(prov, mode = "read-only") {
+  const raw = prov?.service_destinations?.[mode] || prov?.service_destination || "";
+  if (!raw) {
+    return state.lang === "zh"
+      ? "由本机 CLI 配置决定，插件未核实接收方"
+      : "Determined by host CLI configuration (recipient not verified by plugin)";
+  }
+  return state.lang === "zh" ? (DEST_ZH_MAP[raw] || raw) : raw;
 }
 
 function isolationLabel(level) {
@@ -574,6 +609,18 @@ function renderDetail() {
   updateFollowupBox(sess.provider, sess.id);
 }
 
+function updateFollowupHint() {
+  const form = $("followup-form");
+  if (!form || form.classList.contains("hidden")) return;
+  const pid = form.dataset.provider || "";
+  const prov = (state.dashboard?.providers || []).find((p) => p.id === pid);
+  const canFull = Boolean(prov?.allow_full_access);
+  const mode = $("followup-mode").value;
+  const recipient = destinationForMode(prov, mode);
+  const prefix = `${t("discRecipient")}: ${recipient}`;
+  $("followup-hint").textContent = canFull ? prefix : `${prefix} · ${t("writeBlockedHint")}`;
+}
+
 function updateFollowupBox(providerId, sessionId) {
   const form = $("followup-form");
   if (!sessionId) {
@@ -595,7 +642,7 @@ function updateFollowupBox(providerId, sessionId) {
   if (!canWrite && modeSel.value === "workspace-write") {
     modeSel.value = "read-only";
   }
-  $("followup-hint").textContent = canFull ? "" : t("writeBlockedHint");
+  updateFollowupHint();
 }
 
 async function refreshDashboard(forceRefresh = false) {
@@ -751,12 +798,13 @@ async function confirmAntigravityRisk(isEnable = false, mode = "read-only") {
   const prov = (state.dashboard?.providers || []).find((p) => p.id === "antigravity");
   const projName = state.dashboard?.project_name || t("noProject");
   const acct = prov?.account_summary || "Host Antigravity CLI";
+  const recipient = destinationForMode(prov, mode);
   const boundaryText = mode === "full-access"
     ? t("discBoundaryFull")
     : (mode === "workspace-write" ? t("discBoundaryRw") : (prov?.read_only_boundary || t("modeRo")));
   const message = state.lang === "zh"
-    ? `【1. 账号与条款风险】通过第三方桥接调用 Antigravity 可能不符合 Google 使用规定，存在账号风险。\n使用账号：${acct}\n发送上下文：提示词 + 项目「${projName}」内读取的文件 → Google Antigravity 服务\n\n【2. 文件与执行权限（当前档位：${mode}）】\n${boundaryText}\n\n确认继续派发吗？`
-    : `1) Account & Policy Risk: Invoking Antigravity via a third-party bridge may not comply with Google's usage policies.\nAccount: ${acct}\nContext Sent: Prompt + files read inside "${projName}" -> Google Antigravity service\n\n2) File & Execution Boundary (mode: ${mode}):\n${boundaryText}\n\nContinue dispatch?`;
+    ? `【1. 账号与数据接收方】通过第三方桥接调用 Antigravity 可能不符合 Google 使用规定，存在账号风险。\n使用账号：${acct}\n数据接收方：${recipient}\n发送上下文：提示词 + 项目「${projName}」内读取的文件\n\n【2. 文件与执行权限（当前档位：${mode}）】\n${boundaryText}\n\n确认继续派发吗？`
+    : `1) Account & Data Recipient: Invoking Antigravity via a third-party bridge may not comply with Google's usage policies.\nAccount: ${acct}\nData Recipient: ${recipient}\nContext Sent: Prompt + files read inside "${projName}"\n\n2) File & Execution Boundary (mode: ${mode}):\n${boundaryText}\n\nContinue dispatch?`;
   const res = await rpc("ui/confirm", {
     title: t("agRiskTitle"),
     message,
@@ -835,9 +883,14 @@ function updateNewTaskDisclosure() {
   const mode = $("new-mode").value;
   const prov = (state.dashboard?.providers || []).find((p) => p.id === pid);
   const projName = state.dashboard?.project_name || t("noProject");
+  const agBlockers = pid === "antigravity" && mode !== "full-access"
+    ? (prov?.workspace_automation_blockers || [])
+    : [];
 
   box.className = "disclosure-box" + (
-    mode === "full-access" ? " danger" : (pid === "antigravity" || mode === "workspace-write" ? " warn" : "")
+    mode === "full-access" || agBlockers.length > 0
+      ? " danger"
+      : (pid === "antigravity" || mode === "workspace-write" ? " warn" : "")
   );
 
   const addLine = (label, value) => {
@@ -848,9 +901,10 @@ function updateNewTaskDisclosure() {
   };
 
   addLine(t("discAccount"), prov?.account_summary || providerLabel(pid));
+  addLine(t("discRecipient"), destinationForMode(prov, mode));
   const ctxText = state.lang === "zh"
-    ? `提示词 + 当前项目（${projName}）内被 CLI 读取的文件 → ${prov?.service_destination || providerLabel(pid)}`
-    : `Prompt + files inside "${projName}" read by the CLI -> ${prov?.service_destination || providerLabel(pid)}`;
+    ? `提示词 + 当前项目（${projName}）内被 CLI 读取的文件`
+    : `Prompt + files inside "${projName}" read by the CLI`;
   addLine(t("discContext"), ctxText);
 
   if (mode === "full-access") {
@@ -860,6 +914,12 @@ function updateNewTaskDisclosure() {
   } else {
     const isoTag = prov?.read_only_isolation ? `[${isolationLabel(prov.read_only_isolation)}] ` : "";
     addLine(t("discBoundary"), `${isoTag}${prov?.read_only_boundary || t("modeRo")}`);
+  }
+  if (agBlockers.length > 0) {
+    const blockedText = state.lang === "zh"
+      ? `当前目录或上层仓库根目录存在受限模式无法禁用的配置（${agBlockers.slice(0, 4).join(", ")}），启动前将自动拦截该受限任务。`
+      : `Active folder or parent repository root contains entries agy cannot disable (${agBlockers.slice(0, 4).join(", ")}); restricted runs will be stopped before launching CLI.`;
+    addLine(t("discAgBlocked"), blockedText);
   }
 }
 
@@ -1029,6 +1089,7 @@ $("new-provider").addEventListener("change", () => {
   populateModelDropdown($("new-provider").value);
 });
 $("new-mode").addEventListener("change", updateNewTaskDisclosure);
+$("followup-mode").addEventListener("change", updateFollowupHint);
 $("btn-load-models").addEventListener("click", loadModelsForSelectedProvider);
 
 $("btn-clear-done").addEventListener("click", async () => {

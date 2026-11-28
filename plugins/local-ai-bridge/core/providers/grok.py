@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 from pathlib import Path
@@ -141,10 +142,16 @@ def _extract_text_from_event(ev: dict[str, Any]) -> tuple[str, bool]:
     return "", False
 
 
+GROK_DEFAULT_DESTINATION = "xAI Grok service or endpoint configured in host Grok CLI (recipient not verified by plugin)"
+GROK_FULL_DESTINATION = (
+    "Determined by host Grok CLI configuration and enabled MCP/web tools (recipient not verified by plugin)"
+)
+
+
 class GrokProvider(AIProvider):
     id = "grok"
     display_name = "Grok CLI"
-    service_destination = "xAI Grok service (via host Grok CLI)"
+    service_destination = GROK_DEFAULT_DESTINATION
     read_only_isolation = "cli-tool-restricted"
     read_only_boundary = (
         "CLI tool allowlist (read_file, list_dir, grep) plus --disallowed-tools, "
@@ -152,6 +159,18 @@ class GrokProvider(AIProvider):
         "Enforced at the CLI tool/permission layer, not an OS filesystem sandbox."
     )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
+
+    def describe_destination(
+        self,
+        mode: str = "read-only",
+        env: dict[str, str] | None = None,
+    ) -> str:
+        if mode == "full-access":
+            return GROK_FULL_DESTINATION
+        check_env = env if env is not None else os.environ
+        if any(str(check_env.get(k) or "").strip() for k in ("XAI_BASE_URL", "GROK_BASE_URL")):
+            return "Determined by host Grok CLI configuration (recipient not verified by plugin)"
+        return GROK_DEFAULT_DESTINATION
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
         return resolve_cli_command(

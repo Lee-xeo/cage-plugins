@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .providers.antigravity import detect_project_hook_configs
 from .providers.base import AIProvider, ModelInfo, ProviderStatus, TaskHandle, TurnRequest
 from .security import (
     MAX_OUTPUT_RETURN_CHARS,
@@ -49,6 +50,7 @@ class TaskRecord:
     effort: str | None
     request_id: str | None
     fingerprint: str | None
+    service_destination: str = ""
     status: str = "queued"  # queued | running | completed | failed | cancelling | cancelled
     phase: str = "queued"
     last_activity: str = "queued"
@@ -120,6 +122,7 @@ class TaskRunner:
                 effort=snap.get("effort"),
                 request_id=None,
                 fingerprint=None,
+                service_destination=str(snap.get("service_destination") or ""),
                 status=status,
                 phase=str(snap.get("phase") or status),
                 last_activity=str(snap.get("last_activity") or status),
@@ -187,7 +190,9 @@ class TaskRunner:
             enabled = is_provider_enabled(pid, policy)
             allow_write = is_write_allowed(pid, policy)
             allow_full_access = is_full_access_allowed(pid, policy)
+            max_mode = "full-access" if allow_full_access else ("workspace-write" if allow_write else "read-only")
             status = self._probe_provider_cached(pid, provider, policy, cli_env, refresh=refresh)
+            mode_destinations = provider.destinations_by_mode(env=cli_env)
             entry: dict[str, Any] = {
                 "id": pid,
                 "display_name": provider.display_name,
@@ -196,14 +201,15 @@ class TaskRunner:
                 "binary_detected": bool(status.binary_path),
                 "authenticated": status.authenticated,
                 "account_summary": status.account_summary,
-                "service_destination": provider.service_destination,
+                "service_destination": mode_destinations.get(max_mode, provider.service_destination),
+                "service_destinations": mode_destinations,
                 "read_only_isolation": provider.read_only_isolation,
                 "read_only_boundary": provider.read_only_boundary,
                 "version": status.version,
                 "error": sanitize_diagnostic(status.error, self.project_dir) if status.error else None,
                 "allow_write": allow_write,
                 "allow_full_access": allow_full_access,
-                "max_mode": "full-access" if allow_full_access else ("workspace-write" if allow_write else "read-only"),
+                "max_mode": max_mode,
                 "default_mode": "read-only",
                 "requires_risk_ack": pid == "antigravity",
                 "capabilities": list(provider.capabilities),
@@ -211,6 +217,9 @@ class TaskRunner:
             if pid == "antigravity":
                 pcfg = (policy.get("providers") or {}).get(pid) or {}
                 entry["risk_acknowledged"] = bool(pcfg.get("risk_acknowledged", False))
+                entry["workspace_automation_blockers"] = (
+                    detect_project_hook_configs(self.project_dir, env=cli_env) if self.project_dir else []
+                )
             if include_host_paths and status.binary_path:
                 entry["binary_path"] = sanitize_diagnostic(status.binary_path, self.project_dir)
             statuses.append(entry)
@@ -361,6 +370,8 @@ class TaskRunner:
                     }
                 )
 
+            cli_env = build_cli_env(policy)
+            effective_destination = provider.describe_destination(effective_mode, env=cli_env)
             task_id = str(uuid.uuid4())
             rec = TaskRecord(
                 id=task_id,
@@ -374,6 +385,7 @@ class TaskRunner:
                 effort=clean_effort,
                 request_id=clean_req_id,
                 fingerprint=fingerprint,
+                service_destination=effective_destination,
                 status="running",
                 phase="launching",
                 last_activity="launching",
@@ -389,7 +401,12 @@ class TaskRunner:
                 role="user",
                 content=resolved_prompt,
                 task_id=task_id,
-                meta={"mode": effective_mode, "model": clean_model, "effort": clean_effort},
+                meta={
+                    "mode": effective_mode,
+                    "model": clean_model,
+                    "effort": clean_effort,
+                    "service_destination": effective_destination,
+                },
             )
 
             req = TurnRequest(
@@ -400,7 +417,7 @@ class TaskRunner:
                 effort=clean_effort,
                 provider_session_id=provider_session_id,
                 bin_override=self._bin_override(pid, policy),
-                env=build_cli_env(policy),
+                env=cli_env,
             )
             self._executor.submit(self._execute_task, rec, provider, req, handle)
             return self._format_task_for_caller(rec, include_next_check=True)
@@ -540,6 +557,7 @@ class TaskRunner:
             "mode": rec.mode,
             "model": rec.model,
             "effort": rec.effort,
+            "service_destination": rec.service_destination,
             "status": rec.status,
             "phase": rec.phase,
             "last_activity": rec.last_activity,
@@ -570,6 +588,7 @@ class TaskRunner:
             "mode": rec.mode,
             "model": rec.model,
             "effort": rec.effort,
+            "service_destination": rec.service_destination,
             "status": rec.status,
             "phase": rec.phase,
             "last_activity": rec.last_activity,
@@ -579,7 +598,10 @@ class TaskRunner:
             "finished_at": rec.finished_at,
         }
         if provider:
-            out["service_destination"] = provider.service_destination
+            cli_env = build_cli_env(self.store.get_policy())
+            out["service_destination"] = (
+                rec.service_destination or provider.describe_destination(rec.mode, env=cli_env)
+            )
             if account_summary:
                 out["account_summary"] = account_summary
             if rec.mode == "read-only":
@@ -739,6 +761,7 @@ class TaskRunner:
                     "mode": t.mode,
                     "model": t.model,
                     "effort": t.effort,
+                    "service_destination": t.service_destination,
                     "status": t.status,
                     "phase": t.phase,
                     "last_activity": t.last_activity,

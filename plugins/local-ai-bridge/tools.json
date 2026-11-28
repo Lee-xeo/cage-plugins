@@ -2,7 +2,7 @@
   "tools": [
     {
       "name": "ai_list_providers",
-      "description": "List available local AI coding CLIs (Codex, Grok, Antigravity), their detected versions, login/account summary, destination service, actual read-only isolation boundary, active project name, and unlocked permission tier. Call before dispatching tasks to verify account and isolation scope.",
+      "description": "List available local AI coding CLIs (Codex, Grok, Antigravity), their detected versions, login/account summary, per-mode data recipient descriptions (service_destinations), actual read-only isolation boundary, active project name, and unlocked permission tier. Call before dispatching tasks to verify account, recipient, and isolation scope.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -38,7 +38,7 @@
     },
     {
       "name": "ai_run_task",
-      "description": "Start a background task or continue an existing multi-turn session with a local AI CLI (Codex, Grok, or Antigravity) in the active project directory. Returns task_id and session_id immediately without blocking. Prompts and project files read by the CLI are sent via the host CLI's logged-in account to its upstream service. Defaults to read-only mode (OS sandbox for Codex; CLI tool allowlist/deny rules for Grok; best-effort policy deny list plus workspace hook/workflow blocking for Antigravity, not an OS filesystem sandbox). Elevated modes (workspace-write, and the separate high-risk full-access override) are off by default and must be explicitly enabled by the user in the dashboard. Use prompt_file for prompts longer than 3000 bytes. Poll with ai_task_status and follow nextCheck if running.",
+      "description": "Start a background task or continue an existing multi-turn session with a local AI CLI (Codex, Grok, or Antigravity) in the active project directory. Returns task_id, session_id, and the mode-specific service_destination immediately without blocking. Prompts and project files read by the CLI are sent via the host CLI to the recipient configured for that CLI and mode (Codex read-only ignores user config and targets OpenAI unless OPENAI_BASE_URL is set, whereas Codex workspace-write/full-access load host CLI config so the recipient is determined by host Codex CLI configuration and not verified by this plugin). Defaults to read-only mode (OS sandbox for Codex; CLI tool allowlist/deny rules for Grok; best-effort policy deny list plus workspace-to-repository-root automation pre-verification for Antigravity, stopping if workspace/parent hooks, plugins, MCP configs, or workflows exist or cannot be verified). Elevated modes (workspace-write, and the separate high-risk full-access override) are off by default and must be explicitly enabled by the user in the dashboard. Use prompt_file for prompts longer than 3000 bytes. Poll with ai_task_status and follow nextCheck if running.",
       "inputSchema": {
         "type": "object",
         "required": ["provider"],
