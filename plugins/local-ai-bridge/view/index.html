@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN" data-scheme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local AI Bridge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">
+        <span class="pulse-dot" id="live-dot" aria-hidden="true"></span>
+        <h1 id="title-text">Local AI Bridge</h1>
+        <span class="pill" id="project-pill">--</span>
+        <span class="pill mode-ro" id="mode-pill">Read-Only</span>
+        <span class="pill mode-proxy hidden" id="proxy-pill">Proxy ON</span>
+      </div>
+      <div class="brand-sub" id="summary-text">Connecting...</div>
+    </div>
+    <div class="top-actions">
+      <button type="button" id="btn-refresh" class="btn">Refresh</button>
+      <button type="button" id="btn-settings" class="btn">Policy &amp; Paths</button>
+      <button type="button" id="btn-new-task" class="btn primary">+ New Task</button>
+    </div>
+  </header>
+
+  <!-- Provider Status Cards -->
+  <section class="providers-strip" id="providers-strip" aria-label="Local AI Providers"></section>
+
+  <!-- Main Workspace: Task/Session List + Live Inspector -->
+  <main class="workspace">
+    <aside class="list-pane">
+      <div class="pane-controls">
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="tasks" id="tab-tasks">Tasks <span class="count" id="count-tasks">0</span></button>
+          <button type="button" class="tab" data-tab="running" id="tab-running">Running <span class="count" id="count-running">0</span></button>
+          <button type="button" class="tab" data-tab="sessions" id="tab-sessions">Sessions <span class="count" id="count-sessions">0</span></button>
+        </div>
+        <div class="filter-row">
+          <select id="filter-provider" aria-label="Filter provider">
+            <option value="">All Providers</option>
+            <option value="codex">Codex</option>
+            <option value="grok">Grok</option>
+            <option value="antigravity">Antigravity</option>
+          </select>
+          <button type="button" id="btn-clear-done" class="btn sm ghost">Clear Finished</button>
+        </div>
+      </div>
+      <div class="item-list" id="item-list"></div>
+    </aside>
+
+    <section class="detail-pane" id="detail-pane">
+      <div class="empty-detail" id="empty-detail">
+        <p id="empty-detail-text">Select a task or session on the left, or click "+ New Task" to dispatch a prompt to Codex, Grok, or Antigravity.</p>
+      </div>
+
+      <div class="detail-body hidden" id="detail-body">
+        <div class="detail-header">
+          <div class="detail-head-left">
+            <div class="detail-badges" id="detail-badges"></div>
+            <h2 class="detail-title" id="detail-title">--</h2>
+            <div class="detail-meta" id="detail-meta"></div>
+          </div>
+          <div class="detail-actions" id="detail-actions"></div>
+        </div>
+
+        <div class="activity-strip hidden" id="activity-strip"></div>
+
+        <div class="transcript" id="transcript"></div>
+
+        <!-- Follow-up Composer (shown for sessions/tasks with a session_id) -->
+        <div class="followup-form" id="followup-form">
+          <div class="followup-row">
+            <textarea id="followup-input" rows="2" placeholder="Send a follow-up message in this session..."></textarea>
+            <button type="button" class="btn primary" id="btn-send-followup">Send</button>
+          </div>
+          <div class="followup-opts">
+            <label class="inline-opt">
+              <span id="lbl-followup-mode">Mode</span>
+              <select id="followup-mode">
+                <option value="read-only">Read-Only</option>
+                <option value="workspace-write">Workspace Write</option>
+                <option value="full-access">Full Access</option>
+              </select>
+            </label>
+            <span class="hint" id="followup-hint"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- New Task Modal -->
+  <div class="modal-backdrop hidden" id="task-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-head">
+        <h3 id="task-modal-title">New AI Task</h3>
+        <button type="button" class="btn sm ghost" id="btn-close-task-modal">✕</button>
+      </div>
+      <div id="new-task-form" class="modal-body">
+        <div class="grid-2">
+          <div class="field">
+            <label for="new-provider" id="lbl-provider">Provider</label>
+            <select id="new-provider">
+              <option value="codex">Codex CLI</option>
+              <option value="grok">Grok CLI</option>
+              <option value="antigravity">Antigravity CLI (agy)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="new-mode" id="lbl-mode">Permission Mode</label>
+            <select id="new-mode">
+              <option value="read-only">Read-Only (Default)</option>
+              <option value="workspace-write">Workspace Write</option>
+              <option value="full-access">Full Access (Plugins / Browser / Shell)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="new-model" id="lbl-model">Model (optional)</label>
+            <div class="inline-row">
+              <select id="new-model"><option value="">CLI Default</option></select>
+              <button type="button" class="btn sm" id="btn-load-models">Load</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="new-effort" id="lbl-effort">Reasoning Effort (optional)</label>
+            <select id="new-effort">
+              <option value="">Default</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+              <option value="xhigh">xhigh</option>
+              <option value="max">max</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="new-title" id="lbl-title">Session Title (optional)</label>
+          <input type="text" id="new-title" maxlength="80" placeholder="e.g. Architecture review" />
+        </div>
+        <div class="field">
+          <label for="new-prompt" id="lbl-prompt">Prompt</label>
+          <textarea id="new-prompt" rows="6" placeholder="Describe the task for the selected local AI CLI..."></textarea>
+        </div>
+        <div class="disclosure-box" id="new-task-disclosure"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="btn-cancel-task-modal">Cancel</button>
+          <button type="button" class="btn primary" id="btn-submit-task">Dispatch Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Policy & Paths Modal -->
+  <div class="modal-backdrop hidden" id="settings-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+      <div class="modal-head">
+        <h3 id="settings-modal-title">Policy &amp; CLI Paths</h3>
+        <button type="button" class="btn sm ghost" id="btn-close-settings-modal">✕</button>
+      </div>
+      <div id="settings-form" class="modal-body">
+        <div class="policy-banner">
+          <label class="switch-row">
+            <input type="checkbox" id="set-global-write" />
+            <span>
+              <strong id="lbl-global-write">Allow workspace-write globally</strong>
+              <small id="lbl-global-write-desc">Default is read-only review. Enable only when you want delegated CLIs to edit files inside the active project.</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="set-max-concurrent" id="lbl-max-conc">Max Concurrent Tasks (1–12)</label>
+          <input type="number" id="set-max-concurrent" min="1" max="12" value="4" />
+        </div>
+
+        <div class="policy-banner">
+          <label class="switch-row">
+            <input type="checkbox" id="set-proxy-enabled" />
+            <span>
+              <strong id="lbl-proxy-enabled">Enable Network Proxy for AI CLIs</strong>
+              <small id="lbl-proxy-desc">Injects http_proxy / https_proxy / all_proxy (both lowercase &amp; uppercase) and no_proxy into Codex, Grok, and Antigravity subprocesses.</small>
+            </span>
+          </label>
+          <div class="field mt-8">
+            <label for="set-proxy-paste" id="lbl-proxy-paste">Quick Paste Shell Export (optional)</label>
+            <div class="inline-row">
+              <input type="text" id="set-proxy-paste" placeholder="export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890" />
+              <button type="button" class="btn sm" id="btn-parse-proxy">Parse</button>
+            </div>
+          </div>
+          <div class="grid-2 mt-8">
+            <div class="field">
+              <label for="set-http-proxy">http_proxy / HTTP_PROXY</label>
+              <input type="text" id="set-http-proxy" placeholder="http://127.0.0.1:7890" />
+            </div>
+            <div class="field">
+              <label for="set-https-proxy">https_proxy / HTTPS_PROXY</label>
+              <input type="text" id="set-https-proxy" placeholder="http://127.0.0.1:7890" />
+            </div>
+          </div>
+          <div class="grid-2 mt-8">
+            <div class="field">
+              <label for="set-all-proxy">all_proxy / ALL_PROXY</label>
+              <input type="text" id="set-all-proxy" placeholder="socks5://127.0.0.1:7890" />
+            </div>
+            <div class="field">
+              <label for="set-no-proxy">no_proxy / NO_PROXY</label>
+              <input type="text" id="set-no-proxy" placeholder="127.0.0.1,localhost,::1" />
+            </div>
+          </div>
+        </div>
+
+        <div id="provider-settings-rows" class="provider-settings-rows"></div>
+
+        <!-- Separated High-Risk Override Section (independent from normal read-only review) -->
+        <div class="danger-banner">
+          <div class="danger-title" id="lbl-high-risk-title">High-Risk Override: Full Access (Auto-Approve Arbitrary Host Actions)</div>
+          <p class="danger-desc" id="lbl-high-risk-desc">
+            Kept strictly separate from normal read-only review. Enabling full-access allows the selected CLI to auto-approve arbitrary host shell commands, file writes, network access, and browser/MCP plugins without prompts.
+          </p>
+          <label class="switch-row mt-8">
+            <input type="checkbox" id="set-global-full" />
+            <span>
+              <strong id="lbl-global-full">Allow full-access for all enabled CLIs</strong>
+            </span>
+          </label>
+          <div id="provider-full-rows" class="full-access-grid mt-8"></div>
+        </div>
+
+        <div class="modal-foot">
+          <button type="button" class="btn" id="btn-cancel-settings">Cancel</button>
+          <button type="button" class="btn primary" id="btn-save-settings">Save Policy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
