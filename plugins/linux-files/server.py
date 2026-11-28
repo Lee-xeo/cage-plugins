@@ -17,7 +17,7 @@ import time
 import uuid
 import zipfile
 
-VERSION = "0.2.7"
+VERSION = "0.2.8"
 PAGE_ONLY = {"ui": {"visibility": ["app"]}}
 MAX_SCAN = 50000          # entries read from one folder before giving up
 DEFAULT_LIMIT = 300
@@ -35,8 +35,6 @@ PSEUDO_TYPES = {"proc", "sysfs", "devtmpfs", "devpts", "debugfs", "tracefs", "se
                 "efivarfs", "autofs", "rpc_pipefs", "nsfs"}
 EXPORT_SUBFOLDER = "Downloads"
 MAX_NAME_TRIES = 10000     # "name (2)", "name (3)", … before giving up
-PARTIAL_NAME = re.compile(r"\.[0-9a-f]{32}\.partial")
-STALE_PARTIAL = 24 * 3600  # a partial file untouched this long was left by a stopped server
 
 
 def tool(name, description, properties, required=()):
@@ -454,22 +452,7 @@ def open_downloads(share_folder):
         if error.errno in (errno.ELOOP, errno.ENOTDIR):
             raise Refused(f"{folder} is a link or a file, not a folder. Rename it to download here.")
         raise Refused(os_message(error))
-    remove_stale_partials(downloads)
     return downloads
-
-
-def remove_stale_partials(folder_fd):
-    """Deletes partial files that a stopped server left behind, once they are a day old."""
-    cutoff = time.time() - STALE_PARTIAL
-    try:
-        with os.scandir(folder_fd) as scan:
-            stale = [entry.name for entry in scan if PARTIAL_NAME.fullmatch(entry.name)
-                     and entry.is_file(follow_symlinks=False)
-                     and entry.stat(follow_symlinks=False).st_mtime < cutoff]
-        for name in stale:
-            os.unlink(name, dir_fd=folder_fd)
-    except OSError:
-        pass
 
 
 def candidate_names(name):
