@@ -9,7 +9,7 @@
 - **原生非交互协议、零额外依赖**：仅使用 Python 3 标准库，无需启动外部 sidecar 服务，不抢占鼠标或窗口焦点；全部提示词均通过标准输入或私有临时文件传递，不把不可信提示词拼进命令行参数。
   - **Codex**：`codex app-server --stdio` 发现模型，`codex exec --json` / `codex exec resume` 通过 stdin 传递提示词执行任务与多轮续聊。
   - **Grok**：`grok models` 发现模型，`grok --prompt-file <private_tmp>` + `--output-format streaming-messages-json` + `--session-id` / `--resume` 执行任务与多轮续聊。
-  - **Antigravity (`agy`)**：`agy models` 发现模型，`agy --input-format stream-json --output-format stream-json` 通过 stdin 传递提示词，并用 `--conversation` 多轮续聊。
+  - **Antigravity (`agy`)**：**默认停用**——通过第三方工具调用 Antigravity 在 Google 侧不符合相关使用规定，存在账号风险；必须在侧栏看板经过明确的风险二次确认弹窗后才可手动启用，且从看板派发/追问任务时也会再次弹窗确认。启用后通过 `agy models` 发现模型、`agy --input-format stream-json --output-format stream-json` 走 stdin 传提示词并用 `--conversation` 多轮续聊。
 - **三级权限档位（默认硬只读、逐项二次确认放行）**：
   - `read-only`（默认）：
     - **Codex**：`--sandbox read-only --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps -c web_search="disabled"`（Windows 额外加 `-c windows.sandbox="unelevated"`）。

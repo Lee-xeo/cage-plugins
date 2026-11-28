@@ -74,7 +74,13 @@ def default_policy() -> dict[str, Any]:
         "providers": {
             "codex": {"enabled": True, "allow_write": False, "allow_full_access": False, "bin_path": ""},
             "grok": {"enabled": True, "allow_write": False, "allow_full_access": False, "bin_path": ""},
-            "antigravity": {"enabled": True, "allow_write": False, "allow_full_access": False, "bin_path": ""},
+            "antigravity": {
+                "enabled": False,
+                "allow_write": False,
+                "allow_full_access": False,
+                "risk_acknowledged": False,
+                "bin_path": "",
+            },
         },
     }
 
@@ -326,9 +332,12 @@ class StateStore:
             for pid in ("codex", "grok", "antigravity"):
                 entry = saved_providers.get(pid)
                 if isinstance(entry, dict):
-                    base["providers"][pid]["enabled"] = bool(entry.get("enabled", True))
+                    default_en = False if pid == "antigravity" else True
+                    base["providers"][pid]["enabled"] = bool(entry.get("enabled", default_en))
                     base["providers"][pid]["allow_write"] = bool(entry.get("allow_write", False))
                     base["providers"][pid]["allow_full_access"] = bool(entry.get("allow_full_access", False))
+                    if pid == "antigravity":
+                        base["providers"][pid]["risk_acknowledged"] = bool(entry.get("risk_acknowledged", False))
                     bp = entry.get("bin_path")
                     base["providers"][pid]["bin_path"] = str(bp).strip() if isinstance(bp, str) else ""
         return base
@@ -367,6 +376,10 @@ class StateStore:
                         continue
                     if "enabled" in pval:
                         policy["providers"][pid]["enabled"] = bool(pval["enabled"])
+                        if pid == "antigravity" and not policy["providers"][pid]["enabled"]:
+                            policy["providers"][pid]["risk_acknowledged"] = False
+                    if pid == "antigravity" and "risk_acknowledged" in pval:
+                        policy["providers"][pid]["risk_acknowledged"] = bool(pval["risk_acknowledged"])
                     if "allow_write" in pval:
                         policy["providers"][pid]["allow_write"] = bool(pval["allow_write"])
                     if "allow_full_access" in pval:

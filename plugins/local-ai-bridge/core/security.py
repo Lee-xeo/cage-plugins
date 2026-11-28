@@ -313,6 +313,8 @@ def is_write_allowed(provider_id: str, policy: dict[str, Any]) -> bool:
 def is_provider_enabled(provider_id: str, policy: dict[str, Any]) -> bool:
     providers_cfg = policy.get("providers") or {}
     pcfg = providers_cfg.get(provider_id) or {}
+    if provider_id == "antigravity":
+        return bool(pcfg.get("enabled", False)) and bool(pcfg.get("risk_acknowledged", False))
     return bool(pcfg.get("enabled", True))
 
 

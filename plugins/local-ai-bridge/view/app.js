@@ -72,6 +72,11 @@ const I18N = {
     proxyOn: "Proxy ON",
     proxyParsed: "Proxy fields parsed. Click Save Policy to apply.",
     proxyParseEmpty: "No proxy variables found in the pasted command.",
+    agRiskTitle: "Policy Warning: Use Antigravity?",
+    agRiskEnableMsg: "Invoking Antigravity via third-party automation does not comply with Google's policies and may risk account restrictions or suspension. Please consider carefully before enabling it.",
+    agRiskRunMsg: "Invoking Antigravity via third-party automation does not comply with Google's policies and carries account risk. Please consider carefully before dispatching this task.",
+    agRiskBtn: "I Understand, Continue",
+    agOptInHint: "Disabled by default: invoking via third-party bridge does not comply with Google's policies.",
   },
   zh: {
     title: "本地 AI 协作桥",
@@ -119,6 +124,11 @@ const I18N = {
     proxyOn: "代理已开启",
     proxyParsed: "已解析代理地址，点击保存即可生效。",
     proxyParseEmpty: "未从粘贴内容中识别到 http_proxy / https_proxy / all_proxy。",
+    agRiskTitle: "风险提示：确认使用 Antigravity？",
+    agRiskEnableMsg: "通过第三方工具调用 Antigravity 在 Google 侧不符合相关使用规定，可能存在账号受限或封禁风险。请仔细考虑后再决定是否启用。",
+    agRiskRunMsg: "通过第三方工具调用 Antigravity 在 Google 侧不符合相关使用规定，存在账号风险。请仔细考虑后再决定是否继续发送本次任务。",
+    agRiskBtn: "知晓风险，继续使用",
+    agOptInHint: "默认停用：此调用方式在 Google 侧不符合规定，请谨慎考虑后再启用。",
   },
 };
 
@@ -238,6 +248,10 @@ function renderProviders() {
       const errEl = el("div", "provider-err", p.error);
       errEl.title = p.error;
       card.appendChild(errEl);
+    } else if (p.id === "antigravity" && !p.enabled) {
+      const warnEl = el("div", "provider-err", t("agOptInHint"));
+      warnEl.title = t("agOptInHint");
+      card.appendChild(warnEl);
     }
 
     const foot = el("div", "provider-foot");
@@ -662,11 +676,32 @@ async function setProviderTier(provider, nextTier, selectEl) {
   }
 }
 
+async function confirmAntigravityRisk(isEnable = false) {
+  const res = await rpc("ui/confirm", {
+    title: t("agRiskTitle"),
+    message: isEnable ? t("agRiskEnableMsg") : t("agRiskRunMsg"),
+    confirmLabel: t("agRiskBtn"),
+    danger: true,
+  });
+  return Boolean(res?.confirmed);
+}
+
 async function toggleProviderEnabled(provider) {
+  const nextEnabled = !provider.enabled;
+  const providerUpdate = { enabled: nextEnabled };
+  if (provider.id === "antigravity") {
+    if (nextEnabled) {
+      const confirmed = await confirmAntigravityRisk(true);
+      if (!confirmed) return;
+      providerUpdate.risk_acknowledged = true;
+    } else {
+      providerUpdate.risk_acknowledged = false;
+    }
+  }
   try {
     await callTool("ai_manage_policy", {
       action: "update_policy",
-      payload: { providers: { [provider.id]: { enabled: !provider.enabled } } },
+      payload: { providers: { [provider.id]: providerUpdate } },
     });
     await refreshDashboard();
   } catch (err) {
@@ -784,7 +819,9 @@ function openSettingsModal() {
     const enBox = document.createElement("input");
     enBox.type = "checkbox";
     enBox.id = `pset-en-${pid}`;
-    enBox.checked = Boolean(pcfg.enabled);
+    enBox.checked = pid === "antigravity"
+      ? Boolean(pcfg.enabled && pcfg.risk_acknowledged)
+      : Boolean(pcfg.enabled);
     enLbl.appendChild(enBox);
     enLbl.appendChild(document.createTextNode("Enabled"));
 
@@ -888,11 +925,16 @@ async function handleSubmitNewTask() {
     $("new-prompt").focus();
     return;
   }
+  const selectedProvider = $("new-provider").value;
+  if (selectedProvider === "antigravity") {
+    const confirmed = await confirmAntigravityRisk(false);
+    if (!confirmed) return;
+  }
   const btn = $("btn-submit-task");
   btn.disabled = true;
   try {
     const args = {
-      provider: $("new-provider").value,
+      provider: selectedProvider,
       prompt,
       mode: $("new-mode").value,
     };
@@ -932,6 +974,10 @@ async function handleSendFollowup() {
   const form = $("followup-form");
   const prompt = $("followup-input").value.trim();
   if (!prompt) return;
+  if (form.dataset.provider === "antigravity") {
+    const confirmed = await confirmAntigravityRisk(false);
+    if (!confirmed) return;
+  }
   const btn = $("btn-send-followup");
   btn.disabled = true;
   try {
@@ -1009,6 +1055,17 @@ async function handleSaveSettings() {
   }
   const oldPolicy = state.dashboard?.policy || {};
   const oldProviders = oldPolicy.providers || {};
+
+  const prevAgActive = Boolean(oldProviders.antigravity?.enabled && oldProviders.antigravity?.risk_acknowledged);
+  if (providers.antigravity.enabled) {
+    if (!prevAgActive) {
+      const confirmed = await confirmAntigravityRisk(true);
+      if (!confirmed) return;
+    }
+    providers.antigravity.risk_acknowledged = true;
+  } else {
+    providers.antigravity.risk_acknowledged = false;
+  }
 
   // Check each scope individually so unlocking one provider never skips confirmation for another.
   const newlyFullTargets = [];

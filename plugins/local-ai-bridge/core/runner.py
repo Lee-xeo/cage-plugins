@@ -201,8 +201,12 @@ class TaskRunner:
                 "allow_full_access": allow_full_access,
                 "max_mode": "full-access" if allow_full_access else ("workspace-write" if allow_write else "read-only"),
                 "default_mode": "read-only",
+                "requires_risk_ack": pid == "antigravity",
                 "capabilities": list(provider.capabilities),
             }
+            if pid == "antigravity":
+                pcfg = (policy.get("providers") or {}).get(pid) or {}
+                entry["risk_acknowledged"] = bool(pcfg.get("risk_acknowledged", False))
             if include_host_paths and status.binary_path:
                 entry["binary_path"] = sanitize_diagnostic(status.binary_path, self.project_dir)
             statuses.append(entry)
@@ -223,6 +227,13 @@ class TaskRunner:
     def list_models(self, provider_id: str, refresh: bool = False) -> dict[str, Any]:
         provider = self._get_provider(provider_id)
         pid = provider.id
+        policy = self.store.get_policy()
+        if pid == "antigravity" and not is_provider_enabled(pid, policy):
+            raise PermissionError(
+                "Antigravity is disabled by default because invoking it via third-party automation "
+                "does not comply with Google's policies. Please consider carefully and confirm the "
+                "risk warning in the Local AI Bridge panel before enabling it."
+            )
         now = time.monotonic()
         with self._lock:
             cached = self._model_cache.get(pid)
@@ -233,7 +244,6 @@ class TaskRunner:
                     "cached": True,
                     **({"error": cached[2]} if cached[2] else {}),
                 }
-        policy = self.store.get_policy()
         cli_env = build_cli_env(policy)
         models_out: list[dict[str, Any]] = []
         err_msg: str | None = None
@@ -276,6 +286,12 @@ class TaskRunner:
         pid = provider.id
         policy = self.store.get_policy()
         if not is_provider_enabled(pid, policy):
+            if pid == "antigravity":
+                raise PermissionError(
+                    "Antigravity is disabled by default because invoking it via third-party automation "
+                    "does not comply with Google's policies. Please consider carefully and confirm the "
+                    "risk warning in the Local AI Bridge panel before enabling it."
+                )
             raise PermissionError(f"Provider '{pid}' is disabled in Local AI Bridge settings.")
 
         effective_mode = resolve_effective_mode(mode, pid, policy)

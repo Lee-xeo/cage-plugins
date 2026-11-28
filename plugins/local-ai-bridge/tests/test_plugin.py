@@ -23,6 +23,7 @@ from core.runner import TaskRunner  # noqa: E402
 from core.security import (  # noqa: E402
     build_cli_env,
     has_reserved_words,
+    is_provider_enabled,
     mask_proxy_config,
     redact_proxy_credentials,
     resolve_cli_command,
@@ -153,6 +154,42 @@ class SecurityAndPolicyTests(unittest.TestCase):
         policy["providers"]["codex"]["allow_full_access"] = True
         self.assertEqual(resolve_effective_mode("full-access", "codex", policy), "full-access")
         self.assertEqual(resolve_effective_mode("workspace-write", "codex", policy), "workspace-write")
+
+    def test_antigravity_disabled_until_risk_acknowledged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = Path(tmp) / "repo"
+            proj.mkdir()
+            store = StateStore(Path(tmp) / "state", str(proj))
+            policy = store.get_policy()
+            self.assertFalse(policy["providers"]["antigravity"]["enabled"])
+            self.assertFalse(policy["providers"]["antigravity"]["risk_acknowledged"])
+            self.assertFalse(is_provider_enabled("antigravity", policy))
+
+            # Even if an older policy had enabled=True without risk_acknowledged, it stays blocked.
+            unacked = store.update_policy({"providers": {"antigravity": {"enabled": True}}})
+            self.assertFalse(is_provider_enabled("antigravity", unacked))
+
+            fake_ag = FakeProvider(delay=0.01)
+            fake_ag.id = "antigravity"
+            runner = TaskRunner(str(proj), store, {"antigravity": fake_ag})
+            try:
+                with self.assertRaises(PermissionError):
+                    runner.list_models("antigravity")
+                with self.assertRaises(PermissionError):
+                    runner.start_task("antigravity", prompt="hello")
+
+                acked = store.update_policy(
+                    {"providers": {"antigravity": {"enabled": True, "risk_acknowledged": True}}}
+                )
+                self.assertTrue(is_provider_enabled("antigravity", acked))
+                self.assertEqual(len(runner.list_models("antigravity")["models"]), 1)
+
+                # Disabling resets risk_acknowledged so re-enabling requires confirmation again.
+                disabled = store.update_policy({"providers": {"antigravity": {"enabled": False}}})
+                self.assertFalse(disabled["providers"]["antigravity"]["risk_acknowledged"])
+                self.assertFalse(is_provider_enabled("antigravity", disabled))
+            finally:
+                runner.shutdown()
 
     def test_proxy_validation_redaction_and_env_injection(self) -> None:
         self.assertEqual(validate_proxy_url("http://127.0.0.1:7890"), "http://127.0.0.1:7890")
