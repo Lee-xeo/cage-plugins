@@ -3,6 +3,7 @@
 # Every tool is for the plugin's own page only (_meta.ui.visibility: ["app"]).
 # Standard input and output carry newline-delimited JSON-RPC; Python's
 # standard library only.
+import errno
 import grp
 import json
 import mimetypes
@@ -16,7 +17,7 @@ import time
 import uuid
 import zipfile
 
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 PAGE_ONLY = {"ui": {"visibility": ["app"]}}
 MAX_SCAN = 50000          # entries read from one folder before giving up
 DEFAULT_LIMIT = 300
@@ -27,7 +28,15 @@ COUNT_LIMIT = 10000
 # Pseudo file systems: reading them can block or never end.
 SPECIAL_ROOTS = ("/proc", "/sys", "/dev")
 SHARED_TYPES = ("fuse.sshfs", "virtiofs", "9p")
+# Kernel file systems that can be mounted anywhere (a chroot's /proc, say):
+# recognised by device, wherever they are mounted.
+PSEUDO_TYPES = {"proc", "sysfs", "devtmpfs", "devpts", "debugfs", "tracefs", "securityfs", "cgroup",
+                "cgroup2", "pstore", "bpf", "configfs", "fusectl", "mqueue", "hugetlbfs", "binfmt_misc",
+                "efivarfs", "autofs", "rpc_pipefs", "nsfs"}
 EXPORT_SUBFOLDER = "Downloads"
+MAX_NAME_TRIES = 10000     # "name (2)", "name (3)", … before giving up
+PARTIAL_NAME = re.compile(r"\.[0-9a-f]{32}\.partial")
+STALE_PARTIAL = 24 * 3600  # a partial file untouched this long was left by a stopped server
 
 
 def tool(name, description, properties, required=()):
@@ -86,7 +95,12 @@ def under(path, roots):
 def off_limits(path):
     """True for "/" and the pseudo file systems, judged after following links."""
     real = os.path.realpath(path)
-    return real == "/" or under(real, SPECIAL_ROOTS)
+    if real == "/" or under(real, SPECIAL_ROOTS):
+        return True
+    try:
+        return os.stat(real).st_dev in pseudo_devices()
+    except OSError:
+        return False  # the caller's own stat or open reports it
 
 
 def kind_of(mode):
@@ -265,9 +279,8 @@ def unescape_mount(field):
     return re.sub(r"\\([0-7]{3})", lambda match: chr(int(match.group(1), 8)), field)
 
 
-def shared_mounts(mountinfo):
-    """Writable folders served from the user's computer, from /proc/self/mountinfo text."""
-    found = []
+def parse_mounts(mountinfo):
+    """(mount point, file system type, device, options) for each line of mountinfo text."""
     for line in mountinfo.splitlines():
         left, sep, right = line.partition(" - ")
         if not sep:
@@ -275,21 +288,32 @@ def shared_mounts(mountinfo):
         fields, tail = left.split(), right.split()
         if len(fields) < 6 or not tail:
             continue
-        fstype, point, options = tail[0], unescape_mount(fields[4]), fields[5].split(",")
+        try:
+            major, minor = (int(number) for number in fields[2].split(":"))
+        except ValueError:
+            continue
+        options = fields[5].split(",")
         if len(tail) > 2:
             options += tail[2].split(",")  # the superblock's options can be read-only too
+        yield unescape_mount(fields[4]), tail[0], os.makedev(major, minor), options
+
+
+def shared_mounts(mountinfo):
+    """Writable folders served from the user's computer, as {mount point: device}."""
+    found = {}
+    for point, fstype, device, options in parse_mounts(mountinfo):
         if not any(fstype == shared or fstype.startswith(shared + ".") for shared in SHARED_TYPES):
             continue
         if "ro" in options or under(point, SPECIAL_ROOTS) or point in found:
             continue
-        found.append(point)
+        found[point] = device
     return found
 
 
-def read_mountinfo():
+def read_mountinfo(override=True):
     # LINUX_FILES_MOUNTINFO is for tests only: Cage starts guest plugins with a
     # fixed environment (HOME, USER, PATH, …), never this.
-    source = os.environ.get("LINUX_FILES_MOUNTINFO") or "/proc/self/mountinfo"
+    source = (override and os.environ.get("LINUX_FILES_MOUNTINFO")) or "/proc/self/mountinfo"
     try:
         with open(source, encoding="utf-8", errors="replace") as file:
             return file.read()
@@ -297,12 +321,18 @@ def read_mountinfo():
         return ""
 
 
+def pseudo_devices():
+    """Devices of the kernel's pseudo file systems, always from the real mount table."""
+    return {device for _, fstype, device, _ in parse_mounts(read_mountinfo(override=False))
+            if fstype in PSEUDO_TYPES}
+
+
 def shared_folders():
     folders = []
-    for point in shared_mounts(read_mountinfo()):
+    for point, device in shared_mounts(read_mountinfo()).items():
         # A single shared file is bound onto its own path: folders only.
         if os.path.isdir(point):
-            folders.append({"path": point})
+            folders.append({"path": point, "device": device})
     for folder in folders:
         folder["writable"] = os.access(folder["path"], os.W_OK)
         folder["has_downloads"] = os.path.isdir(os.path.join(folder["path"], EXPORT_SUBFOLDER))
@@ -352,7 +382,8 @@ def remembered(folders):
 def places(_args):
     folders = shared_folders()
     home = os.path.expanduser("~")
-    return {"home": home, "root": "/", "shared": folders, "suggested": suggested(folders),
+    shared = [{key: value for key, value in folder.items() if key != "device"} for folder in folders]
+    return {"home": home, "root": "/", "shared": shared, "suggested": suggested(folders),
             "remembered": remembered(folders), "export_subfolder": EXPORT_SUBFOLDER}
 
 
@@ -390,16 +421,106 @@ def export_target(destination):
         raise Refused("That folder is not shared with your computer.")
     if not match["writable"]:
         raise Refused(f"Cannot write to {destination}.")
-    return os.path.join(destination, EXPORT_SUBFOLDER)
+    return match
 
 
-def free_name(folder, name):
+DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+CREATE_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+def open_downloads(share_folder):
+    """Opens the share's Downloads folder, creating it if needed, as a descriptor.
+
+    The export writes only relative to that descriptor, so it stays in the folder
+    checked here even if a path is changed later. The share must still be the
+    mounted one (by device), so an unmounted share's empty mount point is never
+    written to; Downloads is opened without following links: one pointing
+    elsewhere is refused, not followed."""
+    destination = share_folder["path"]
+    folder = os.path.join(destination, EXPORT_SUBFOLDER)
+    try:
+        share = os.open(destination, DIRECTORY_FLAGS)
+        try:
+            if os.fstat(share).st_dev != share_folder["device"]:
+                raise Refused(f"{destination} is no longer shared with your computer.")
+            try:
+                os.mkdir(EXPORT_SUBFOLDER, dir_fd=share)
+            except FileExistsError:
+                pass
+            downloads = os.open(EXPORT_SUBFOLDER, DIRECTORY_FLAGS, dir_fd=share)
+        finally:
+            os.close(share)
+    except OSError as error:
+        if error.errno in (errno.ELOOP, errno.ENOTDIR):
+            raise Refused(f"{folder} is a link or a file, not a folder. Rename it to download here.")
+        raise Refused(os_message(error))
+    remove_stale_partials(downloads)
+    return downloads
+
+
+def remove_stale_partials(folder_fd):
+    """Deletes partial files that a stopped server left behind, once they are a day old."""
+    cutoff = time.time() - STALE_PARTIAL
+    try:
+        with os.scandir(folder_fd) as scan:
+            stale = [entry.name for entry in scan if PARTIAL_NAME.fullmatch(entry.name)
+                     and entry.is_file(follow_symlinks=False)
+                     and entry.stat(follow_symlinks=False).st_mtime < cutoff]
+        for name in stale:
+            os.unlink(name, dir_fd=folder_fd)
+    except OSError:
+        pass
+
+
+def candidate_names(name):
     stem, dot, extension = name.partition(".") if not name.startswith(".") else (name, "", "")
-    candidate, number = name, 2
-    while os.path.lexists(os.path.join(folder, candidate)):
-        candidate = f"{stem} ({number}){dot}{extension}"
-        number += 1
-    return candidate
+    yield name
+    for number in range(2, MAX_NAME_TRIES):
+        yield f"{stem} ({number}){dot}{extension}"
+
+
+# linkat errors meaning "no hard links here", as opposed to a real failure.
+NO_HARD_LINKS = {errno.EPERM, errno.EOPNOTSUPP, errno.ENOTSUP, errno.ENOSYS, errno.EMLINK, errno.EXDEV}
+
+
+def commit(folder_fd, partial, name):
+    """Gives the finished partial file the first free name and returns it.
+
+    Never replaces an existing file, so two exports with the same name that finish
+    together both keep their content. A hard link fails if the name is taken; where
+    the share has no hard links, the name is first claimed with an exclusive create
+    and the partial file is moved onto that placeholder."""
+    hard_links = True
+    for candidate in candidate_names(name):
+        if hard_links:
+            try:
+                os.link(partial, candidate, src_dir_fd=folder_fd, dst_dir_fd=folder_fd, follow_symlinks=False)
+            except FileExistsError:
+                continue
+            except OSError as error:
+                if error.errno not in NO_HARD_LINKS:
+                    raise
+                hard_links = False
+            else:
+                try:
+                    os.unlink(partial, dir_fd=folder_fd)
+                except OSError:
+                    pass  # a hidden leftover; the download itself is complete
+                return candidate
+        try:
+            os.close(os.open(candidate, CREATE_FLAGS, 0o600, dir_fd=folder_fd))
+        except FileExistsError:
+            continue
+        try:
+            os.rename(partial, candidate, src_dir_fd=folder_fd, dst_dir_fd=folder_fd)
+        except BaseException:
+            try:
+                os.unlink(candidate, dir_fd=folder_fd)
+            except OSError:
+                pass
+            raise
+        return candidate
+    raise OSError(errno.EEXIST, "Too many files with this name", name)
 
 
 class ReadFailed(Exception):
@@ -424,12 +545,15 @@ class NotRegular(OSError):
     pass
 
 
-def open_regular(path):
+SOURCE_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+
+
+def open_regular(path, dir_fd=None):
     """Opens a regular file for reading without following a final link.
 
     O_NONBLOCK keeps a FIFO swapped in after a check from blocking the open;
     fstat then confirms what was actually opened."""
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    fd = os.open(path, SOURCE_FLAGS, dir_fd=dir_fd)
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
             raise NotRegular(0, "Not a regular file", path)
@@ -440,8 +564,8 @@ def open_regular(path):
         raise
 
 
-def write_file(job, source_path, partial):
-    with open_regular(source_path) as source, open(partial, "xb") as target:
+def write_file(job, source_fd, target):
+    with os.fdopen(source_fd, "rb", closefd=False) as source:
         copy_stream(job, source, target)
     job["files_done"] = 1
 
@@ -473,37 +597,43 @@ def zip_name(name):
 
 def zip_entry(name, info):
     entry = zipfile.ZipInfo(zip_name(name), zip_date(info.st_mtime))
-    entry.external_attr = (info.st_mode & 0xFFFF) << 16
+    # Type and rwx bits only: no setuid, setgid or sticky bits in the archive.
+    entry.external_attr = (stat.S_IFMT(info.st_mode) | (info.st_mode & 0o777)) << 16
     entry.file_size = info.st_size
     entry.compress_type = zipfile.ZIP_DEFLATED
     return entry
 
 
-def write_zip(job, folder, partial):
-    base = os.path.dirname(folder.rstrip("/")) or "/"
-    with zipfile.ZipFile(partial, "x", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
-        # The archive is recognised by its inode, so a link or another spelling
-        # of the destination folder can't make it zip itself.
-        own = os.fstat(archive.fp.fileno())
-        for root, dirs, files in os.walk(folder, onerror=lambda error: skip(job, os_message(error))):
-            if under(os.path.realpath(root), SPECIAL_ROOTS):
-                dirs[:] = []
+def write_zip(job, folder_fd, top, target):
+    """Zips the folder open as folder_fd, with its entries under top/.
+
+    os.fwalk goes through directory descriptors and never follows links, so a
+    folder swapped for a link during the walk is not entered."""
+    # The archive is recognised by its inode, so a link or another spelling
+    # of the destination folder can't make it zip itself.
+    own = os.fstat(target.fileno())
+    pseudo = pseudo_devices()
+    with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
+        walk = os.fwalk(".", dir_fd=folder_fd, onerror=lambda error: skip(job, os_message(error)))
+        for root, dirs, files, root_fd in walk:
+            relative_root = os.path.normpath(os.path.join(top, root))
+            if os.fstat(root_fd).st_dev in pseudo:
+                dirs[:] = []  # a /proc, /sys or /dev mounted inside the folder
+                skip(job, f"Not copied (system folder): {relative_root}")
                 continue
-            relative_root = os.path.relpath(root, base)
             if not files and not dirs:
                 archive.writestr(zip_name(relative_root) + "/", b"")
             for name in sorted(files):
-                path = os.path.join(root, name)
                 try:
-                    info = os.lstat(path)
+                    info = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
                     if (info.st_dev, info.st_ino) == (own.st_dev, own.st_ino) or not stat.S_ISREG(info.st_mode):
                         continue  # the archive itself; links, pipes, sockets and devices
-                    source = open_regular(path)
+                    source = open_regular(name, root_fd)
                     opened = os.fstat(source.fileno())
                 except OSError as error:
                     # Unreadable, gone since the listing, swapped for a link, or an
                     # I/O error on the mount: leave the file out and carry on.
-                    skip(job, os_message(error))
+                    skip(job, f"{error.strerror or error}: {os.path.join(relative_root, name)}")
                     continue
                 # Errors writing the archive are not caught here: they fail the export.
                 with source, archive.open(zip_entry(os.path.join(relative_root, name), opened), "w",
@@ -517,15 +647,17 @@ def write_zip(job, folder, partial):
 
 
 def run_export(job):
-    partial = job["partial"]
+    folder_fd, source_fd, partial = job.pop("folder_fd"), job.pop("source_fd"), job["partial"]
+    created = False
     try:
-        if job["is_folder"]:
-            write_zip(job, job["source"], partial)
-        else:
-            write_file(job, job["source"], partial)
-        final = os.path.join(job["folder"], free_name(job["folder"], job["name"]))
-        os.rename(partial, final)
-        job.update(state="done", result=final)
+        with os.fdopen(os.open(partial, CREATE_FLAGS, 0o666, dir_fd=folder_fd), "wb") as target:
+            created = True
+            if job["is_folder"]:
+                write_zip(job, source_fd, os.path.basename(job["source"]), target)
+            else:
+                write_file(job, source_fd, target)
+        final = commit(folder_fd, partial, job["name"])
+        job.update(state="done", result=os.path.join(job["folder"], final))
     except Cancelled:
         job["state"] = "cancelled"
     except Exception as error:  # reported to the page, never raised
@@ -533,34 +665,52 @@ def run_export(job):
             error = error.__cause__
         job.update(state="failed", error=os_message(error) if isinstance(error, OSError) else str(error))
     finally:
-        if job["state"] != "done":
+        if job["state"] != "done" and created:
             try:
-                os.unlink(partial)
+                os.unlink(partial, dir_fd=folder_fd)
             except OSError:
                 pass
+        os.close(folder_fd)
+        os.close(source_fd)
         job["finished"] = time.time()
+
+
+def open_source(source):
+    """Opens the file or folder to copy, so the export reads what was checked here.
+
+    Returns the descriptor and its fstat; the path is not used again."""
+    try:
+        fd = os.open(source, SOURCE_FLAGS)
+    except OSError as error:
+        raise Refused(os_message(error))
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISDIR(info.st_mode) and not stat.S_ISREG(info.st_mode):
+            raise Refused("Only regular files and folders can be copied.")
+        if info.st_dev in pseudo_devices():
+            raise Refused("This location cannot be copied.")
+        os.set_blocking(fd, True)
+        return fd, info
+    except BaseException:
+        os.close(fd)
+        raise
 
 
 def export_start(args):
     asked = absolute(args.get("path"))
-    folder = export_target(args.get("destination"))
+    share = export_target(args.get("destination"))
     if off_limits(asked):
         raise Refused("This location cannot be copied.")
     # Copy what a link points to, checked above, and name the copy after the link.
     source = os.path.realpath(asked)
+    source_fd, info = open_source(source)
     try:
-        info = os.stat(source)
-    except OSError as error:
-        raise Refused(os_message(error))
+        folder_fd = open_downloads(share)
+    except BaseException:
+        os.close(source_fd)
+        raise
     is_folder = stat.S_ISDIR(info.st_mode)
-    if not is_folder and not stat.S_ISREG(info.st_mode):
-        raise Refused("Only regular files and folders can be copied.")
-    if not os.access(source, os.R_OK):
-        raise Refused(f"Permission denied: {source}")
-    try:
-        os.makedirs(folder, exist_ok=True)
-    except OSError as error:
-        raise Refused(os_message(error))
+    folder = os.path.join(share["path"], EXPORT_SUBFOLDER)
     name = os.path.basename(asked) + (".zip" if is_folder else "")
     job_id = uuid.uuid4().hex
     job = {
@@ -568,7 +718,8 @@ def export_start(args):
         "is_folder": is_folder, "bytes_total": None if is_folder else info.st_size,
         "bytes_done": 0, "files_done": 0, "skipped": [], "skipped_count": 0, "started": time.time(),
         # Not named after the file: a long name plus a suffix would exceed NAME_MAX.
-        "partial": os.path.join(folder, f".{job_id}.partial"),
+        "partial": f".{job_id}.partial",  # relative to folder_fd
+        "folder_fd": folder_fd, "source_fd": source_fd,
         "cancel": threading.Event(),
     }
     with JOBS_LOCK:

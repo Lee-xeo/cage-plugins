@@ -1580,7 +1580,7 @@
     },
     {
       "name": "linux-files",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "description": "Browse the whole Linux file system in columns, copy any path, and download files or zipped folders to your computer.",
       "permissions": [],
       "author": {
@@ -1679,9 +1679,9 @@
       },
       "runtime": "python3",
       "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/linux-files/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-files-0.2.6.tar.gz",
-      "sha256": "06a25d8b68716c434a714a88b08f9227d67fd59d949ff2229f775ab4c5ded449",
-      "bytes": 27121
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-files-0.2.7.tar.gz",
+      "sha256": "8deead11fa8272431096bbd8aac16cfd5b46be5dd0530dfe73d8b4f61fe9b597",
+      "bytes": 29135
     },
     {
       "name": "local-preview",

@@ -1,7 +1,7 @@
 {
   "name": "linux-files",
   "displayName": "Linux Files",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Browse the whole Linux file system in columns, copy any path, and download files or zipped folders to your computer.",
   "icon": "icon.svg",
   "engines": { "cage": ">=0.2.1" },
