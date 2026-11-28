@@ -301,7 +301,7 @@ def compilation_directory(staging, source, requested):
         raise BuildError("working_directory 必须是项目内的相对目录。")
     if requested == ".":
         return staging
-    if (any(part in ("", ".", "..") for part in requested.split("/"))
+    if (any(part in ("", ".", "..") or part.endswith((" ", ".")) for part in requested.split("/"))
             or re.search(r'[\\<>:"|?*\x00-\x1f]', requested)):
         raise BuildError("working_directory 必须是项目内的相对目录。")
     cwd = staging / requested

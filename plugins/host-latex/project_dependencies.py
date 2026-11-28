@@ -76,6 +76,7 @@ class Reader:
         self.start = self.position
         self.comments = []
         depth = 1
+        group_depth = 0
         value = []
         length = 0
         while self.char:
@@ -89,9 +90,14 @@ class Reader:
                         skipped += self.comments.pop()[1]
                     self.comments.append((length, skipped))
                 continue
-            if char == opening:
+            # A brace group shields both '[' and ']' inside an optional argument.
+            if opening == "[" and char == "{":
+                group_depth += 1
+            elif char == "}" and group_depth:
+                group_depth -= 1
+            if char == opening and not group_depth:
                 depth += 1
-            if char == closing:
+            if char == closing and not group_depth:
                 depth -= 1
                 if not depth:
                     return "".join(value)
