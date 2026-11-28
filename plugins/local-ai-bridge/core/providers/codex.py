@@ -55,6 +55,12 @@ def _classify_codex_error(text: str) -> str:
 class CodexProvider(AIProvider):
     id = "codex"
     display_name = "Codex CLI"
+    service_destination = "OpenAI Codex service (via host Codex CLI)"
+    read_only_isolation = "os-sandbox"
+    read_only_boundary = (
+        "OS-level read-only sandbox (--sandbox read-only) with --ignore-user-config, "
+        "--ignore-rules, disabled hooks/plugins/apps, and web_search disabled."
+    )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
@@ -89,18 +95,27 @@ class CodexProvider(AIProvider):
 
         # Check real login status rather than assuming authenticated=True
         auth_state: bool | None = None
+        account_summary: str | None = None
         auth_err: str | None = None
         l_code, l_out, l_err = run_quick_command([*cmd, "login", "status"], timeout=5.0, env=env)
         combined = f"{l_out}\n{l_err}".strip()
         if l_code == 0 and re.search(r"logged in", combined, re.I):
             auth_state = True
+            if re.search(r"chatgpt", combined, re.I):
+                account_summary = "Host Codex CLI (ChatGPT login)"
+            elif re.search(r"api\s*key", combined, re.I):
+                account_summary = "Host Codex CLI (API key)"
+            else:
+                account_summary = "Host Codex CLI (logged-in account)"
         elif re.search(r"not logged in|unauthorized|login required", combined, re.I):
             auth_state = False
+            account_summary = "Not logged in"
             auth_err = "Codex CLI is not logged in. Run `codex login` on the host machine."
 
         return ProviderStatus(
             available=True,
             authenticated=auth_state,
+            account_summary=account_summary,
             version=version,
             binary_path=cmd[-1],
             error=auth_err,

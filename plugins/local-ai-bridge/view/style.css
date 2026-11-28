@@ -607,6 +607,64 @@ input:focus, select:focus, textarea:focus {
   background: var(--chrome);
 }
 
+.danger-banner {
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--danger) 6%, var(--chrome));
+}
+
+.danger-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.danger-desc {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.full-access-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.full-access-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.disclosure-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--chrome);
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.disclosure-box.warn {
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.disclosure-box.danger {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, var(--chrome));
+}
+
+.disclosure-line strong {
+  color: var(--strong);
+}
+
 .switch-row {
   display: flex;
   align-items: flex-start;

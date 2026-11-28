@@ -72,11 +72,29 @@ const I18N = {
     proxyOn: "Proxy ON",
     proxyParsed: "Proxy fields parsed. Click Save Policy to apply.",
     proxyParseEmpty: "No proxy variables found in the pasted command.",
-    agRiskTitle: "Policy Warning: Use Antigravity?",
-    agRiskEnableMsg: "Invoking Antigravity via third-party automation does not comply with Google's policies and may risk account restrictions or suspension. Please consider carefully before enabling it.",
-    agRiskRunMsg: "Invoking Antigravity via third-party automation does not comply with Google's policies and carries account risk. Please consider carefully before dispatching this task.",
-    agRiskBtn: "I Understand, Continue",
-    agOptInHint: "Disabled by default: invoking via third-party bridge does not comply with Google's policies.",
+    agAccountTitle: "Step 1/2: Confirm Google Account Policy Risk",
+    agAccountEnableMsg:
+      "Automating Antigravity via a third-party bridge may not comply with Google's usage policies and carries account restriction or suspension risk (see README for upstream Antigravity CLI docs and Google Terms links).\n\n" +
+      "This step only confirms you understand the account/policy risk. File & execution permission boundaries will be confirmed separately next.",
+    agAccountBtn: "I Accept Account Risk",
+    agBoundaryTitle: "Step 2/2: Confirm Antigravity Execution Boundary",
+    agBoundaryEnableMsg:
+      "The agy process runs directly in the active shared project directory and is NOT an OS-level read-only filesystem sandbox.\n\n" +
+      "Even in read-only mode, this plugin can only enforce a best-effort --settings deny list (blocking write_file/command/mcp/*_url) plus a pre-flight check that refuses projects containing workspace hooks or workflows (.agents/hooks.json, .agents/workflows/). agy provides no separate deny flag for run_workflow or user-global hooks/workflows. Prompts and read project files will be sent via your local logged-in account to Google.",
+    agBoundaryBtn: "I Understand Execution Boundary",
+    agRiskTitle: "Confirm Antigravity Dispatch",
+    agRiskBtn: "Continue Dispatch",
+    agOptInHint: "Disabled by default: separately confirm Google account policy risk and non-OS-sandbox execution boundary before enabling.",
+    isoOsSandbox: "OS Read-Only Sandbox",
+    isoCliTools: "CLI Tool-Restricted",
+    isoPolicyDeny: "Policy Deny-List (Not OS Sandbox)",
+    fullActiveBadge: "Full Access",
+    discAccount: "Account",
+    discContext: "Context Sent",
+    discBoundary: "Execution Boundary",
+    discBoundaryRw: "Workspace-write: allows editing files in the active project (shell/MCP restricted where supported).",
+    discBoundaryFull: "HIGH RISK Full Access: auto-approves arbitrary host shell commands, file writes, network, and plugins/browser control.",
+    fullLockedHint: "Full-access is kept separate from read-only review; unlock it under High-Risk Override in Policy & Paths if needed.",
   },
   zh: {
     title: "本地 AI 协作桥",
@@ -124,11 +142,29 @@ const I18N = {
     proxyOn: "代理已开启",
     proxyParsed: "已解析代理地址，点击保存即可生效。",
     proxyParseEmpty: "未从粘贴内容中识别到 http_proxy / https_proxy / all_proxy。",
-    agRiskTitle: "风险提示：确认使用 Antigravity？",
-    agRiskEnableMsg: "通过第三方工具调用 Antigravity 在 Google 侧不符合相关使用规定，可能存在账号受限或封禁风险。请仔细考虑后再决定是否启用。",
-    agRiskRunMsg: "通过第三方工具调用 Antigravity 在 Google 侧不符合相关使用规定，存在账号风险。请仔细考虑后再决定是否继续发送本次任务。",
-    agRiskBtn: "知晓风险，继续使用",
-    agOptInHint: "默认停用：此调用方式在 Google 侧不符合规定，请谨慎考虑后再启用。",
+    agAccountTitle: "步骤 1/2：确认 Google 账号与条款风险",
+    agAccountEnableMsg:
+      "通过第三方桥接工具以非交互方式调用 Antigravity 可能不符合 Google 的相关使用规定，存在账号受限或封禁风险（详见 README 中的上游 Antigravity CLI 文档与 Google 服务条款链接）。\n\n" +
+      "本弹窗仅确认账号合规风险；文件与执行权限边界将在下一步单独确认。",
+    agAccountBtn: "知晓账号风险，下一步",
+    agBoundaryTitle: "步骤 2/2：确认 Antigravity 文件与执行边界",
+    agBoundaryEnableMsg:
+      "agy 进程会在当前共享项目目录直接启动，并非 OS 级只读文件系统沙箱。\n\n" +
+      "即使在 read-only 档位下，本插件也只能通过临时 --settings 拒绝列表（拦截写文件/命令/MCP/网络）加启动前检查（拒绝包含 .agents/hooks.json 或 .agents/workflows/ 等项目钩子/工作流的目录）做尽力约束；agy 目前无独立开关禁用 run_workflow 或本机全局 hooks/workflows。提示词与读取的项目文件上下文会通过本机已登录账号发往 Google 服务。",
+    agBoundaryBtn: "知晓执行边界并启用",
+    agRiskTitle: "确认派发 Antigravity 任务",
+    agRiskBtn: "确认派发",
+    agOptInHint: "默认停用：请分别确认 Google 账号合规风险与非 OS 沙箱执行边界后再启用。",
+    isoOsSandbox: "OS 级只读沙箱",
+    isoCliTools: "CLI 工具白名单限制",
+    isoPolicyDeny: "策略拒绝列表（非 OS 沙箱）",
+    fullActiveBadge: "完全权限已开",
+    discAccount: "使用账号",
+    discContext: "发送上下文",
+    discBoundary: "实际执行边界",
+    discBoundaryRw: "允许改写模式：可修改当前共享项目目录中的文件（仍尽量禁用终端执行与 MCP）。",
+    discBoundaryFull: "高风险完全权限：将自动批准本机任意命令、文件写入、网络与浏览器/MCP 插件调用。",
+    fullLockedHint: "完全权限与普通只读审查分离；如确需开启，请在「策略与路径」底部的高风险覆盖区独立解锁。",
   },
 };
 
@@ -202,6 +238,13 @@ function el(tag, className, text) {
   return node;
 }
 
+function isolationLabel(level) {
+  if (level === "os-sandbox") return t("isoOsSandbox");
+  if (level === "cli-tool-restricted") return t("isoCliTools");
+  if (level === "policy-deny-best-effort") return t("isoPolicyDeny");
+  return level || "";
+}
+
 function renderProviders() {
   const wrap = $("providers-strip");
   wrap.textContent = "";
@@ -222,26 +265,38 @@ function renderProviders() {
     }
     head.appendChild(nameWrap);
 
-    const tier = p.allow_full_access ? "full-access" : (p.allow_write ? "workspace-write" : "read-only");
-    const tierCls = tier === "full-access" ? "tier-full" : (tier === "workspace-write" ? "tier-rw" : "tier-ro");
-    const tierSel = el("select", `tier-select ${tierCls}`);
-    tierSel.setAttribute("aria-label", `${p.id} permission tier`);
-    for (const [val, label] of [
-      ["read-only", t("modeRo")],
-      ["workspace-write", t("modeRw")],
-      ["full-access", t("modeFull")],
-    ]) {
-      const opt = el("option", "", label);
-      opt.value = val;
-      if (val === tier) opt.selected = true;
-      tierSel.appendChild(opt);
+    // Keep card selector scoped to normal Read-Only / Workspace-Write; Full Access lives in the
+    // separated High-Risk Override section of Policy & Paths.
+    if (p.allow_full_access) {
+      const fullBadge = el("button", "btn sm danger", t("fullActiveBadge"));
+      fullBadge.type = "button";
+      fullBadge.title = t("discBoundaryFull");
+      fullBadge.addEventListener("click", () => openSettingsModal());
+      head.appendChild(fullBadge);
+    } else {
+      const tier = p.allow_write ? "workspace-write" : "read-only";
+      const tierCls = tier === "workspace-write" ? "tier-rw" : "tier-ro";
+      const tierSel = el("select", `tier-select ${tierCls}`);
+      tierSel.setAttribute("aria-label", `${p.id} permission tier`);
+      for (const [val, label] of [
+        ["read-only", t("modeRo")],
+        ["workspace-write", t("modeRw")],
+      ]) {
+        const opt = el("option", "", label);
+        opt.value = val;
+        if (val === tier) opt.selected = true;
+        tierSel.appendChild(opt);
+      }
+      tierSel.addEventListener("change", () => setProviderTier(p, tierSel.value, tierSel));
+      head.appendChild(tierSel);
     }
-    tierSel.addEventListener("change", () => setProviderTier(p, tierSel.value, tierSel));
-    head.appendChild(tierSel);
     card.appendChild(head);
 
     const meta = el("div", "provider-meta");
-    meta.appendChild(el("span", "", p.version || p.binary_path || "—"));
+    meta.appendChild(el("span", "", p.account_summary || p.version || "—"));
+    if (p.read_only_isolation) {
+      meta.appendChild(el("span", "tag ro", isolationLabel(p.read_only_isolation)));
+    }
     card.appendChild(meta);
 
     if (p.error) {
@@ -676,10 +731,35 @@ async function setProviderTier(provider, nextTier, selectEl) {
   }
 }
 
-async function confirmAntigravityRisk(isEnable = false) {
+async function confirmAntigravityRisk(isEnable = false, mode = "read-only") {
+  if (isEnable) {
+    const accountStep = await rpc("ui/confirm", {
+      title: t("agAccountTitle"),
+      message: t("agAccountEnableMsg"),
+      confirmLabel: t("agAccountBtn"),
+      danger: true,
+    });
+    if (!accountStep?.confirmed) return false;
+    const boundaryStep = await rpc("ui/confirm", {
+      title: t("agBoundaryTitle"),
+      message: t("agBoundaryEnableMsg"),
+      confirmLabel: t("agBoundaryBtn"),
+      danger: true,
+    });
+    return Boolean(boundaryStep?.confirmed);
+  }
+  const prov = (state.dashboard?.providers || []).find((p) => p.id === "antigravity");
+  const projName = state.dashboard?.project_name || t("noProject");
+  const acct = prov?.account_summary || "Host Antigravity CLI";
+  const boundaryText = mode === "full-access"
+    ? t("discBoundaryFull")
+    : (mode === "workspace-write" ? t("discBoundaryRw") : (prov?.read_only_boundary || t("modeRo")));
+  const message = state.lang === "zh"
+    ? `【1. 账号与条款风险】通过第三方桥接调用 Antigravity 可能不符合 Google 使用规定，存在账号风险。\n使用账号：${acct}\n发送上下文：提示词 + 项目「${projName}」内读取的文件 → Google Antigravity 服务\n\n【2. 文件与执行权限（当前档位：${mode}）】\n${boundaryText}\n\n确认继续派发吗？`
+    : `1) Account & Policy Risk: Invoking Antigravity via a third-party bridge may not comply with Google's usage policies.\nAccount: ${acct}\nContext Sent: Prompt + files read inside "${projName}" -> Google Antigravity service\n\n2) File & Execution Boundary (mode: ${mode}):\n${boundaryText}\n\nContinue dispatch?`;
   const res = await rpc("ui/confirm", {
     title: t("agRiskTitle"),
-    message: isEnable ? t("agRiskEnableMsg") : t("agRiskRunMsg"),
+    message,
     confirmLabel: t("agRiskBtn"),
     danger: true,
   });
@@ -747,6 +827,42 @@ function closeNewTaskModal() {
   $("task-modal").classList.add("hidden");
 }
 
+function updateNewTaskDisclosure() {
+  const box = $("new-task-disclosure");
+  if (!box) return;
+  box.textContent = "";
+  const pid = $("new-provider").value;
+  const mode = $("new-mode").value;
+  const prov = (state.dashboard?.providers || []).find((p) => p.id === pid);
+  const projName = state.dashboard?.project_name || t("noProject");
+
+  box.className = "disclosure-box" + (
+    mode === "full-access" ? " danger" : (pid === "antigravity" || mode === "workspace-write" ? " warn" : "")
+  );
+
+  const addLine = (label, value) => {
+    const row = el("div", "disclosure-line");
+    row.appendChild(el("strong", "", `${label}: `));
+    row.appendChild(document.createTextNode(value));
+    box.appendChild(row);
+  };
+
+  addLine(t("discAccount"), prov?.account_summary || providerLabel(pid));
+  const ctxText = state.lang === "zh"
+    ? `提示词 + 当前项目（${projName}）内被 CLI 读取的文件 → ${prov?.service_destination || providerLabel(pid)}`
+    : `Prompt + files inside "${projName}" read by the CLI -> ${prov?.service_destination || providerLabel(pid)}`;
+  addLine(t("discContext"), ctxText);
+
+  if (mode === "full-access") {
+    addLine(t("discBoundary"), t("discBoundaryFull"));
+  } else if (mode === "workspace-write") {
+    addLine(t("discBoundary"), t("discBoundaryRw"));
+  } else {
+    const isoTag = prov?.read_only_isolation ? `[${isolationLabel(prov.read_only_isolation)}] ` : "";
+    addLine(t("discBoundary"), `${isoTag}${prov?.read_only_boundary || t("modeRo")}`);
+  }
+}
+
 function syncNewTaskModeOptions() {
   const pid = $("new-provider").value;
   const prov = (state.dashboard?.providers || []).find((p) => p.id === pid);
@@ -761,6 +877,7 @@ function syncNewTaskModeOptions() {
   if (!canWrite && sel.value === "workspace-write") {
     sel.value = "read-only";
   }
+  updateNewTaskDisclosure();
 }
 
 function populateModelDropdown(pid) {
@@ -808,8 +925,10 @@ function openSettingsModal() {
 
   const container = $("provider-settings-rows");
   container.textContent = "";
+  const fullRows = $("provider-full-rows");
+  fullRows.textContent = "";
   for (const pid of ["codex", "grok", "antigravity"]) {
-    const pcfg = policy.providers?.[pid] || { enabled: true, allow_write: false, allow_full_access: false, bin_path: "" };
+    const pcfg = policy.providers?.[pid] || { enabled: pid !== "antigravity", allow_write: false, allow_full_access: false, bin_path: "" };
     const card = el("div", "pset-card");
     const head = el("div", "pset-head");
     head.appendChild(el("span", `tag ${pid}`, providerLabel(pid)));
@@ -833,17 +952,8 @@ function openSettingsModal() {
     wrLbl.appendChild(wrBox);
     wrLbl.appendChild(document.createTextNode("Write"));
 
-    const fullLbl = el("label", "");
-    const fullBox = document.createElement("input");
-    fullBox.type = "checkbox";
-    fullBox.id = `pset-full-${pid}`;
-    fullBox.checked = Boolean(pcfg.allow_full_access);
-    fullLbl.appendChild(fullBox);
-    fullLbl.appendChild(document.createTextNode("Full Access"));
-
     checks.appendChild(enLbl);
     checks.appendChild(wrLbl);
-    checks.appendChild(fullLbl);
     head.appendChild(checks);
     card.appendChild(head);
 
@@ -854,6 +964,16 @@ function openSettingsModal() {
     pathInput.placeholder = `Optional custom ${pid} CLI executable path`;
     card.appendChild(pathInput);
     container.appendChild(card);
+
+    // Separate per-provider full-access toggle inside the isolated High-Risk Override panel
+    const fullLbl = el("label", "");
+    const fullBox = document.createElement("input");
+    fullBox.type = "checkbox";
+    fullBox.id = `pset-full-${pid}`;
+    fullBox.checked = Boolean(pcfg.allow_full_access);
+    fullLbl.appendChild(fullBox);
+    fullLbl.appendChild(document.createTextNode(providerLabel(pid)));
+    fullRows.appendChild(fullLbl);
   }
   $("settings-modal").classList.remove("hidden");
 }
@@ -908,6 +1028,7 @@ $("new-provider").addEventListener("change", () => {
   syncNewTaskModeOptions();
   populateModelDropdown($("new-provider").value);
 });
+$("new-mode").addEventListener("change", updateNewTaskDisclosure);
 $("btn-load-models").addEventListener("click", loadModelsForSelectedProvider);
 
 $("btn-clear-done").addEventListener("click", async () => {
@@ -926,8 +1047,9 @@ async function handleSubmitNewTask() {
     return;
   }
   const selectedProvider = $("new-provider").value;
+  const selectedMode = $("new-mode").value;
   if (selectedProvider === "antigravity") {
-    const confirmed = await confirmAntigravityRisk(false);
+    const confirmed = await confirmAntigravityRisk(false, selectedMode);
     if (!confirmed) return;
   }
   const btn = $("btn-submit-task");
@@ -975,7 +1097,7 @@ async function handleSendFollowup() {
   const prompt = $("followup-input").value.trim();
   if (!prompt) return;
   if (form.dataset.provider === "antigravity") {
-    const confirmed = await confirmAntigravityRisk(false);
+    const confirmed = await confirmAntigravityRisk(false, $("followup-mode").value);
     if (!confirmed) return;
   }
   const btn = $("btn-send-followup");

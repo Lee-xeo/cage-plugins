@@ -144,6 +144,13 @@ def _extract_text_from_event(ev: dict[str, Any]) -> tuple[str, bool]:
 class GrokProvider(AIProvider):
     id = "grok"
     display_name = "Grok CLI"
+    service_destination = "xAI Grok service (via host Grok CLI)"
+    read_only_isolation = "cli-tool-restricted"
+    read_only_boundary = (
+        "CLI tool allowlist (read_file, list_dir, grep) plus --disallowed-tools, "
+        "--deny Bash/Edit/Write/MCPTool/WebFetch/WebSearch, --no-subagents, and --disable-web-search. "
+        "Enforced at the CLI tool/permission layer, not an OS filesystem sandbox."
+    )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
@@ -178,9 +185,13 @@ class GrokProvider(AIProvider):
         _, m_out, m_err = run_quick_command([*cmd, "models"], timeout=5.0, env=env)
         _, auth = parse_grok_models_output(f"{m_out}\n{m_err}")
         auth_err = "Grok CLI is not authenticated. Run `grok login` on the host machine." if auth is False else None
+        account_summary = (
+            "Host Grok CLI (logged-in account)" if auth is True else ("Not logged in" if auth is False else "Host Grok CLI (unverified)")
+        )
         return ProviderStatus(
             available=True,
             authenticated=auth,
+            account_summary=account_summary,
             version=version,
             binary_path=cmd[-1],
             error=auth_err,

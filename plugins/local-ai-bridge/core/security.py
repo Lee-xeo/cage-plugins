@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+import ctypes
 import glob
 import hashlib
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Sequence
+
+if os.name == "nt":
+    import msvcrt  # type: ignore[import-not-found]
+else:
+    msvcrt = None  # type: ignore[assignment]
 
 MAX_PROMPT_BYTES = 512 * 1024
 MAX_OUTPUT_RETURN_CHARS = 32_000
@@ -232,31 +239,210 @@ def assert_within_dir(target: Path, base: Path, label: str = "path") -> Path:
     return resolved_target
 
 
-def resolve_project_file(rel_path: str, project_dir: str, label: str = "prompt_file") -> Path:
-    """Resolve a relative UTF-8 text file confined strictly to project_dir."""
-    if not project_dir:
-        raise ValueError("No active project directory is open.")
+def _win_normalize_final_path(raw: str) -> str:
+    if raw.startswith("\\\\?\\UNC\\"):
+        raw = "\\\\" + raw[8:]
+    elif raw.startswith("\\\\?\\"):
+        raw = raw[4:]
+    return os.path.normcase(os.path.normpath(raw))
+
+
+def _win_final_path_from_handle(handle: int) -> str:
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    buf_len = 4096
+    buf = ctypes.create_unicode_buffer(buf_len)
+    res = kernel32.GetFinalPathNameByHandleW(ctypes.c_void_p(handle), buf, buf_len, 0)
+    if res == 0:
+        raise OSError("GetFinalPathNameByHandleW failed.")
+    if res >= buf_len:
+        buf = ctypes.create_unicode_buffer(res + 1)
+        res = kernel32.GetFinalPathNameByHandleW(ctypes.c_void_p(handle), buf, res + 1, 0)
+        if res == 0:
+            raise OSError("GetFinalPathNameByHandleW failed.")
+    return _win_normalize_final_path(buf.value)
+
+
+def _win_final_path_from_fd(fd: int) -> str:
+    """Resolve the kernel final path of an open Windows file descriptor via GetFinalPathNameByHandleW."""
+    assert msvcrt is not None
+    return _win_final_path_from_handle(msvcrt.get_osfhandle(fd))
+
+
+def _win_final_path_from_dir(path: Path) -> str:
+    """Resolve the kernel final path of a Windows directory via CreateFileW + GetFinalPathNameByHandleW."""
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    FILE_SHARE_ALL = 0x00000001 | 0x00000002 | 0x00000004
+    OPEN_EXISTING = 3
+    FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+    INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
+    handle = kernel32.CreateFileW(
+        str(path),
+        0,
+        FILE_SHARE_ALL,
+        None,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        None,
+    )
+    if not handle or handle == INVALID_HANDLE_VALUE:
+        return _win_normalize_final_path(str(path.resolve(strict=True)))
+    try:
+        return _win_final_path_from_handle(handle)
+    finally:
+        kernel32.CloseHandle(ctypes.c_void_p(handle))
+
+
+def _read_bounded_fd(fd: int, max_bytes: int, label: str) -> bytes:
+    """Verify an already-open descriptor is a regular file and read at most max_bytes from it."""
+    st = os.fstat(fd)
+    if not stat.S_ISREG(st.st_mode):
+        raise ValueError(f"{label} is not a regular file.")
+    if st.st_size > max_bytes:
+        raise ValueError(f"{label} exceeds the {max_bytes // 1024} KiB size limit.")
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        want = min(65536, (max_bytes + 1) - total)
+        if want <= 0:
+            break
+        block = os.read(fd, want)
+        if not block:
+            break
+        total += len(block)
+        if total > max_bytes:
+            raise ValueError(f"{label} exceeds the {max_bytes // 1024} KiB size limit.")
+        chunks.append(block)
+    return b"".join(chunks)
+
+
+def _split_safe_relative_parts(rel_path: str, label: str) -> list[str]:
     if not isinstance(rel_path, str) or not rel_path.strip():
         raise ValueError(f"{label} must be a non-empty relative path.")
     cleaned = rel_path.strip()
     if "\x00" in cleaned:
         raise ValueError(f"{label} contains invalid characters.")
-    candidate = Path(cleaned)
-    if candidate.is_absolute() or ".." in candidate.parts:
+    if cleaned.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", cleaned):
         raise ValueError(f"{label} must be a relative path inside the active project directory.")
+    raw_parts = [p for p in re.split(r"[\\/]+", cleaned) if p]
+    if not raw_parts:
+        raise ValueError(f"{label} must be a non-empty relative path.")
+    parts: list[str] = []
+    for seg in raw_parts:
+        if seg in (".", ".."):
+            raise ValueError(f"{label} must not contain '.' or '..' path segments.")
+        parts.append(seg)
+    return parts
+
+
+def read_project_file_safe(
+    rel_path: str,
+    project_dir: str,
+    label: str = "prompt_file",
+    max_bytes: int = MAX_PROMPT_BYTES,
+) -> tuple[str, str]:
+    """
+    Safely open and read a relative UTF-8 text file confined to project_dir using a single
+    verified file descriptor (eliminating path/size TOCTOU races):
+    - POSIX: walks directory components via dir_fd + O_NOFOLLOW, then fstat + bounded os.read.
+    - Windows: verifies no reparse points, opens one fd, verifies GetFinalPathNameByHandleW
+      remains inside project_dir + fstat + bounded os.read.
+    Returns: (text, filename)
+    """
+    if not project_dir:
+        raise ValueError("No active project directory is open.")
     base = Path(project_dir)
     if not base.is_dir():
         raise ValueError("Active project directory does not exist.")
-    full = base / candidate
-    if not full.exists():
-        raise ValueError(f"{label} does not exist: {cleaned}")
-    resolved = assert_within_dir(full, base, label=label)
-    if not resolved.is_file():
-        raise ValueError(f"{label} is not a regular file: {cleaned}")
-    size = resolved.stat().st_size
-    if size > MAX_PROMPT_BYTES:
-        raise ValueError(f"{label} exceeds the {MAX_PROMPT_BYTES // 1024} KiB size limit.")
-    return resolved
+    parts = _split_safe_relative_parts(rel_path, label=label)
+    filename = parts[-1]
+
+    use_dir_fd = (
+        os.name != "nt"
+        and hasattr(os, "O_NOFOLLOW")
+        and (os.open in getattr(os, "supports_dir_fd", set()))
+    )
+    if use_dir_fd:
+        o_dir = getattr(os, "O_DIRECTORY", 0)
+        o_nofollow = os.O_NOFOLLOW
+        o_nonblock = getattr(os, "O_NONBLOCK", 0)
+        cur_fd: int | None = None
+        file_fd: int | None = None
+        try:
+            cur_fd = os.open(str(base.resolve(strict=True)), os.O_RDONLY | o_dir)
+            for seg in parts[:-1]:
+                try:
+                    next_fd = os.open(seg, os.O_RDONLY | o_dir | o_nofollow, dir_fd=cur_fd)
+                except OSError as exc:
+                    raise ValueError(f"{label} directory component is invalid or a symlink: {seg}") from exc
+                os.close(cur_fd)
+                cur_fd = next_fd
+            try:
+                file_fd = os.open(filename, os.O_RDONLY | o_nofollow | o_nonblock, dir_fd=cur_fd)
+            except FileNotFoundError as exc:
+                raise ValueError(f"{label} does not exist: {rel_path}") from exc
+            except OSError as exc:
+                raise ValueError(f"{label} cannot be opened safely (symlink or inaccessible): {rel_path}") from exc
+            raw = _read_bounded_fd(file_fd, max_bytes=max_bytes, label=label)
+        finally:
+            if file_fd is not None:
+                try:
+                    os.close(file_fd)
+                except OSError:
+                    pass
+            if cur_fd is not None:
+                try:
+                    os.close(cur_fd)
+                except OSError:
+                    pass
+    else:
+        resolved_base = base.resolve(strict=True)
+        walk = resolved_base
+        for idx, seg in enumerate(parts):
+            walk = walk / seg
+            try:
+                lst = os.lstat(walk)
+            except FileNotFoundError as exc:
+                raise ValueError(f"{label} does not exist: {rel_path}") from exc
+            attrs = getattr(lst, "st_file_attributes", 0)
+            if stat.S_ISLNK(lst.st_mode) or (attrs & 0x400):
+                raise ValueError(f"{label} escapes or uses a symbolic link/reparse point.")
+            if idx < len(parts) - 1:
+                if not stat.S_ISDIR(lst.st_mode):
+                    raise ValueError(f"{label} directory component is not a directory: {seg}")
+            elif not stat.S_ISREG(lst.st_mode):
+                raise ValueError(f"{label} is not a regular file.")
+        o_bin = getattr(os, "O_BINARY", 0)
+        file_fd = None
+        try:
+            try:
+                file_fd = os.open(str(walk), os.O_RDONLY | o_bin)
+            except FileNotFoundError as exc:
+                raise ValueError(f"{label} does not exist: {rel_path}") from exc
+            except OSError as exc:
+                raise ValueError(f"{label} cannot be opened safely: {rel_path}") from exc
+            if os.name == "nt":
+                final_target = _win_final_path_from_fd(file_fd)
+                base_norm = _win_final_path_from_dir(resolved_base)
+                if final_target == base_norm:
+                    raise ValueError(f"{label} is not a regular file.")
+                try:
+                    Path(final_target).relative_to(Path(base_norm))
+                except ValueError as exc:
+                    raise ValueError(f"{label} escapes the active project directory.") from exc
+            raw = _read_bounded_fd(file_fd, max_bytes=max_bytes, label=label)
+        finally:
+            if file_fd is not None:
+                try:
+                    os.close(file_fd)
+                except OSError:
+                    pass
+
+    if b"\x00" in raw:
+        raise ValueError(f"{label} appears to be binary.")
+    text = raw.decode("utf-8", errors="replace").strip()
+    if not text:
+        raise ValueError(f"{label} is empty: {filename}")
+    return text, filename
 
 
 def resolve_prompt_input(
@@ -264,20 +450,14 @@ def resolve_prompt_input(
     prompt_file: str | None,
     project_dir: str,
 ) -> str:
-    """Resolve prompt text from inline string or a jailed project file."""
+    """Resolve prompt text from inline string or a single-handle bounded project file."""
     if isinstance(prompt, str) and prompt.strip():
         text = prompt.strip()
         if len(text.encode("utf-8")) > MAX_PROMPT_BYTES:
             raise ValueError(f"Prompt exceeds {MAX_PROMPT_BYTES // 1024} KiB limit.")
         return text
     if isinstance(prompt_file, str) and prompt_file.strip():
-        path = resolve_project_file(prompt_file, project_dir, label="prompt_file")
-        raw = path.read_bytes()
-        if b"\x00" in raw:
-            raise ValueError("prompt_file appears to be binary.")
-        text = raw.decode("utf-8", errors="replace").strip()
-        if not text:
-            raise ValueError(f"prompt_file is empty: {path.name}")
+        text, _ = read_project_file_safe(prompt_file, project_dir, label="prompt_file")
         return text
     raise ValueError("Provide either 'prompt' or 'prompt_file'.")
 

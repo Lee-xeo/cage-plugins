@@ -15,20 +15,25 @@ from pathlib import Path
 PLUGIN_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_DIR))
 
-from core.providers.antigravity import AntigravityProvider, parse_agy_models_output  # noqa: E402
+from core.providers.antigravity import (  # noqa: E402
+    AntigravityProvider,
+    detect_project_hook_configs,
+    parse_agy_models_output,
+)
 from core.providers.base import AIProvider, ModelInfo, ProviderStatus, TaskHandle, TurnRequest, TurnResult  # noqa: E402
 from core.providers.codex import CodexProvider  # noqa: E402
 from core.providers.grok import GrokProvider, parse_grok_models_output  # noqa: E402
 from core.runner import TaskRunner  # noqa: E402
 from core.security import (  # noqa: E402
+    MAX_PROMPT_BYTES,
     build_cli_env,
     has_reserved_words,
     is_provider_enabled,
     mask_proxy_config,
+    read_project_file_safe,
     redact_proxy_credentials,
     resolve_cli_command,
     resolve_effective_mode,
-    resolve_project_file,
     resolve_prompt_input,
     sanitize_diagnostic,
     validate_proxy_url,
@@ -40,6 +45,9 @@ import server  # noqa: E402
 class FakeProvider(AIProvider):
     id = "codex"
     display_name = "Fake Codex"
+    service_destination = "Fake service"
+    read_only_isolation = "os-sandbox"
+    read_only_boundary = "OS-level read-only sandbox."
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn")
 
     def __init__(self, delay: float = 0.05) -> None:
@@ -54,7 +62,13 @@ class FakeProvider(AIProvider):
         project_dir: str = "",
     ) -> ProviderStatus:
         self.probe_count += 1
-        return ProviderStatus(available=True, authenticated=True, version="fake 1.0", binary_path="/usr/bin/fake")
+        return ProviderStatus(
+            available=True,
+            authenticated=True,
+            account_summary="Fake local login",
+            version="fake 1.0",
+            binary_path="/usr/bin/fake",
+        )
 
     def list_models(
         self,
@@ -107,31 +121,97 @@ class SecurityAndPolicyTests(unittest.TestCase):
         self.assertNotIn("<form", html)
         self.assertNotIn('type="submit"', html)
 
-    def test_prompt_file_jail(self) -> None:
+    def test_prompt_file_single_handle_jail_and_bounds(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             proj = Path(tmp) / "proj"
-            proj.mkdir()
+            sub = proj / "notes"
+            sub.mkdir(parents=True)
+            outside_dir = Path(tmp) / "outside_dir"
+            outside_dir.mkdir()
             outside = Path(tmp) / "secret.txt"
             outside.write_text("secret", encoding="utf-8")
-            inside = proj / "prompt.txt"
+            (outside_dir / "leak.txt").write_text("leak", encoding="utf-8")
+
+            inside = sub / "prompt.txt"
             inside.write_text("Review main.py", encoding="utf-8")
+            oversized = proj / "big.txt"
+            oversized.write_bytes(b"a" * (MAX_PROMPT_BYTES + 16))
+            binary = proj / "bin.dat"
+            binary.write_bytes(b"hello\x00world")
+            empty = proj / "empty.txt"
+            empty.write_text("   \n", encoding="utf-8")
 
-            resolved = resolve_project_file("prompt.txt", str(proj))
-            self.assertEqual(resolved, inside.resolve())
-            self.assertEqual(resolve_prompt_input(None, "prompt.txt", str(proj)), "Review main.py")
+            text, fname = read_project_file_safe("notes/prompt.txt", str(proj))
+            self.assertEqual((text, fname), ("Review main.py", "prompt.txt"))
+            self.assertEqual(resolve_prompt_input(None, "notes/prompt.txt", str(proj)), "Review main.py")
 
-            with self.assertRaises(ValueError):
-                resolve_project_file("../secret.txt", str(proj))
-            with self.assertRaises(ValueError):
-                resolve_project_file(str(outside), str(proj))
+            # Traversal, absolute, directory, oversized, binary, empty all rejected
+            for bad in ("../secret.txt", "./notes/prompt.txt", str(outside), "notes", "big.txt", "bin.dat", "empty.txt"):
+                with self.assertRaises(ValueError, msg=f"Expected rejection for {bad!r}"):
+                    read_project_file_safe(bad, str(proj))
 
+            # Symlink leaf AND symlink parent directory rejected without following
             link = proj / "escape.txt"
+            dir_link = proj / "linked_dir"
             try:
                 link.symlink_to(outside)
+                dir_link.symlink_to(outside_dir)
             except OSError:
                 self.skipTest("Symlink creation requires elevated privileges on this platform.")
             with self.assertRaises(ValueError):
-                resolve_project_file("escape.txt", str(proj))
+                read_project_file_safe("escape.txt", str(proj))
+            with self.assertRaises(ValueError):
+                read_project_file_safe("linked_dir/leak.txt", str(proj))
+
+    def test_antigravity_blocks_restricted_modes_when_project_hooks_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = Path(tmp) / "repo"
+            hook_path = proj / ".agents" / "hooks.json"
+            hook_path.parent.mkdir(parents=True)
+            hook_path.write_text('{"PreInvocation": []}', encoding="utf-8")
+
+            plugin_hook = proj / ".agents" / "plugins" / "demo" / "hooks.json"
+            plugin_hook.parent.mkdir(parents=True)
+            plugin_hook.write_text("{}", encoding="utf-8")
+
+            wf_file = proj / ".agents" / "workflows" / "auto.md"
+            wf_file.parent.mkdir(parents=True)
+            wf_file.write_text("# workflow\n", encoding="utf-8")
+
+            detected = detect_project_hook_configs(str(proj))
+            self.assertIn(".agents/hooks.json", detected)
+            self.assertIn(".agents/plugins/demo/hooks.json", detected)
+            self.assertIn(".agents/workflows/", detected)
+
+            provider = AntigravityProvider()
+            # Use python executable as fake binary override so run_turn reaches the hook/workflow guard
+            h = TaskHandle(lambda *a: None, lambda *a: None, lambda *a: None)
+            res = provider.run_turn(
+                TurnRequest(
+                    prompt="audit",
+                    project_dir=str(proj),
+                    mode="read-only",
+                    bin_override=sys.executable,
+                ),
+                h,
+            )
+            self.assertFalse(res.ok)
+            self.assertIn("hooks.json", res.error or "")
+
+            # Even without hooks.json, workspace workflows alone still block restricted runs.
+            hook_path.unlink()
+            plugin_hook.unlink()
+            res2 = provider.run_turn(
+                TurnRequest(
+                    prompt="audit",
+                    project_dir=str(proj),
+                    mode="workspace-write",
+                    bin_override=sys.executable,
+                ),
+                h,
+            )
+            self.assertFalse(res2.ok)
+            self.assertIn(".agents/workflows/", res2.error or "")
 
     def test_default_read_only_gate(self) -> None:
         policy = {
@@ -451,10 +531,15 @@ class RunnerIsolationAndProtocolTests(unittest.TestCase):
             runner_b = TaskRunner(str(proj_b), StateStore(state_dir, str(proj_b)), {"codex": fake_b})
             try:
                 # Model-facing ai_list_providers hides host binary_path & project_dir
+                # while exposing account summary, destination service, and read-only boundary
                 info = runner_a.list_providers()
                 self.assertNotIn("project_dir", info)
-                self.assertNotIn("binary_path", info["providers"][0])
-                self.assertTrue(info["providers"][0]["binary_detected"])
+                p0 = info["providers"][0]
+                self.assertNotIn("binary_path", p0)
+                self.assertTrue(p0["binary_detected"])
+                self.assertEqual(p0["account_summary"], "Fake local login")
+                self.assertEqual(p0["read_only_isolation"], "os-sandbox")
+                self.assertTrue(p0["read_only_boundary"])
 
                 # Probe caching prevents repeated subprocess probes during rapid polling
                 runner_a.list_providers()

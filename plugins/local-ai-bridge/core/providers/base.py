@@ -18,6 +18,7 @@ from typing import Any, Callable
 class ProviderStatus:
     available: bool
     authenticated: bool | None = None
+    account_summary: str | None = None
     version: str | None = None
     binary_path: str | None = None
     error: str | None = None
@@ -119,6 +120,9 @@ class AIProvider:
 
     id: str = ""
     display_name: str = ""
+    service_destination: str = ""
+    read_only_isolation: str = ""
+    read_only_boundary: str = ""
     capabilities: tuple[str, ...] = ()
 
     def probe(

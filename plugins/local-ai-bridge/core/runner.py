@@ -195,6 +195,10 @@ class TaskRunner:
                 "available": status.available,
                 "binary_detected": bool(status.binary_path),
                 "authenticated": status.authenticated,
+                "account_summary": status.account_summary,
+                "service_destination": provider.service_destination,
+                "read_only_isolation": provider.read_only_isolation,
+                "read_only_boundary": provider.read_only_boundary,
                 "version": status.version,
                 "error": sanitize_diagnostic(status.error, self.project_dir) if status.error else None,
                 "allow_write": allow_write,
@@ -556,6 +560,9 @@ class TaskRunner:
         offset: int = 0,
         limit: int = MAX_OUTPUT_RETURN_CHARS,
     ) -> dict[str, Any]:
+        provider = self.providers.get(rec.provider)
+        cached_probe = self._probe_cache.get(rec.provider)
+        account_summary = cached_probe[1].account_summary if cached_probe else None
         out: dict[str, Any] = {
             "task_id": rec.id,
             "session_id": rec.session_id,
@@ -571,6 +578,13 @@ class TaskRunner:
             "created_at": rec.created_at,
             "finished_at": rec.finished_at,
         }
+        if provider:
+            out["service_destination"] = provider.service_destination
+            if account_summary:
+                out["account_summary"] = account_summary
+            if rec.mode == "read-only":
+                out["read_only_isolation"] = provider.read_only_isolation
+                out["read_only_boundary"] = provider.read_only_boundary
         if rec.status in ("queued", "running", "cancelling"):
             if rec.partial_text:
                 out["partial_preview"] = rec.partial_text[-2000:]

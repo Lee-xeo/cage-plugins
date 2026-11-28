@@ -28,7 +28,10 @@ _AGY_NPM_ENTRIES = (
 _AGY_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 
 # Antigravity enforces Deny > Ask > Allow in its permission engine, overriding user local Allow rules.
+# Note: this is a CLI policy deny-list (NOT an OS-level read-only filesystem sandbox); `agy` currently
+# exposes no separate deny rule for `run_workflow` or user-global hooks, so we also pre-check project hooks.
 _AGY_READONLY_SETTINGS: dict[str, Any] = {
+    "toolPermission": "request-review",
     "permissions": {
         "deny": [
             "write_file(*)",
@@ -38,10 +41,11 @@ _AGY_READONLY_SETTINGS: dict[str, Any] = {
             "download_url(*)",
             "read_url(*)",
         ]
-    }
+    },
 }
 
 _AGY_WORKSPACE_WRITE_SETTINGS: dict[str, Any] = {
+    "toolPermission": "request-review",
     "permissions": {
         "deny": [
             "command(*)",
@@ -49,8 +53,66 @@ _AGY_WORKSPACE_WRITE_SETTINGS: dict[str, Any] = {
             "execute_url(*)",
             "download_url(*)",
         ]
-    }
+    },
 }
+
+_PROJECT_HOOK_RELATIVE_PATHS = (
+    ".agents/hooks.json",
+    ".agent/hooks.json",
+    ".gemini/hooks.json",
+    ".antigravity/hooks.json",
+)
+
+_PROJECT_WORKFLOW_RELATIVE_DIRS = (
+    ".agents/workflows",
+    ".agent/workflows",
+    ".gemini/workflows",
+    ".antigravity/workflows",
+)
+
+
+def _dir_has_entries(path: Path) -> bool:
+    if path.is_symlink():
+        return True
+    if not path.is_dir():
+        return False
+    try:
+        return any(True for _ in path.iterdir())
+    except OSError:
+        return True
+
+
+def detect_project_hook_configs(project_dir: str) -> list[str]:
+    """
+    Detect workspace-scoped Antigravity hook configs and workflow directories that `agy`
+    cannot disable via CLI flags.
+    """
+    if not project_dir:
+        return []
+    base = Path(project_dir)
+    found: list[str] = []
+    for rel in _PROJECT_HOOK_RELATIVE_PATHS:
+        cand = base / rel
+        if cand.exists() or cand.is_symlink():
+            found.append(rel)
+    for rel in _PROJECT_WORKFLOW_RELATIVE_DIRS:
+        cand = base / rel
+        if _dir_has_entries(cand):
+            found.append(f"{rel}/")
+    plugins_dir = base / ".agents" / "plugins"
+    if plugins_dir.is_dir():
+        try:
+            for child in sorted(plugins_dir.iterdir()):
+                for sub in ("hooks.json", "hooks/hooks.json"):
+                    cand = child / sub
+                    if cand.exists() or cand.is_symlink():
+                        found.append(f".agents/plugins/{child.name}/{sub}")
+                wf_dir = child / "workflows"
+                if _dir_has_entries(wf_dir):
+                    found.append(f".agents/plugins/{child.name}/workflows/")
+        except OSError:
+            pass
+    return found
 
 
 def parse_agy_models_output(text: str) -> list[ModelInfo]:
@@ -84,6 +146,14 @@ def parse_agy_models_output(text: str) -> list[ModelInfo]:
 class AntigravityProvider(AIProvider):
     id = "antigravity"
     display_name = "Antigravity CLI (agy)"
+    service_destination = "Google Antigravity service (via host agy CLI)"
+    read_only_isolation = "policy-deny-best-effort"
+    read_only_boundary = (
+        "Best-effort CLI policy deny list (--settings denying write_file, command, mcp, *_url) "
+        "plus pre-flight blocking of workspace hooks and workflows (.agents/hooks.json, .agents/workflows/). "
+        "NOT an OS-level read-only filesystem sandbox; agy still runs in the active project directory and "
+        "has no separate deny rule for run_workflow or user-global hooks/workflows."
+    )
     capabilities = ("read-only", "workspace-write", "full-access", "multi-turn", "model-discovery", "reasoning-effort")
 
     def _resolve_cmd(self, bin_override: str | None = None, project_dir: str = "") -> list[str] | None:
@@ -119,6 +189,7 @@ class AntigravityProvider(AIProvider):
         return ProviderStatus(
             available=True,
             authenticated=None,
+            account_summary="Host Antigravity CLI (cached local login, unverified)",
             version=version,
             binary_path=cmd[-1],
         )
@@ -176,6 +247,21 @@ class AntigravityProvider(AIProvider):
         cmd = self._resolve_cmd(req.bin_override, project_dir=req.project_dir)
         if not cmd:
             return TurnResult(ok=False, error="Antigravity CLI (`agy`) is not installed on this computer.")
+
+        # Refuse restricted runs when workspace hook configs or workflow directories are present
+        # because `agy` has no CLI flag to disable project lifecycle hooks or workspace workflows.
+        if req.mode in ("read-only", "workspace-write"):
+            hook_files = detect_project_hook_configs(req.project_dir)
+            if hook_files:
+                listed = ", ".join(hook_files[:5])
+                return TurnResult(
+                    ok=False,
+                    error=(
+                        f"Refusing to run Antigravity in {req.mode} mode because this project contains "
+                        f"workspace hook/workflow entries ({listed}) that agy CLI cannot disable via flags. "
+                        "Inspect/remove those project entries or explicitly unlock full-access mode."
+                    ),
+                )
 
         temp_settings_file: Path | None = None
         try:

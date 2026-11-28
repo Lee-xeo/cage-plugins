@@ -2,7 +2,7 @@
   "tools": [
     {
       "name": "ai_list_providers",
-      "description": "List available local AI coding CLIs (Codex, Grok, Antigravity), their detected versions, authentication status, active project name, and unlocked permission tier (read-only, workspace-write, or full-access).",
+      "description": "List available local AI coding CLIs (Codex, Grok, Antigravity), their detected versions, login/account summary, destination service, actual read-only isolation boundary, active project name, and unlocked permission tier. Call before dispatching tasks to verify account and isolation scope.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -38,7 +38,7 @@
     },
     {
       "name": "ai_run_task",
-      "description": "Start a background task or continue an existing multi-turn session with a local AI CLI (Codex, Grok, or Antigravity) in the active project directory. Returns task_id and session_id immediately without blocking. Defaults to read-only mode (enforcing hard write/shell restrictions); workspace-write and full-access require the user to enable them in the dashboard. Use prompt_file for prompts longer than 3000 bytes. Poll with ai_task_status and follow nextCheck if running.",
+      "description": "Start a background task or continue an existing multi-turn session with a local AI CLI (Codex, Grok, or Antigravity) in the active project directory. Returns task_id and session_id immediately without blocking. Prompts and project files read by the CLI are sent via the host CLI's logged-in account to its upstream service. Defaults to read-only mode (OS sandbox for Codex; CLI tool allowlist/deny rules for Grok; best-effort policy deny list plus workspace hook/workflow blocking for Antigravity, not an OS filesystem sandbox). Elevated modes (workspace-write, and the separate high-risk full-access override) are off by default and must be explicitly enabled by the user in the dashboard. Use prompt_file for prompts longer than 3000 bytes. Poll with ai_task_status and follow nextCheck if running.",
       "inputSchema": {
         "type": "object",
         "required": ["provider"],
@@ -54,7 +54,7 @@
           },
           "prompt_file": {
             "type": "string",
-            "description": "Relative path inside the active project directory to a UTF-8 file containing the prompt (max 512 KiB)."
+            "description": "Relative path inside the active project directory to a regular UTF-8 file containing the prompt (single-handle verified, max 512 KiB)."
           },
           "session_id": {
             "type": "string",
@@ -71,7 +71,7 @@
           "mode": {
             "type": "string",
             "enum": ["read-only", "workspace-write", "full-access"],
-            "description": "Execution permission mode. Defaults to read-only (blocks edits and shell commands). workspace-write allows project edits; full-access unlocks unrestricted host commands, plugins/browser control, and auto-approved execution when enabled by the user."
+            "description": "Execution mode. Defaults to read-only (actual isolation varies by CLI; check ai_list_providers read_only_boundary). workspace-write allows project edits; full-access is a separate high-risk override that auto-approves arbitrary host commands and plugins only when explicitly unlocked by the user."
           },
           "title": {
             "type": "string",
