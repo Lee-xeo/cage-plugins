@@ -1,0 +1,33 @@
+name: publish-releases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dist/*.tar.gz"
+      - ".github/workflows/publish-releases.yml"
+      - "scripts/sync_packages.sh"
+      - "scripts/stats.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: packages-release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Mirror plugin archives and refresh stats.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/sync_packages.sh --create
