@@ -1,0 +1,32 @@
+{
+  "name": "shortcuts",
+  "displayName": "Shortcuts",
+  "version": "0.1.0",
+  "description": "Lists and runs the shortcuts the user puts in one dedicated folder of the Shortcuts app on this Mac, and returns their text output.",
+  "icon": "icon.svg",
+  "engines": {
+    "cage": ">=0.1.8"
+  },
+  "kind": "host",
+  "platforms": [
+    "darwin"
+  ],
+  "permissions": [
+    "commands"
+  ],
+  "categories": [
+    "productivity",
+    "desktop"
+  ],
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "shortcuts",
+        "command": [
+          "python3",
+          "server.py"
+        ]
+      }
+    ]
+  }
+}

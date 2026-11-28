@@ -1891,6 +1891,107 @@
       "bytes": 27747
     },
     {
+      "name": "shortcuts",
+      "version": "0.1.0",
+      "description": "Lists and runs the shortcuts the user puts in one dedicated folder of the Shortcuts app on this Mac, and returns their text output.",
+      "permissions": [
+        "commands"
+      ],
+      "author": {
+        "name": "ikook-wang"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "快捷指令",
+          "description": "运行你放在「快捷指令」App 某个文件夹里的快捷指令，并读回输出的文字。只开放该文件夹中的快捷指令，仅限 macOS。"
+        },
+        "zh-TW": {
+          "displayName": "捷徑",
+          "description": "執行你放在「捷徑」App 某個資料夾中的捷徑，並讀回輸出的文字。只開放該資料夾中的捷徑，僅限 macOS。"
+        },
+        "ru": {
+          "displayName": "Быстрые команды",
+          "description": "Запускает быстрые команды из одной папки приложения «Быстрые команды» и возвращает их текстовый вывод. Доступны только команды из этой папки; только macOS."
+        },
+        "ar": {
+          "displayName": "الاختصارات",
+          "description": "يشغّل الاختصارات التي تضعها في مجلد واحد من تطبيق الاختصارات ويعيد النص الذي تُخرجه. تتاح اختصارات هذا المجلد فقط، على macOS فقط."
+        },
+        "fa": {
+          "displayName": "میان‌برها",
+          "description": "میان‌برهایی را که در یک پوشه از برنامهٔ Shortcuts گذاشته‌اید اجرا می‌کند و متن خروجی آن‌ها را برمی‌گرداند. فقط میان‌برهای همان پوشه در دسترس‌اند؛ فقط macOS."
+        },
+        "ko": {
+          "displayName": "단축어",
+          "description": "단축어 앱의 한 폴더에 넣어 둔 단축어를 실행하고 출력된 텍스트를 읽어옵니다. 그 폴더의 단축어만 사용할 수 있으며 macOS 전용입니다."
+        },
+        "es": {
+          "displayName": "Atajos",
+          "description": "Ejecuta los atajos que guardes en una carpeta de la app Atajos y devuelve el texto que producen. Solo están disponibles los atajos de esa carpeta; solo macOS."
+        },
+        "my": {
+          "displayName": "Shortcuts",
+          "description": "Shortcuts အက်ပ်ရှိ ဖိုင်တွဲတစ်ခုတွင် သင်ထည့်ထားသော shortcut များကို လုပ်ဆောင်ပြီး ထွက်လာသော စာသားကို ပြန်ဖတ်ပေးသည်။ ထိုဖိုင်တွဲထဲမှ shortcut များသာ အသုံးပြုနိုင်ပြီး macOS တွင်သာ ရရှိနိုင်သည်။"
+        },
+        "be": {
+          "displayName": "Хуткія каманды",
+          "description": "Запускае хуткія каманды з адной папкі праграмы «Хуткія каманды» і вяртае іх тэкставы вынік. Даступныя толькі каманды з гэтай папкі; толькі macOS."
+        },
+        "ps": {
+          "displayName": "شارټ کټونه",
+          "description": "هغه شارټ کټونه چلوي چې تاسو د Shortcuts اپ په یوه فولډر کې ایښي، او د هغوی متني پایله بېرته راوړي. یوازې د همدې فولډر شارټ کټونه شته؛ یوازې macOS."
+        },
+        "prs": {
+          "displayName": "میان‌برها",
+          "description": "میان‌برهایی را که در یک پوشهٔ برنامهٔ Shortcuts گذاشته‌اید اجرا می‌کند و متن خروجی آن‌ها را برمی‌گرداند. تنها میان‌برهای همان پوشه در دسترس است؛ تنها macOS."
+        },
+        "am": {
+          "displayName": "አቋራጮች",
+          "description": "በአቋራጮች መተግበሪያ ውስጥ በአንድ አቃፊ ያስቀመጧቸውን አቋራጮች ያስኬዳል እና የሚያወጡትን ጽሑፍ ይመልሳል። የዚያ አቃፊ አቋራጮች ብቻ ይገኛሉ፤ ለmacOS ብቻ።"
+        },
+        "so": {
+          "displayName": "Gaabiyeyaal",
+          "description": "Wuxuu socodsiiyaa gaabiyeyaasha aad dhigtay hal gal oo ka mid ah barnaamijka Shortcuts, wuxuuna soo celiyaa qoraalka ay soo saaraan. Kaliya gaabiyeyaasha galkaas ayaa la heli karaa; macOS oo kaliya."
+        },
+        "ti": {
+          "displayName": "ኣቋራጻት",
+          "description": "ኣብ ሓደ ማህደር ናይ Shortcuts መተግበሪ ዘቐመጥካዮም ኣቋራጻት የካይድ፡ ዘውጽእዎ ጽሑፍ ድማ ይመልስ። ናይቲ ማህደር ኣቋራጻት ጥራይ ይርከቡ፤ ንmacOS ጥራይ።"
+        },
+        "fr": {
+          "displayName": "Raccourcis",
+          "description": "Exécute les raccourcis que vous placez dans un dossier de l'app Raccourcis et renvoie le texte qu'ils produisent. Seuls les raccourcis de ce dossier sont disponibles ; macOS uniquement."
+        }
+      },
+      "displayName": "Shortcuts",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "productivity",
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.1.8"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "shortcuts",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/shortcuts/icon.svg",
+      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/shortcuts-0.1.0.tar.gz",
+      "sha256": "99c478b5f5d3b961ba2917ef7125aeaa071980a54d4ff27b0da5b42ec3b465fa",
+      "bytes": 6752
+    },
+    {
       "name": "sqlite",
       "version": "0.1.1",
       "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
